@@ -1,7 +1,5 @@
 import {GenericTemplates} from "./generic.templates";
 import {VoiceRecorder} from "../classes/audio/VoiceRecorder";
-import {configuredFeatures} from "../classes/store";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature";
 import {compute, create, signal} from "@targoninc/jess";
 import {button} from "@targoninc/jess-components";
 
@@ -26,7 +24,7 @@ export class AudioTemplates {
                     icon: {icon: iconState},
                     classes: ["flex", "align-children"],
                     title: "Currently only OpenAI is supported",
-                    disabled: compute(a => !a[BotanikaFeature.OpenAI]?.enabled, configuredFeatures),
+                    disabled: true,
                     onclick: () => {
                         recorder.toggleRecording();
                         onState.value = !onState.value;
