@@ -128,6 +128,7 @@ export class SettingsTemplates {
         }
 
         const value = compute(c => getter(c) ?? null, configuration);
+        const changed = compute((v, c) => v !== (getter(c) ?? null), value, configuration);
 
         return create("div")
             .classes("flex-v", "card", "small-gap")
@@ -139,7 +140,14 @@ export class SettingsTemplates {
                             .children(
                                 GenericTemplates.icon(sc.icon),
                             ).build() : null,
-                        SettingsTemplates.settingImplementation(sc, value, updateKey),
+                        // @ts-ignore
+                        SettingsTemplates.settingImplementation(sc, value, (_, val) => value.value = val),
+                        when(changed, button({
+                            icon: {icon: "save"},
+                            text: "Set",
+                            classes: ["flex", "align-center"],
+                            onclick: () => updateKey(sc.key, value.value)
+                        })),
                     ).build(),
                 signalMap(errors, create("div").classes("flex-v"), e => create("span")
                     .classes("error")
@@ -152,6 +160,8 @@ export class SettingsTemplates {
         switch (sc.type) {
             case "string":
                 return GenericTemplates.input(InputType.text, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
+            case "password":
+                return GenericTemplates.input(InputType.password, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "color":
                 return GenericTemplates.input(InputType.color, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "date":
