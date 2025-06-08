@@ -22,7 +22,7 @@ export const configuration = signal<Configuration>({} as Configuration);
 export const chatContext = signal<ChatContext>(INITIAL_CONTEXT);
 export const chats = signal<ChatContext[]>([]);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
-export const mcpConfig = signal<McpConfiguration>({} as McpConfiguration);
+export const mcpConfig = signal<McpConfiguration|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
@@ -52,15 +52,15 @@ export function initializeStore() {
         }
     });
 
-    Api.getMcpConfig().then(mcpConf => {
-        if (mcpConf.data) {
-            mcpConfig.value = mcpConf.data as McpConfiguration;
-        }
-    });
-
     Api.getShortcutConfig().then(sc => {
         if (sc.data) {
             shortCutConfig.value = sc.data as ShortcutConfiguration;
+        }
+    });
+
+    Api.getMcpConfig().then(mcpConf => {
+        if (mcpConf.success) {
+            mcpConfig.value = mcpConf.data as McpConfiguration;
         }
     });
 

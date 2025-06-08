@@ -100,7 +100,7 @@ export class SettingsTemplates {
                         }))),
                         SettingsTemplates.shortcuts(),
                         SettingsTemplates.configuredFeatures(),
-                        SettingsTemplates.mcpConfig(),
+                        when(mcpConfig, SettingsTemplates.mcpConfig()),
                         create("div")
                             .classes("flex")
                             .children(
@@ -251,7 +251,7 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v", "allow-overflow")
             .children(
-                compute(c => SettingsTemplates.mcpConfigInternal(c), mcpConfig)
+                compute(c => SettingsTemplates.mcpConfigInternal(c ?? <McpConfiguration>{}), mcpConfig)
             ).build();
     }
 

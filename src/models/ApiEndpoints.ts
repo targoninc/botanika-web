@@ -20,9 +20,6 @@ export enum ApiEndpoint {
     MCP_CONFIG = "/mcpConfig",
     MCP_SERVER = "/mcpServer",
 
-    // Environment variable endpoint
-    SET_ENVIRONMENT_VARIABLE = "/setEnvironmentVariable",
-
     // Shortcut configuration endpoints
     SHORTCUT_CONFIG = "/shortCutConfig",
 

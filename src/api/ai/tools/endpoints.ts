@@ -2,6 +2,7 @@ import {addMcpServer, deleteMcpServer, getMcpConfig, updateMcpServer} from "./cl
 import {Application, Request, Response} from "express";
 import { McpServerConfig } from "../../../models/mcp/McpServerConfig";
 import { ApiEndpoint } from "../../../models/ApiEndpoints";
+import {isAdmin} from "../../authentication/middleware.ts";
 
 export function getMcpConfigEndpoint(req: Request, res: Response) {
     res.json(getMcpConfig());
@@ -33,8 +34,8 @@ export async function updateMcpServerEndpoint(req: Request, res: Response) {
 }
 
 export function addMcpEndpoints(app: Application) {
-    app.get(ApiEndpoint.MCP_CONFIG, getMcpConfigEndpoint);
-    app.post(ApiEndpoint.MCP_SERVER, addMcpServerEndpoint);
-    app.delete(ApiEndpoint.MCP_SERVER, deleteMcpServerEndpoint);
-    app.put(ApiEndpoint.MCP_SERVER, updateMcpServerEndpoint);
+    app.get(ApiEndpoint.MCP_CONFIG, isAdmin, getMcpConfigEndpoint);
+    app.post(ApiEndpoint.MCP_SERVER, isAdmin, addMcpServerEndpoint);
+    app.delete(ApiEndpoint.MCP_SERVER, isAdmin, deleteMcpServerEndpoint);
+    app.put(ApiEndpoint.MCP_SERVER, isAdmin, updateMcpServerEndpoint);
 }
