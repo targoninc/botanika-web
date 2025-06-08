@@ -2,6 +2,7 @@ import {z} from "zod";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
+import { Configuration } from "src/models/Configuration";
 
 async function play(deviceId: string, contextUri: string, uris: string[], positionMs: number): Promise<void> {
     const api = await createClient();
@@ -44,7 +45,7 @@ async function playToolCall(input: SpotifyPlayOptions) {
     };
 }
 
-export function spotifyPlayTool() {
+export function spotifyPlayTool(userConfig: Configuration) {
     return {
         id: "spotify-play",
         description: "Play a song, album or playlist on Spotify. If you don't know the URIs, use the Spotify search tool first.",

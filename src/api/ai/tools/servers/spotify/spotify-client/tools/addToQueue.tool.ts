@@ -2,6 +2,7 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
+import { Configuration } from "src/models/Configuration";
 
 async function addToQueue(uri: string, deviceId: string): Promise<SpotifyApi.AddToQueueResponse> {
     const api = await createClient();
@@ -28,7 +29,7 @@ async function addToQueueToolCall(input: any) {
     };
 }
 
-export function spotifyAddToQueueTool() {
+export function spotifyAddToQueueTool(userConfig: Configuration) {
     return {
         id: "spotify-addToQueue",
         description: "Add a Spotify URI to the queue.",

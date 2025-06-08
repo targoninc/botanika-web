@@ -2,6 +2,7 @@ import {z} from "zod";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
+import { Configuration } from "src/models/Configuration";
 
 async function pause(deviceId: string): Promise<void> {
     const api = await createClient();
@@ -29,7 +30,7 @@ async function pauseToolCall(input: SpotifyPauseOptions) {
     };
 }
 
-export function spotifyPauseTool() {
+export function spotifyPauseTool(userConfig: Configuration) {
     return {
         id: "spotify-pause",
         description: "Pause Spotify playback.",

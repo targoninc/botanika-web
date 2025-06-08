@@ -5,6 +5,7 @@ import {wrapTool} from "../../../../tooling";
 import {SearchType} from "../models/SearchType";
 import {checkIfEnabled, createClient} from "../createClient";
 import {SpotifySearchOptions} from "../models/SpotifySearchOptions";
+import { Configuration } from "src/models/Configuration";
 
 async function search(query: string, searchTypes: SearchType[]): Promise<SpotifyApi.SearchResponse> {
     const api = await createClient();
@@ -50,7 +51,7 @@ async function searchToolCall(input: SpotifySearchOptions) {
     };
 }
 
-export function spotifySearchTool() {
+export function spotifySearchTool(userConfig: Configuration) {
     return {
         id: "spotify-search",
         description: "Spotify search. Useful for when you need to search for music or podcasts.",

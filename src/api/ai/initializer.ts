@@ -1,6 +1,6 @@
-import {createClients, getAllMcpTools} from "./mcp/createClient";
+import {createClients, getAllMcpTools} from "./tools/createClient";
 import {CLI} from "../CLI";
-import {McpInfo} from "./mcp/models/McpInfo";
+import {McpInfo} from "./tools/models/McpInfo";
 
 export async function getMcpTools() {
     CLI.debug(`Initializing MCP clients...`);

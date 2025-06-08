@@ -2,6 +2,7 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {ResourceReference} from "../../../../../../../models/chat/ResourceReference";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
+import { Configuration } from "src/models/Configuration";
 
 async function getDevices(): Promise<SpotifyApi.UserDevicesResponse> {
     const api = await createClient();
@@ -33,7 +34,7 @@ async function getDevicesToolCall() {
     };
 }
 
-export function spotifyGetDevicesTool() {
+export function spotifyGetDevicesTool(userConfig: Configuration) {
     return {
         id: "spotify-getDevices",
         description: "Get Spotify devices.",
