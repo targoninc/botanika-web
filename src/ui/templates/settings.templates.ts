@@ -1,10 +1,8 @@
 import {GenericTemplates} from "./generic.templates";
 import {Api} from "../classes/api";
-import {configuration, configuredFeatures, mcpConfig, shortCutConfig} from "../classes/store";
+import {configuration, mcpConfig, shortCutConfig} from "../classes/store";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
 import {McpConfiguration} from "../../models/mcp/McpConfiguration";
-import {ConfiguredFeatures} from "../../models/features/ConfiguredFeatures";
-import {FeatureConfigurationInfo} from "../../models/features/FeatureConfigurationInfo";
 import {createModal, toast} from "../classes/ui";
 import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
 import {shortcutNames} from "../../models/shortcuts/Shortcut";
@@ -103,9 +101,16 @@ export class SettingsTemplates {
                         SettingsTemplates.shortcuts(),
                         SettingsTemplates.configuredFeatures(),
                         SettingsTemplates.mcpConfig(),
-                        GenericTemplates.buttonWithIcon("folder_open", "Open app data folder", async () => {
-                            await Api.openAppDataPath();
-                        }),
+                        create("div")
+                            .classes("flex")
+                            .children(
+                                GenericTemplates.buttonWithIcon("folder_open", "Open app data folder", async () => {
+                                    await Api.openAppDataPath();
+                                }),
+                                GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
+                                    window.location.href = "/logout";
+                                }),
+                            ).build()
                     ).build()
             ).build();
     }

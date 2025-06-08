@@ -15,7 +15,7 @@ const uiDir = path.join(process.cwd(), "src/ui");
 
 CLI.debug(`Starting API...`);
 
-const APP_PORT = Number(process.env.PORT || "48678");
+const APP_PORT = Number(process.env.PORT || "3001");
 const port = APP_PORT;
 
 try {
