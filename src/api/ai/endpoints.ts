@@ -11,15 +11,14 @@ import {getMcpTools} from "./initializer";
 import {CLI} from "../CLI";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {getConfig, getConfigKey} from "../configuration";
+import {getConfig} from "../configuration";
 import {getSimpleResponse, streamResponseAsMessage} from "./llms/calls";
 import {LanguageModelV1, StepResult, ToolSet} from "ai";
-import {McpInfo} from "./tools/models/McpInfo";
 import {Signal, signal} from "@targoninc/jess";
 import {ModelCapability} from "../../models/llms/ModelCapability";
 import {updateContext} from "../updateContext.ts";
-import {googleSearchTool} from "./tools/servers/google-search/google-search.tool.ts";
 import {getBuiltInTools} from "./tools/servers/allTools.ts";
+import {Configuration} from "../../models/Configuration.ts";
 
 export const currentChatContext = signal<ChatContext>(null);
 
@@ -41,7 +40,8 @@ export async function sendMessages(messages: ChatMessage[], chatContext: ChatCon
 async function afterMessageFinished(m: ChatMessage, chatContext: ChatContext, res: Response) {
     m.time = Date.now();
     chatContext = await sendMessages([m], chatContext, res);
-    if (getConfigKey("enableTts") && m.text.length > 0) {
+    // TODO: Check if tts is enabled
+    if (false && m.text.length > 0) {
         chatContext = await sendAudioAndStop(chatContext, m, res);
     } else {
         res.end();
@@ -67,14 +67,15 @@ function onContextChange(res: Response, chatContext: ChatContext) {
     };
 }
 
-async function processSteps(streamResponse: {
+async function processSteps(userConfig: Configuration,
+    streamResponse: {
     message: Signal<ChatMessage>;
     steps: Promise<Array<StepResult<ToolSet>>>
 }, maxSteps: number, model: LanguageModelV1, tools: ToolSet, chatContext: ChatContext, worldContext: Record<string, any>, provider: string, modelName: string, res: Response) {
     const steps = await streamResponse.steps;
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
-        const response = await getSimpleResponse(model, tools, getPromptMessages(chatContext.history, worldContext, getConfig()));
+        const response = await getSimpleResponse(model, tools, getPromptMessages(chatContext.history, worldContext, userConfig));
         const m = newAssistantMessage(response.text, provider, modelName);
         chatContext = await afterMessageFinished(m, chatContext, res);
     }
@@ -146,15 +147,16 @@ export const chatEndpoint = async (req: Request, res: Response) => {
         if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
             mcpInfo.tools = {};
         }
-        const builtInTools = getBuiltInTools();
+        const userConfig = await getConfig(req);
+        const builtInTools = getBuiltInTools(userConfig);
         const tools = Object.assign(builtInTools, mcpInfo.tools);
 
         const onChange = onContextChange(res, chatContext);
         currentChatContext.subscribe(onChange);
 
         const worldContext = getWorldContext();
-        const maxSteps = getConfig().maxSteps;
-        const streamResponse = await streamResponseAsMessage(maxSteps, provider, modelName, model, tools, getPromptMessages(chatContext.history, worldContext, getConfig()));
+        const maxSteps = userConfig.maxSteps ?? 5;
+        const streamResponse = await streamResponseAsMessage(maxSteps, provider, modelName, model, tools, getPromptMessages(chatContext.history, worldContext, userConfig));
 
         const streamPromise = new Promise<void>((resolve) => {
             streamResponse.message.subscribe(async (m: ChatMessage) => {
@@ -166,7 +168,7 @@ export const chatEndpoint = async (req: Request, res: Response) => {
             });
         });
 
-        chatContext = await processSteps(streamResponse, maxSteps, model, tools, chatContext, worldContext, provider, modelName, res);
+        chatContext = await processSteps(userConfig, streamResponse, maxSteps, model, tools, chatContext, worldContext, provider, modelName, res);
         await streamPromise;
         currentChatContext.unsubscribe(onChange);
         CLI.debug(`Closing MCP connections`);
