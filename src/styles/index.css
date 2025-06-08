@@ -389,6 +389,10 @@ nav {
     flex-wrap: nowrap;
 }
 
+.allow-overflow {
+    max-height: unset;
+}
+
 .no-wrap {
     flex-wrap: nowrap;
     overflow: hidden;
