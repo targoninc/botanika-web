@@ -86,7 +86,7 @@ export class ApiBase {
                 data: JSON.parse(text) as T
             };
         } catch (e) {
-            if (!res.ok) {
+            if (!res.ok && text !== "Not authorized") {
                 toast(text, null, ToastType.negative);
             }
             return {
