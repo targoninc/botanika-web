@@ -50,10 +50,6 @@ export class Api extends ApiBase {
         return this.get<Record<string, ProviderDefinition>>(ApiEndpoint.MODELS);
     }
 
-    static getConfiguredFeatures() {
-        return this.get<ConfiguredFeatures>(ApiEndpoint.CONFIGURED_APIS);
-    }
-
     static getMcpConfig() {
         return this.get<McpConfiguration>(ApiEndpoint.MCP_CONFIG);
     }

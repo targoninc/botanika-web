@@ -4,7 +4,6 @@ import {GoogleSearchResult} from "./google-search.models.ts";
 import {ResourceReference} from "../../../../../models/chat/ResourceReference.ts";
 import dotenv from "dotenv";
 import {ChatToolResult} from "../../../../../models/chat/ChatToolResult.ts";
-import {featureEnabled} from "../../../../features/configuredFeatures.ts";
 import {wrapTool} from "../../tooling.ts";
 import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts";
 import { Configuration } from "src/models/Configuration.ts";
@@ -37,10 +36,6 @@ async function search(userConfig: Configuration, query: string): Promise<GoogleS
 }
 
 async function toolCall(input: any, userConfig: Configuration) {
-    if (!await featureEnabled(BotanikaFeature.GoogleSearch)) {
-        throw new Error("Google Search API is not enabled.");
-    }
-
     const result = await search(userConfig, input.query);
     return <ChatToolResult>{
         text: `${result.items.length} Google search results`,

@@ -60,8 +60,6 @@ export function initializeStore() {
         }
     });
 
-    loadconfiguredFeatures();
-
     Api.getShortcutConfig().then(sc => {
         if (sc.data) {
             shortCutConfig.value = sc.data as ShortcutConfiguration;
@@ -69,14 +67,6 @@ export function initializeStore() {
     });
 
     loadChats();
-}
-
-export function loadconfiguredFeatures() {
-    Api.getConfiguredFeatures().then(res => {
-        if (res.data) {
-            configuredFeatures.value = res.data as ConfiguredFeatures;
-        }
-    });
 }
 
 export function loadChats() {

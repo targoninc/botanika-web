@@ -6,7 +6,6 @@ import {appDataPath} from "./appData";
 import {CLI} from "./CLI";
 import {Application} from "express";
 import {ApiEndpoint} from "../models/ApiEndpoints";
-import {getConfiguredFeatures} from "./features/configuredFeatures";
 import {execSync} from "child_process";
 import {BotanikaFeature} from "../models/features/BotanikaFeature";
 
@@ -64,11 +63,6 @@ export function addConfigEndpoints(app: Application) {
         const value = req.body.value;
         setConfigKey(key, value);
         res.status(200).send(getConfigKey(key));
-    });
-
-    app.get(ApiEndpoint.CONFIGURED_APIS, async (req, res) => {
-        const apis = await getConfiguredFeatures();
-        res.status(200).json(apis);
     });
 
     app.post(ApiEndpoint.OPEN_APP_DATA_PATH, async (req, res) => {

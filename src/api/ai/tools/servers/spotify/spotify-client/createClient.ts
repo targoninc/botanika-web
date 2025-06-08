@@ -1,8 +1,5 @@
 import dotenv from "dotenv";
-import {setEnvironmentVariable} from "../../../../../features/environment";
 import {CLI} from "../../../../../CLI";
-import {featureEnabled} from "../../../../../features/configuredFeatures";
-import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature";
 import {mcpApp} from "../../../../../api-server.ts";
 import { Configuration } from "src/models/Configuration.ts";
 
@@ -60,7 +57,7 @@ async function authorize() {
         try {
             const data = await api.authorizationCodeGrant(code);
             //currentWindow.focus();
-            await setEnvironmentVariable("SPOTIFY_TOKEN", data.body['access_token']);
+            //await setEnvironmentVariable("SPOTIFY_TOKEN", data.body['access_token']);
             token = data.body['access_token'];
 
             api.setAccessToken(data.body['access_token']);
@@ -96,7 +93,5 @@ export async function createClient(userConfig: Configuration) {
 }
 
 export async function checkIfEnabled() {
-    if (!await featureEnabled(BotanikaFeature.Spotify)) {
-        throw new Error("Spotify API is not enabled.");
-    }
+    return true;
 }
