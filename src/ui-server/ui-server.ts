@@ -1,10 +1,9 @@
-import {baseHtml} from "./baseHtml";
+import ui from "./baseHtml.html" with {type: "text"};
 import {config} from "dotenv";
 import * as path from "path";
 import {CLI} from "../api/CLI.ts";
 import {apiServer} from "../api/api-server.ts";
-import {Application} from "express";
-import express from "express";
+import express, {Application} from "express";
 
 config();
 
@@ -18,9 +17,14 @@ CLI.debug(`Starting API...`);
 
 const APP_PORT = Number(process.env.PORT || "48678");
 const port = APP_PORT;
-const test = await fetch(`http://localhost:${port}`);
-if (test.status === 200) {
-    throw new Error('Server already running on a different instance');
+
+try {
+    const test = await fetch(`http://localhost:${port}`);
+    if (test.status === 200) {
+        throw new Error('Server already running on a different instance');
+    }
+} catch {
+    // Ignore error if server is not running
 }
 
 export const app = express();
@@ -36,8 +40,7 @@ apiServer(app).then((app: Application) => {
     // Handle all other routes with baseHtml
     app.get('*', async (req, res) => {
         try {
-            const html = await baseHtml(req);
-            res.type('text/html').send(html);
+            res.type('text/html').send(ui);
         } catch (error) {
             console.error("Error rendering HTML:", error);
             res.status(500).send("Internal Server Error");

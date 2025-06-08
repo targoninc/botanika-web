@@ -79,7 +79,7 @@ export async function createClient() {
         api = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENT_ID,
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-            redirectUri: 'http://localhost:48678/mcp/spotify/callback',
+            redirectUri: `${process.env.BASE_URL}/mcp/spotify/callback`,
         });
     }
 
