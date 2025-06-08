@@ -18,13 +18,9 @@ CLI.debug(`Starting API...`);
 
 const APP_PORT = Number(process.env.PORT || "48678");
 const port = APP_PORT;
-try {
-    const test = await fetch(`http://localhost:${port}`);
-    if (test.status === 200) {
-        throw new Error('Server already running on a different instance');
-    }
-} catch (e) {
-    console.log('Server not running, starting...');
+const test = await fetch(`http://localhost:${port}`);
+if (test.status === 200) {
+    throw new Error('Server already running on a different instance');
 }
 
 export const app = express();
