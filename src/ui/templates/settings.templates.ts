@@ -357,6 +357,10 @@ export class SettingsTemplates {
     }
 
     private static existingMcpServer(server: McpServerConfig) {
+        const name = signal(server.name);
+        const url = signal(server.url);
+        const oldUrl = server.url;
+
         return create("div")
             .classes("flex-v", "bordered-panel")
             .children(
@@ -368,19 +372,12 @@ export class SettingsTemplates {
                             .children(
                                 input({
                                     type: InputType.text,
-                                    value: server.name,
+                                    value: name,
                                     name: "name",
                                     label: "Name",
                                     placeholder: "Name",
                                     onchange: (value) => {
-                                        server.name = value;
-                                        Api.updateMcpServer(server).then(() => {
-                                            Api.getMcpConfig().then(mcpConf => {
-                                                if (mcpConf.data) {
-                                                    mcpConfig.value = mcpConf.data as McpConfiguration;
-                                                }
-                                            });
-                                        });
+                                        name.value = value;
                                     }
                                 }),
                                 input({
@@ -390,16 +387,32 @@ export class SettingsTemplates {
                                     label: "URL",
                                     placeholder: "URL",
                                     onchange: (value) => {
-                                        server.url = value;
-                                        Api.updateMcpServer(server).then(() => {
-                                            Api.getMcpConfig().then(mcpConf => {
-                                                if (mcpConf.data) {
-                                                    mcpConfig.value = mcpConf.data as McpConfiguration;
-                                                }
-                                            });
-                                        });
+                                        url.value = value;
                                     }
                                 }),
+                                button({
+                                    icon: {icon: "save"},
+                                    text: "Set",
+                                    disabled: compute((n, u) => !n || n.length === 0 || !u || u.length === 0, name, url),
+                                    classes: ["flex", "align-center"],
+                                    onclick: () => {
+                                        createModal(GenericTemplates.confirmModalWithContent("Change MCP server config", create("div")
+                                            .children(
+                                                create("p")
+                                                    .text(`Are you sure you want to change the config for MCP server ${server.name}?`),
+                                            ).build(), "Yes", "No", () => {
+                                            server.name = name.value;
+                                            server.url = url.value;
+                                            Api.updateMcpServer(oldUrl, server).then(() => {
+                                                Api.getMcpConfig().then(mcpConf => {
+                                                    if (mcpConf.data) {
+                                                        mcpConfig.value = mcpConf.data as McpConfiguration;
+                                                    }
+                                                });
+                                            });
+                                        }));
+                                    }
+                                })
                             ).build(),
                         GenericTemplates.buttonWithIcon("delete", "Delete", () => {
                             createModal(GenericTemplates.confirmModal("Delete MCP Server connection", `Are you sure you want to delete ${server.url}?`, "Yes", "No", () => {
@@ -419,7 +432,7 @@ export class SettingsTemplates {
                         GenericTemplates.heading(3, "Headers"),
                         GenericTemplates.keyValueInput(server.headers, headers => {
                             server.headers = headers;
-                            Api.updateMcpServer(server).then(() => {
+                            Api.updateMcpServer(oldUrl, server).then(() => {
                                 toast("MCP server updated");
                                 Api.getMcpConfig().then(mcpConf => {
                                     if (mcpConf.data) {

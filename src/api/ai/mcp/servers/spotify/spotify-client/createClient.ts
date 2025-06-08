@@ -3,7 +3,7 @@ import {setEnvironmentVariable} from "../../../../../features/environment";
 import {CLI} from "../../../../../CLI";
 import {featureEnabled} from "../../../../../features/configuredFeatures";
 import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature";
-import {app} from "../../../../../../ui-server/ui-server.ts";
+import {mcpApp} from "../../../../../api-server.ts";
 
 const SpotifyWebApi = require("spotify-web-api-node");
 
@@ -31,7 +31,7 @@ let token: string = process.env.SPOTIFY_TOKEN;
 async function authorize() {
     if (!token) {
         let code: string;
-        app.get('/mcp/spotify/callback', async (req, res) => {
+        mcpApp.get('/mcp/spotify/callback', async (req, res) => {
             code = req.query.code;
             if (!code) {
                 res.status(400).send('Missing code parameter');
@@ -79,7 +79,7 @@ export async function createClient() {
         api = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENT_ID,
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-            redirectUri: `${process.env.BASE_URL}/mcp/spotify/callback`,
+            redirectUri: `http://localhost:${process.env.MCP_PORT}/mcp/spotify/callback`,
         });
     }
 

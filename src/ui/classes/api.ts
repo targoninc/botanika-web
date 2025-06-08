@@ -69,8 +69,8 @@ export class Api extends ApiBase {
         return this.delete(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(url)}`);
     }
 
-    static updateMcpServer(mcpServerConfig: McpServerConfig) {
-        return this.put(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(mcpServerConfig.url)}`, mcpServerConfig);
+    static updateMcpServer(oldUrl: string, mcpServerConfig: McpServerConfig) {
+        return this.put(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(oldUrl)}`, mcpServerConfig);
     }
 
     static setEnvironmentVariable(key: string, value: string) {

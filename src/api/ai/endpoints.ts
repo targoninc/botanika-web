@@ -86,6 +86,8 @@ export const chatEndpoint = async (req: Request, res: Response) => {
         return;
     }
 
+    //console.log(req.oidc.user);
+
     const provider = req.body.provider ?? "groq";
     const modelName = req.body.model ?? "llama-3.1-8b-instant";
 
