@@ -94,8 +94,4 @@ export class Api extends ApiBase {
             messageId,
         });
     }
-
-    static getIsUserAdmin() {
-        return this.get(ApiEndpoint.IS_ADMIN);
-    }
 }
