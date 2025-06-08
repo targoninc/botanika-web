@@ -104,7 +104,8 @@ export const chatEndpoint = async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    const model = getModel(provider, modelName);
+    const userConfig = await getConfig(req);
+    const model = getModel(provider, modelName, userConfig);
 
     let chatId = req.body.chatId;
     let chatContext: ChatContext;
@@ -147,7 +148,6 @@ export const chatEndpoint = async (req: Request, res: Response) => {
         if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
             mcpInfo.tools = {};
         }
-        const userConfig = await getConfig(req);
         const builtInTools = getBuiltInTools(userConfig);
         const tools = Object.assign(builtInTools, mcpInfo.tools);
 

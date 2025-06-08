@@ -5,7 +5,7 @@ import {
     chatContext, currentlyPlayingAudio,
     deleteChat,
     target,
-    updateContextFromStream, shortCutConfig, configuredFeatures, currentText
+    updateContextFromStream, shortCutConfig, currentText
 } from "../classes/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
@@ -313,15 +313,7 @@ export class ChatTemplates {
     }
 
     static llmSelector() {
-        const availableProviders = compute((a, c) => {
-            const out = [];
-            for (const provider in a) {
-                if (a[provider].requiredFeatures.every(f => c[f]?.enabled)) {
-                    out.push(provider);
-                }
-            }
-            return out;
-        }, availableModels, configuredFeatures);
+        const availableProviders = signal(Object.keys(LlmProvider));
         const filteredModels = compute((a, p) => {
             const out = {};
             for (const provider in a) {
@@ -332,6 +324,9 @@ export class ChatTemplates {
             return out as Record<string, ProviderDefinition>;
         }, availableModels, availableProviders);
         const setProvider = async (p: LlmProvider) => {
+            if (p === configuration.value.provider) {
+                return;
+            }
             configuration.value = {
                 ...configuration.value,
                 provider: p
@@ -342,7 +337,7 @@ export class ChatTemplates {
             const val = c.provider ?? "groq";
             const toUse = p.includes(val) ? val : p[0];
             if (toUse !== c.provider && toUse) {
-                setProvider(toUse).then();
+                setProvider(toUse as LlmProvider).then();
             }
             return toUse;
         }, configuration, availableProviders);

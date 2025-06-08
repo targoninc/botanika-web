@@ -1,9 +1,9 @@
 import {LanguageModelV1} from "ai"
-import {groq} from "@ai-sdk/groq";
-import {openai} from "@ai-sdk/openai";
-import {azure} from "@ai-sdk/azure";
-import {openrouter} from "@openrouter/ai-sdk-provider";
-import {ollama} from 'ollama-ai-provider';
+import {createGroq} from "@ai-sdk/groq";
+import {createOpenAI} from "@ai-sdk/openai";
+import {createAzure} from "@ai-sdk/azure";
+import {createOpenRouter} from "@openrouter/ai-sdk-provider";
+import {createOllama} from 'ollama-ai-provider';
 import {LlmProvider} from "../../../models/llms/llmProvider";
 import {ProviderV1} from "@ai-sdk/provider";
 import {ModelDefinition} from "../../../models/llms/ModelDefinition";
@@ -15,26 +15,48 @@ import {getOpenrouterModels} from "./providers/openrouter";
 import dotenv from "dotenv";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition";
 import { BotanikaFeature } from "../../../models/features/BotanikaFeature";
+import {Configuration} from "../../../models/Configuration.ts";
 
 dotenv.config();
 
 export const providerMap: Record<LlmProvider, ProviderV1|any> = {
-    [LlmProvider.groq]: groq,
-    [LlmProvider.openai]: openai,
-    [LlmProvider.ollama]: (modelName: string) => ollama(modelName, {
-        simulateStreaming: true
-    }),
-    [LlmProvider.azure]: azure,
-    [LlmProvider.openrouter]: openrouter
+    [LlmProvider.groq]: (modelName: string, config: Configuration) => {
+        return createGroq({
+            apiKey: config.featureOptions[BotanikaFeature.Groq].apiKey,
+        }).languageModel(modelName);
+    },
+    [LlmProvider.openai]: (modelName: string, config: Configuration) => {
+        return createOpenAI({
+            apiKey: config.featureOptions[BotanikaFeature.OpenAI].apiKey,
+        }).languageModel(modelName);
+    },
+    [LlmProvider.ollama]: (modelName: string, config: Configuration) => {
+        return createOllama({
+            baseURL: config.featureOptions[BotanikaFeature.Ollama].url,
+        }).languageModel(modelName, {
+            simulateStreaming: true
+        });
+    },
+    [LlmProvider.azure]: (modelName: string, config: Configuration) => {
+        return createAzure({
+            resourceName: config.featureOptions[BotanikaFeature.Azure].resourceName,
+            apiKey: config.featureOptions[BotanikaFeature.Azure].apiKey,
+        }).languageModel(modelName);
+    },
+    [LlmProvider.openrouter]: (modelName: string, config: Configuration) => {
+        return createOpenRouter({
+            apiKey: config.featureOptions[BotanikaFeature.OpenRouter].apiKey
+        }).languageModel(modelName);
+    }
 }
 
-export function getModel(providerName: LlmProvider, model: string): LanguageModelV1 {
+export function getModel(providerName: LlmProvider, model: string, config: Configuration): LanguageModelV1 {
     const provider = providerMap[providerName];
     if (!provider) {
         throw new Error("Invalid LLM provider");
     }
 
-    return provider(model);
+    return provider(model, config);
 }
 
 export async function getAvailableModels(provider: string): Promise<ModelDefinition[]> {
@@ -54,27 +76,11 @@ export async function getAvailableModels(provider: string): Promise<ModelDefinit
     }
 }
 
-function getRequiredFeature(provider: LlmProvider): BotanikaFeature[] {
-    switch (provider) {
-        case LlmProvider.groq:
-            return [BotanikaFeature.Groq];
-        case LlmProvider.openai:
-            return [BotanikaFeature.OpenAI];
-        case LlmProvider.ollama:
-            return [BotanikaFeature.Ollama];
-        case LlmProvider.azure:
-            return [BotanikaFeature.Azure];
-        case LlmProvider.openrouter:
-            return [BotanikaFeature.OpenRouter];
-    }
-}
-
 export async function initializeLlms() {
     const availableProviders = Object.values(LlmProvider);
     const models: Record<string, ProviderDefinition> = {};
     for (const provider of availableProviders) {
         models[provider] = <ProviderDefinition>{
-            requiredFeatures: getRequiredFeature(provider),
             models: await getAvailableModels(provider)
         };
     }
