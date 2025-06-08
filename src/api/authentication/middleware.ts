@@ -13,7 +13,7 @@ export const isAdmin: RequestHandler = (req, res, next) => {
         return next();
     }
 
-    res.redirect("/login");
+    res.status(403).send("Not authorized");
 };
 
 export function addUserMiddleware(app: Application) {

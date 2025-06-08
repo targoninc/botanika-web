@@ -68,13 +68,6 @@ export class Api extends ApiBase {
         return this.put(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(oldUrl)}`, mcpServerConfig);
     }
 
-    static setEnvironmentVariable(key: string, value: string) {
-        return this.post(ApiEndpoint.SET_ENVIRONMENT_VARIABLE, {
-            key,
-            value
-        });
-    }
-
     static getShortcutConfig() {
         return this.get<ShortcutConfiguration>(ApiEndpoint.SHORTCUT_CONFIG);
     }
@@ -100,5 +93,9 @@ export class Api extends ApiBase {
             chatId,
             messageId,
         });
+    }
+
+    static getIsUserAdmin() {
+        return this.get(ApiEndpoint.IS_ADMIN);
     }
 }
