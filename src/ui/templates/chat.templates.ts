@@ -1,11 +1,15 @@
 import {
-    activateChat, availableModels,
+    activateChat,
+    availableModels,
+    chatContext,
     chats,
     configuration,
-    chatContext, currentlyPlayingAudio,
+    currentlyPlayingAudio,
+    currentText,
     deleteChat,
+    shortCutConfig,
     target,
-    updateContextFromStream, shortCutConfig, currentText
+    updateContextFromStream
 } from "../classes/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
@@ -24,6 +28,9 @@ import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {compute, create, nullElement, signal, when} from "@targoninc/jess";
 import {button} from "@targoninc/jess-components";
+import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
+import {featureOptions} from "../../models/features/featureOptions.ts";
+import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -313,7 +320,20 @@ export class ChatTemplates {
     }
 
     static llmSelector() {
-        const availableProviders = signal(Object.keys(LlmProvider));
+        const providerFeatureMap: Record<LlmProvider, BotanikaFeature> = {
+            [LlmProvider.openai]: BotanikaFeature.OpenAI,
+            [LlmProvider.ollama]: BotanikaFeature.Ollama,
+            [LlmProvider.groq]: BotanikaFeature.Groq,
+            [LlmProvider.azure]: BotanikaFeature.Azure,
+            [LlmProvider.openrouter]: BotanikaFeature.OpenRouter,
+        };
+        const availableProviders = compute(c => Object.keys(LlmProvider).filter(p => {
+            const feat = providerFeatureMap[p];
+            if (!c.featureOptions || !c.featureOptions[feat]) {
+                return false;
+            }
+            return featureOptions[feat].every((o: SettingConfiguration) => !!c.featureOptions[feat][o.key]);
+        }), configuration);
         const filteredModels = compute((a, p) => {
             const out = {};
             for (const provider in a) {
@@ -341,22 +361,28 @@ export class ChatTemplates {
             }
             return toUse;
         }, configuration, availableProviders);
+        const anyProvider = compute(ap => ap.length > 0, availableProviders);
 
         return create("div")
             .classes("flex", "select-container", "big-gap")
             .children(
-                compute(p => GenericTemplates.select("Provider", p.map(m => {
-                    return {
-                        value: m,
-                        text: m
-                    };
-                }), provider, setProvider), availableProviders),
+                when(anyProvider, create("div")
+                    .classes("flex")
+                    .children(
+                        compute(p => GenericTemplates.select("Provider", p.map(m => {
+                            return {
+                                value: m,
+                                text: m
+                            };
+                        }), provider, setProvider), availableProviders),
+                    ).build()),
                 compute((p, a) => {
                     if (!a[p] || Object.keys(a).length === 0) {
                         return nullElement();
                     }
                     return ChatTemplates.modelSelector(a[p].models ?? []);
-                }, provider, filteredModels)
+                }, provider, filteredModels),
+                when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
             ).build();
     }
 

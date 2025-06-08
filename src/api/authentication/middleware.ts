@@ -18,6 +18,8 @@ export const isAdmin: RequestHandler = (req, res, next) => {
 };
 
 export function addUserMiddleware(app: Application) {
+    const userMap = new Map<string, Tables<"users">>();
+
     app.use(async (req, res, next) => {
         if (req.oidc?.user) {
             await db.from("users")
@@ -25,7 +27,12 @@ export function addUserMiddleware(app: Application) {
                     external_id: req.oidc.user.sub,
                 });
 
-            req.user = (await db.from("users").select("*").eq("external_id", req.oidc.user.sub).single()).data;
+            if (!userMap.has(req.oidc.user.sub)) {
+                req.user = (await db.from("users").select("*").eq("external_id", req.oidc.user.sub).single()).data;
+                userMap.set(req.oidc.user.sub, req.user);
+            } else {
+                req.user = userMap.get(req.oidc.user.sub);
+            }
         }
 
         next();
