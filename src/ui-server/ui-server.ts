@@ -1,8 +1,10 @@
-import {file, serve} from "bun";
 import {baseHtml} from "./baseHtml";
 import {config} from "dotenv";
 import * as path from "path";
-import {MIME_TYPES} from "./MIME_TYPES";
+import {CLI} from "../api/CLI.ts";
+import {apiServer} from "../api/api-server.ts";
+import {Application} from "express";
+import express from "express";
 
 config();
 
@@ -12,48 +14,41 @@ const outDir = path.join(process.cwd(), "out");
 const styleDir = path.join(process.cwd(), "src/styles");
 const uiDir = path.join(process.cwd(), "src/ui");
 
-const getMimeType = (filepath: string): string => {
-    const getFileExtension = (path: string): string =>
-        path.split('.').pop()?.toLowerCase() || "";
-    const extension = getFileExtension(filepath);
-    return MIME_TYPES[extension] || "text/plain";
-};
+CLI.debug(`Starting API...`);
 
-// Bun uiServer handler
-const uiServer = serve({
-    port: parseInt(process.env.PORT || "3000"),
-    async fetch(req) {
-        const url = new URL(req.url);
-        const pathname = url.pathname;
+const APP_PORT = Number(process.env.PORT || "48678");
+const port = APP_PORT;
+try {
+    const test = await fetch(`http://localhost:${port}`);
+    if (test.status === 200) {
+        throw new Error('Server already running on a different instance');
+    }
+} catch (e) {
+    console.log('Server not running, starting...');
+}
 
-        // Handle static files from "out" and "src/ui" directories
-        const staticFiles = [outDir, uiDir, styleDir];
-        for (const dir of staticFiles) {
-            const staticFilePath = path.join(dir, pathname.slice(1)); // Remove leading "/"
+export const app = express();
 
-            if (await Bun.file(staticFilePath).exists()) {
-                const mimeType = getMimeType(staticFilePath);
-
-                return new Response(await file(staticFilePath).arrayBuffer(), {
-                    headers: { "Content-Type": mimeType },
-                });
-            }
-        }
-
-        if (pathname === "/api-url") {
-            const apiUrl = process.env.API_URL ?? "https://botanika-api.targoninc.com";
-            return new Response(apiUrl, { headers: { "Content-Type": "text/plain" } });
-        }
-
-        // Handle dynamic routes (fallback to baseHtml render)
-        try {
-            const html = await baseHtml(req);
-            return new Response(html, { headers: { "Content-Type": "text/html" } });
-        } catch (error) {
-            console.error("Error rendering HTML:", error);
-            return new Response("Internal Server Error", { status: 500 });
-        }
-    },
+// Static files
+[outDir, uiDir, styleDir].forEach(dir => {
+    app.use(express.static(dir));
 });
 
-console.log(`Server is running on http://localhost:${uiServer.port}`);
+apiServer(app).then((app: Application) => {
+    CLI.success(`API started!`);
+
+    // Handle all other routes with baseHtml
+    app.get('*', async (req, res) => {
+        try {
+            const html = await baseHtml(req);
+            res.type('text/html').send(html);
+        } catch (error) {
+            console.error("Error rendering HTML:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    });
+
+    app.listen(port, () => {
+        console.log(`Server started: http://localhost:${port}`);
+    });
+});

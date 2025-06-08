@@ -13,10 +13,9 @@ RUN bun install --frozen-lockfile
 COPY ./src ./src
 COPY ./package.json .
 COPY ./bun.lock .
-COPY ./api.ts .
 
 # Build the UI
-RUN bun run build-ui-prod
+RUN bun run build-prod
 
 # Define the command to run the app
-CMD ["bun", "run", "start-ui-prod"]
+CMD ["bun", "run", "start-prod"]
