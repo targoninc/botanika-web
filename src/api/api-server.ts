@@ -32,15 +32,16 @@ export async function apiServer(app: Application) {
         next();
     });
 
-    /*app.use(auth({
+    app.use(auth({
         authRequired: true,
         secret: process.env.OIDC_SECRET,
         clientID: process.env.OIDC_CLIENT_ID,
         issuerBaseURL: process.env.OIDC_ISSUER_BASE_URL,
         baseURL: process.env.OIDC_BASE_URL || `http://localhost:${process.env.PORT || 48678}`,
         clientSecret: process.env.OIDC_CLIENT_SECRET,
-        clientAuthMethod: "client_secret_basic"
-    }));*/
+        clientAuthMethod: "client_secret_post",
+        idpLogout: true
+    }));
 
     addTranscribeEndpoints(app);
     app.use(express.json());
