@@ -14,13 +14,31 @@ export const defaultConfig: Configuration = {
     botDescription: "",
     maxSteps: 5,
     featureOptions: {
-        [BotanikaFeature.GoogleSearch]: {},
-        [BotanikaFeature.OpenAI]: {},
-        [BotanikaFeature.Groq]: {},
-        [BotanikaFeature.Ollama]: {},
-        [BotanikaFeature.Azure]: {},
-        [BotanikaFeature.OpenRouter]: {},
-        [BotanikaFeature.Spotify]: {}
+        [BotanikaFeature.GoogleSearch]: {
+            apiKey: "",
+            searchEngineId: ""
+        },
+        [BotanikaFeature.OpenAI]: {
+            apiKey: "",
+            transcriptionModel: "",
+        },
+        [BotanikaFeature.Groq]: {
+            apiKey: "",
+        },
+        [BotanikaFeature.Ollama]: {
+            url: "",
+        },
+        [BotanikaFeature.OpenRouter]: {
+            apiKey: "",
+        },
+        [BotanikaFeature.Spotify]: {
+            clientId: "",
+            clientSecret: "",
+        },
+        [BotanikaFeature.Azure]: {
+            resourceName: "",
+            apiKey: "",
+        },
     },
     tintColor: "#00ff00",
 }

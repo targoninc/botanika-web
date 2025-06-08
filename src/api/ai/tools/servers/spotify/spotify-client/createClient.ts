@@ -4,6 +4,7 @@ import {CLI} from "../../../../../CLI";
 import {featureEnabled} from "../../../../../features/configuredFeatures";
 import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature";
 import {mcpApp} from "../../../../../api-server.ts";
+import { Configuration } from "src/models/Configuration.ts";
 
 const SpotifyWebApi = require("spotify-web-api-node");
 
@@ -74,11 +75,11 @@ async function authorize() {
     }
 }
 
-export async function createClient() {
+export async function createClient(userConfig: Configuration) {
     if (!api) {
         api = new SpotifyWebApi({
-            clientId: process.env.SPOTIFY_CLIENT_ID,
-            clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+            clientId: userConfig.featureOptions.Spotify.clientId,
+            clientSecret: userConfig.featureOptions.Spotify.clientSecret,
             redirectUri: `http://localhost:${process.env.MCP_PORT}/mcp/spotify/callback`,
         });
     }

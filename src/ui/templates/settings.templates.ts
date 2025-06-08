@@ -141,10 +141,6 @@ export class SettingsTemplates {
                             ).build() : null,
                         SettingsTemplates.settingImplementation(sc, value, updateKey),
                     ).build(),
-                create("p")
-                    .classes("text-small")
-                    .text(sc.description)
-                    .build(),
                 signalMap(errors, create("div").classes("flex-v"), e => create("span")
                     .classes("error")
                     .text(e)
@@ -206,10 +202,9 @@ export class SettingsTemplates {
                     const fOptions = featureOptions[name];
                     const loading = signal(false);
 
-                    const configuredApiEnvVars = feature.envVars && feature.envVars.length > 0 ? SettingsTemplates.configuredApiEnvVars(feature, load) : null;
                     const mcpServers = fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
                         return c.featureOptions && c.featureOptions[name] ? c.featureOptions[name][s.key] : null;
-                    }, (c, k, v) => ({
+                    }, (c, k, v) => (<Configuration>{
                         ...c,
                         featureOptions: {
                             ...(c.featureOptions ?? {}),
@@ -231,7 +226,6 @@ export class SettingsTemplates {
                                         .text(name),
                                     when(loading, GenericTemplates.spinner())
                                 ).build(),
-                            configuredApiEnvVars,
                             ...mcpServers,
                         ).build();
                 })

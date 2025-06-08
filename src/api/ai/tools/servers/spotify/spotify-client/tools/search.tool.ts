@@ -7,8 +7,8 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {SpotifySearchOptions} from "../models/SpotifySearchOptions";
 import { Configuration } from "src/models/Configuration";
 
-async function search(query: string, searchTypes: SearchType[]): Promise<SpotifyApi.SearchResponse> {
-    const api = await createClient();
+async function search(userConfig: Configuration, query: string, searchTypes: SearchType[]): Promise<SpotifyApi.SearchResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.search(query, searchTypes, {
             limit: 10,
@@ -21,10 +21,10 @@ async function search(query: string, searchTypes: SearchType[]): Promise<Spotify
     }
 }
 
-async function searchToolCall(input: SpotifySearchOptions) {
+async function searchToolCall(input: SpotifySearchOptions, userConfig: Configuration) {
     await checkIfEnabled();
 
-    const result = await search(input.query, input.searchTypes);
+    const result = await search(userConfig, input.query, input.searchTypes);
     const refs = Object.keys(result).flatMap(key => {
         return result[key].items
             .filter(i => !!i)
@@ -59,6 +59,6 @@ export function spotifySearchTool(userConfig: Configuration) {
             query: z.string().describe('What to search for'),
             searchTypes: z.array(z.nativeEnum(SearchType)).describe('What types to search for. Must be an array.'),
         },
-        execute: wrapTool("spotify-search", searchToolCall),
+        execute: wrapTool("spotify-search", input => searchToolCall(input, userConfig)),
     };
 }

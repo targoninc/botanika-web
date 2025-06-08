@@ -12,6 +12,32 @@ export interface Configuration extends Record<string, any> {
     model: string;
     enableTts: boolean;
     maxSteps: number;
-    featureOptions: Record<BotanikaFeature, Record<string, any>>;
+    featureOptions: {
+        [BotanikaFeature.GoogleSearch]: {
+            apiKey: string,
+            searchEngineId: string,
+        },
+        [BotanikaFeature.OpenAI]: {
+            apiKey: string,
+            transcriptionModel: string,
+        },
+        [BotanikaFeature.Groq]: {
+            apiKey: string,
+        },
+        [BotanikaFeature.Ollama]: {
+            url: string,
+        },
+        [BotanikaFeature.OpenRouter]: {
+            apiKey: string,
+        },
+        [BotanikaFeature.Spotify]: {
+            clientId: string,
+            clientSecret: string,
+        },
+        [BotanikaFeature.Azure]: {
+            resourceName: string,
+            apiKey: string,
+        },
+    };
     tintColor: string;
 }
