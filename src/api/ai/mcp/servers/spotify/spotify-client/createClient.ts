@@ -3,7 +3,7 @@ import {setEnvironmentVariable} from "../../../../../features/environment";
 import {CLI} from "../../../../../CLI";
 import {featureEnabled} from "../../../../../features/configuredFeatures";
 import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature";
-import {app} from "../../../../../api-server.ts";
+import {app} from "../../../../../../ui-server/ui-server.ts";
 
 const SpotifyWebApi = require("spotify-web-api-node");
 

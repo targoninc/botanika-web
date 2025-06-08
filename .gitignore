@@ -98,3 +98,4 @@ release
 .env
 .env.bak
 
+supabase
