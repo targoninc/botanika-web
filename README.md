@@ -18,8 +18,8 @@ If you want to use any of these integrations, add them on the "Settings" page.
 
 | Integration name | MCP Server URL                               |
 |------------------|----------------------------------------------|
-| Google Search    | http://localhost:48678/mcp/sse/google/search |
-| Spotify          | http://localhost:48678/mcp/sse/spotify       |
+| Google Search    | http://localhost:3001/mcp/sse/google/search |
+| Spotify          | http://localhost:3001/mcp/sse/spotify       |
 
 ### Supported LLM providers
 

@@ -1,6 +1,6 @@
 import {McpConfiguration} from "../../../../models/mcp/McpConfiguration";
 
-const APP_PORT = Number(process.env.PORT || "48678");
+const APP_PORT = Number(process.env.PORT || "3001");
 
 export const defaultMcpConfig: McpConfiguration = {
     servers: [
