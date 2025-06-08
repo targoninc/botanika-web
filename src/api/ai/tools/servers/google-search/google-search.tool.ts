@@ -13,9 +13,8 @@ dotenv.config();
 
 async function search(userConfig: Configuration, query: string): Promise<GoogleSearchResult> {
     try {
-        console.log(userConfig.featureOptions["Google Search"]);
-        const apiKey = userConfig.featureOptions["Google Search"]["apiKey"];
-        const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+        const apiKey = userConfig.featureOptions[BotanikaFeature.GoogleSearch].apiKey;
+        const searchEngineId = userConfig.featureOptions[BotanikaFeature.GoogleSearch].searchEngineId;
 
         if (!apiKey || !searchEngineId) {
             throw new Error("Google API Key or Search Engine ID is not defined in environment variables.");
