@@ -1,6 +1,6 @@
 import {GenericTemplates} from "./generic.templates";
 import {Api} from "../classes/api";
-import {configuration, configuredFeatures, loadconfiguredFeatures, mcpConfig, shortCutConfig} from "../classes/store";
+import {configuration, configuredFeatures, mcpConfig, shortCutConfig} from "../classes/store";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
 import {McpConfiguration} from "../../models/mcp/McpConfiguration";
 import {ConfiguredFeatures} from "../../models/features/ConfiguredFeatures";
@@ -182,11 +182,11 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v", "allow-overflow")
             .children(
-                compute(a => SettingsTemplates.configuredFeaturesInternal(a, loadconfiguredFeatures), configuredFeatures)
+                compute(a => SettingsTemplates.configuredFeaturesInternal(a), configuration)
             ).build();
     }
 
-    static configuredFeaturesInternal(apis: ConfiguredFeatures, load: () => void) {
+    static configuredFeaturesInternal(config: Configuration) {
         return create("div")
             .classes("flex-v")
             .children(
@@ -196,20 +196,20 @@ export class SettingsTemplates {
                     .children(
                         GenericTemplates.warning("You might have to restart the application after changing API configuration")
                     ).build(),
-                ...Object.keys(apis).map((api: BotanikaFeature) => {
-                    const name = api;
-                    const feature = apis[name];
-                    const fOptions = featureOptions[name];
+                ...Object.keys(featureOptions).map((api: BotanikaFeature) => {
+                    const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
+                    const fOptions = featureOptions[api];
                     const loading = signal(false);
+                    const allSet = fOptions.every(f => !!features[f.key]);
 
-                    const mcpServers = fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
-                        return c.featureOptions && c.featureOptions[name] ? c.featureOptions[name][s.key] : null;
+                    const settingsList = fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
+                        return c.featureOptions && c.featureOptions[api] ? c.featureOptions[api][s.key] : null;
                     }, (c, k, v) => (<Configuration>{
                         ...c,
                         featureOptions: {
                             ...(c.featureOptions ?? {}),
-                            [name]: {
-                                ...((c.featureOptions ?? {})[name] ?? {}),
+                            [api]: {
+                                ...((c.featureOptions ?? {})[api] ?? {}),
                                 [k]: v,
                             }
                         }
@@ -219,58 +219,14 @@ export class SettingsTemplates {
                         .classes("flex-v", "card")
                         .children(
                             create("div")
-                                .classes("flex", feature.enabled ? "positive" : "negative")
+                                .classes("flex", allSet ? "positive" : "negative")
                                 .children(
-                                    GenericTemplates.icon(feature.enabled ? "check" : "key_off", [feature.enabled ? "positive" : "negative"]),
+                                    GenericTemplates.icon(allSet ? "check" : "key_off", [allSet ? "positive" : "negative"]),
                                     create("b")
-                                        .text(name),
+                                        .text(api),
                                     when(loading, GenericTemplates.spinner())
                                 ).build(),
-                            ...mcpServers,
-                        ).build();
-                })
-            ).build();
-    }
-
-    private static configuredApiEnvVars(feature: FeatureConfigurationInfo, load: () => void) {
-        return create("div")
-            .classes("flex-v")
-            .children(
-                ...feature.envVars.map(envVar => {
-                    const value = signal("");
-
-                    return create("div")
-                        .classes("flex", "align-center", "indent-left")
-                        .children(
-                            GenericTemplates.icon(envVar.isSet ? "key" : "key_off", [envVar.isSet ? "positive" : "negative"]),
-                            input({
-                                type: InputType.text,
-                                value: "",
-                                name: envVar.key,
-                                placeholder: envVar.key,
-                                onchange: (newVal) => {
-                                    value.value = newVal;
-                                }
-                            }),
-                            button({
-                                icon: {icon: "save"},
-                                text: "Set",
-                                disabled: compute(v => !v || v.length === 0, value),
-                                classes: ["flex", "align-center"],
-                                onclick: () => {
-                                    createModal(GenericTemplates.confirmModalWithContent("Overwrite environment variable", create("div")
-                                        .children(
-                                            create("p")
-                                                .text(`Are you sure you want to overwrite the environment variable ${envVar.key}?`),
-                                        ).build(), "Yes", "No", () => {
-                                        Api.setEnvironmentVariable(envVar.key, value.value).then(res => {
-                                            if (res.success) {
-                                                load();
-                                            }
-                                        });
-                                    }));
-                                }
-                            })
+                            ...settingsList,
                         ).build();
                 })
             ).build();

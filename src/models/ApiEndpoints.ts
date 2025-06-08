@@ -16,9 +16,6 @@ export enum ApiEndpoint {
     // Models endpoint
     MODELS = "/models",
 
-    // API configuration endpoint
-    CONFIGURED_APIS = "/configuredFeatures",
-
     // MCP endpoints
     MCP_CONFIG = "/mcpConfig",
     MCP_SERVER = "/mcpServer",
