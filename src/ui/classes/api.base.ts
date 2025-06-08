@@ -4,7 +4,7 @@ import {ToastType} from "../enums/ToastType";
 export class ApiBase {
     static baseUrl = window.location.origin;
 
-    static async stream(url: string, data = {}, sendCredentials = false) {
+    static async stream(url: string, data = {}, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'POST',
             headers: {
@@ -19,7 +19,7 @@ export class ApiBase {
         return res.body;
     }
 
-    static async streamWithFormData(url: string, formData: FormData, sendCredentials = false) {
+    static async streamWithFormData(url: string, formData: FormData, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'POST',
             body: formData,
@@ -31,7 +31,7 @@ export class ApiBase {
         return res.body;
     }
 
-    static async post(url: string, data = {}, sendCredentials = false) {
+    static async post(url: string, data = {}, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'POST',
             headers: {
@@ -43,7 +43,7 @@ export class ApiBase {
         return await this.basicResponseHandling(res);
     }
 
-    static async get<T>(url: string, sendCredentials = false) {
+    static async get<T>(url: string, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'GET',
             headers: {
@@ -54,7 +54,7 @@ export class ApiBase {
         return await this.basicResponseHandling<T>(res);
     }
 
-    static async delete(url: string, sendCredentials = false) {
+    static async delete(url: string, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'DELETE',
             headers: {
@@ -65,7 +65,7 @@ export class ApiBase {
         return await this.basicResponseHandling(res);
     }
 
-    static async put(url: string, data = {}, sendCredentials = false) {
+    static async put(url: string, data = {}, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'PUT',
             headers: {

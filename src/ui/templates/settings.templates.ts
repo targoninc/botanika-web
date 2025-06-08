@@ -13,6 +13,7 @@ import {Configuration} from "../../models/Configuration";
 import {featureOptions} from "../../models/features/featureOptions";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
+import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 
 export class SettingsTemplates {
     static settings() {
@@ -199,11 +200,25 @@ export class SettingsTemplates {
                     .children(
                         GenericTemplates.warning("You might have to restart the application after changing API configuration")
                     ).build(),
-                ...Object.keys(apis).map(api => {
+                ...Object.keys(apis).map((api: BotanikaFeature) => {
                     const name = api;
-                    const feature = apis[name] as FeatureConfigurationInfo;
-                    const fOptions = featureOptions[name] as SettingConfiguration[];
+                    const feature = apis[name];
+                    const fOptions = featureOptions[name];
                     const loading = signal(false);
+
+                    const configuredApiEnvVars = feature.envVars && feature.envVars.length > 0 ? SettingsTemplates.configuredApiEnvVars(feature, load) : null;
+                    const mcpServers = fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
+                        return c.featureOptions && c.featureOptions[name] ? c.featureOptions[name][s.key] : null;
+                    }, (c, k, v) => ({
+                        ...c,
+                        featureOptions: {
+                            ...(c.featureOptions ?? {}),
+                            [name]: {
+                                ...((c.featureOptions ?? {})[name] ?? {}),
+                                [k]: v,
+                            }
+                        }
+                    }))) : [];
 
                     return create("div")
                         .classes("flex-v", "card")
@@ -216,19 +231,8 @@ export class SettingsTemplates {
                                         .text(name),
                                     when(loading, GenericTemplates.spinner())
                                 ).build(),
-                            feature.envVars && feature.envVars.length > 0 ? SettingsTemplates.configuredApiEnvVars(feature, load) : null,
-                            ...(fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
-                                return c.featureOptions && c.featureOptions[name] ? c.featureOptions[name][s.key] : null;
-                            }, (c, k, v) => ({
-                                ...c,
-                                featureOptions: {
-                                    ...(c.featureOptions ?? {}),
-                                    [name]: {
-                                        ...((c.featureOptions ?? {})[name] ?? {}),
-                                        [k]: v,
-                                    }
-                                }
-                            }))) : []),
+                            configuredApiEnvVars,
+                            ...mcpServers,
                         ).build();
                 })
             ).build();
