@@ -1,17 +1,16 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:debian AS base
 
 # Set the working directory
 WORKDIR /usr/src/app
 
 # Copy the current directory contents into the container at /usr/src/app
-COPY . .
+COPY ./src ./src
+COPY ./package.json .
+COPY ./bun.lock .
+COPY ./api.ts .
 
 # Install the project dependencies
 RUN bun install
-RUN bun run build-ui-prod
-
-# Make the app's ports available to the outside world
-EXPOSE 3000
 
 # Define the command to run the app
-CMD ["bun", "run", "start-ui-prod"]
+CMD ["bun", "run", "start-api-prod"]
