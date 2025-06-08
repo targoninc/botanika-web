@@ -183,7 +183,7 @@ export class SettingsTemplates {
 
     static configuredFeatures() {
         return create("div")
-            .classes("flex-v")
+            .classes("flex-v", "allow-overflow")
             .children(
                 compute(a => SettingsTemplates.configuredFeaturesInternal(a, loadconfiguredFeatures), configuredFeatures)
             ).build();
@@ -280,6 +280,7 @@ export class SettingsTemplates {
 
     static mcpConfig() {
         return create("div")
+            .classes("flex-v", "allow-overflow")
             .children(
                 compute(c => SettingsTemplates.mcpConfigInternal(c), mcpConfig)
             ).build();
