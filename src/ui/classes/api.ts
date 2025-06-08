@@ -6,6 +6,7 @@ import {McpServerConfig} from "../../models/mcp/McpServerConfig";
 import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
+import {Tables} from "../../models/supabaseDefinitions.ts";
 
 export class Api extends ApiBase {
     static getConfig() {
@@ -93,5 +94,9 @@ export class Api extends ApiBase {
             chatId,
             messageId,
         });
+    }
+
+    static getUser() {
+        return this.get(ApiEndpoint.GET_USER);
     }
 }

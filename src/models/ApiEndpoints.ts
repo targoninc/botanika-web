@@ -3,6 +3,9 @@
  * This ensures consistency between endpoint declaration and usage.
  */
 export enum ApiEndpoint {
+    // User endpoints
+    GET_USER = "/user/get",
+
     // Configuration endpoints
     CONFIG = "/config",
     CONFIG_KEY = "/config/", // Used with parameter: key
@@ -31,5 +34,5 @@ export enum ApiEndpoint {
 
     // Audio endpoints
     AUDIO = "/audio",
-    TRANSCRIBE = "/transcribe"
+    TRANSCRIBE = "/transcribe",
 }

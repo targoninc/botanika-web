@@ -4,7 +4,7 @@ import {addChatEndpoints} from "./ai/endpoints";
 import {addMcpEndpoints} from "./ai/tools/endpoints";
 import {addAudioEndpoints} from "./ai/tts/endpoints";
 import {addShortcutEndpoints} from "./shortcuts/shortcuts";
-import {ApiEndpoint} from "../models/ApiEndpoints";
+import {addUserEndpoints} from "./authentication/middleware.ts";
 
 export function createEndpoints(app: Application) {
     addConfigEndpoints(app);
@@ -12,8 +12,5 @@ export function createEndpoints(app: Application) {
     addMcpEndpoints(app);
     addAudioEndpoints(app);
     addShortcutEndpoints(app);
-
-    app.get(ApiEndpoint.OPENAI_KEY, (req, res) => {
-        res.send(process.env.OPENAI_API_KEY);
-    });
+    addUserEndpoints(app);
 }

@@ -93,6 +93,14 @@ export class SettingsTemplates {
                                     .build(),
                                 when(loading, GenericTemplates.spinner()),
                             ).build(),
+                        create("div")
+                            .classes("flex-v")
+                            .children(
+                                GenericTemplates.user(),
+                                GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
+                                    window.location.href = "/logout";
+                                }),
+                            ).build(),
                         GenericTemplates.heading(2, "General"),
                         ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                             ...c,
@@ -101,16 +109,6 @@ export class SettingsTemplates {
                         SettingsTemplates.shortcuts(),
                         SettingsTemplates.configuredFeatures(),
                         when(mcpConfig, SettingsTemplates.mcpConfig()),
-                        create("div")
-                            .classes("flex")
-                            .children(
-                                GenericTemplates.buttonWithIcon("folder_open", "Open app data folder", async () => {
-                                    await Api.openAppDataPath();
-                                }),
-                                GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
-                                    window.location.href = "/logout";
-                                }),
-                            ).build()
                     ).build()
             ).build();
     }
