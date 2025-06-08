@@ -2,9 +2,10 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
+import {z} from "zod";
 
-async function getCurrentPlayback(): Promise<SpotifyApi.CurrentPlaybackResponse> {
-    const api = await createClient();
+async function getCurrentPlayback(userConfig: Configuration): Promise<SpotifyApi.CurrentPlaybackResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.getMyCurrentPlaybackState();
 
@@ -15,10 +16,12 @@ async function getCurrentPlayback(): Promise<SpotifyApi.CurrentPlaybackResponse>
     }
 }
 
-async function getCurrentPlaybackToolCall() {
-    await checkIfEnabled();
+async function getCurrentPlaybackToolCall(userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    const result = await getCurrentPlayback();
+    const result = await getCurrentPlayback(userConfig);
 
     return <ChatToolResult>{
         text: `Currently playing ${result.currently_playing_type} on ${result.device?.name ?? "nothing"} ${result.device?.id ? `(${result.device.id})` : ""} at ${result.device?.volume_percent ?? 0}%`,
@@ -35,7 +38,7 @@ export function spotifyGetCurrentPlaybackTool(userConfig: Configuration) {
     return {
         id: "spotify-getCurrentPlayback",
         description: "Get what is currently playing on Spotify.",
-        parameters: {},
-        execute: wrapTool("spotify-getCurrentPlayback", getCurrentPlaybackToolCall),
+        parameters: z.object({}),
+        execute: wrapTool("spotify-getCurrentPlayback", () => getCurrentPlaybackToolCall(userConfig)),
     };
 }

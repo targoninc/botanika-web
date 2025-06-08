@@ -5,8 +5,8 @@ import {z} from "zod";
 import {CLI} from "../../../../../../CLI";
 import { Configuration } from "src/models/Configuration";
 
-async function getArtistTopTracks(artistId: string, countryCode: string): Promise<SpotifyApi.ArtistsTopTracksResponse> {
-    const api = await createClient();
+async function getArtistTopTracks(userConfig: Configuration, artistId: string, countryCode: string): Promise<SpotifyApi.ArtistsTopTracksResponse> {
+    const api = await createClient(userConfig);
     try {
         CLI.debug(`Getting top tracks for artist ${artistId}`);
         const response = await api.getArtistTopTracks(artistId, countryCode ?? "US");
@@ -18,10 +18,12 @@ async function getArtistTopTracks(artistId: string, countryCode: string): Promis
     }
 }
 
-async function getArtistTopTracksToolCall(input: any) {
-    await checkIfEnabled();
+async function getArtistTopTracksToolCall(input: any, userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    const response = await getArtistTopTracks(input.artistId, input.countryCode);
+    const response = await getArtistTopTracks(userConfig, input.artistId, input.countryCode);
 
     return <ChatToolResult>{
         text: `Found ${response.tracks.length} top tracks for artist`,
@@ -39,10 +41,10 @@ export function spotifyGetArtistTopTracksTool(userConfig: Configuration) {
     return {
         id: "spotify-getArtistTopTracks",
         description: "Get a list of Spotify top tracks for an artist",
-        parameters: {
+        parameters: z.object({
             artistId: z.string().describe("Spotify artist ID, format is base62"),
             countryCode: z.string().nullable().optional().describe("The country/territory where the tracks are most popular. (format: ISO 3166-1 alpha-2")
-        },
-        execute: wrapTool("spotify-getArtistTopTracks", getArtistTopTracksToolCall),
+        }),
+        execute: wrapTool("spotify-getArtistTopTracks", input => getArtistTopTracksToolCall(input, userConfig)),
     };
 }

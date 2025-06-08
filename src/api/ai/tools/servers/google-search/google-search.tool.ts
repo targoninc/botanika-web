@@ -55,9 +55,9 @@ export function googleSearchTool(userConfig: Configuration) {
     return {
         id: "google-search-engine",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
-        parameters: {
+        parameters: z.object({
             query: z.string().describe('The query to search for'),
-        },
+        }),
         execute: wrapTool("google-search-engine", input => toolCall(input, userConfig)),
     };
 }

@@ -4,8 +4,8 @@ import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import { Configuration } from "src/models/Configuration";
 
-async function addToQueue(uri: string, deviceId: string): Promise<SpotifyApi.AddToQueueResponse> {
-    const api = await createClient();
+async function addToQueue(userConfig: Configuration, uri: string, deviceId: string): Promise<SpotifyApi.AddToQueueResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.addToQueue(uri, {
             device_id: deviceId
@@ -18,10 +18,11 @@ async function addToQueue(uri: string, deviceId: string): Promise<SpotifyApi.Add
     }
 }
 
-async function addToQueueToolCall(input: any) {
-    await checkIfEnabled();
-
-    await addToQueue(input.uri, input.deviceId);
+async function addToQueueToolCall(input: any, userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
+    await addToQueue(userConfig, input.uri, input.deviceId);
 
     return <ChatToolResult>{
         text: "Added item to Spotify playback queue",
@@ -33,10 +34,10 @@ export function spotifyAddToQueueTool(userConfig: Configuration) {
     return {
         id: "spotify-addToQueue",
         description: "Add a Spotify URI to the queue.",
-        parameters: {
+        parameters: z.object({
             uri: z.string().describe('The URI to add to the queue'),
             deviceId: z.string().describe('The device ID to add to the queue on'),
-        },
-        execute: wrapTool("spotify-addToQueue", addToQueueToolCall),
+        }),
+        execute: wrapTool("spotify-addToQueue", input => addToQueueToolCall(userConfig, userConfig)),
     };
 }

@@ -4,8 +4,8 @@ import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
 import { Configuration } from "src/models/Configuration";
 
-async function pause(deviceId: string): Promise<void> {
-    const api = await createClient();
+async function pause(userConfig: Configuration, deviceId: string): Promise<void> {
+    const api = await createClient(userConfig);
     try {
         await api.pause({
             device_id: deviceId,
@@ -20,10 +20,12 @@ interface SpotifyPauseOptions {
     deviceId: string;
 }
 
-async function pauseToolCall(input: SpotifyPauseOptions) {
-    await checkIfEnabled();
+async function pauseToolCall(input: SpotifyPauseOptions, userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    await pause(input.deviceId);
+    await pause(userConfig, input.deviceId);
 
     return <ChatToolResult>{
         text: `Paused playback on Spotify`,
@@ -34,9 +36,9 @@ export function spotifyPauseTool(userConfig: Configuration) {
     return {
         id: "spotify-pause",
         description: "Pause Spotify playback.",
-        parameters: {
+        parameters: z.object({
             deviceId: z.string().describe('The device ID to pause on'),
-        },
-        execute: wrapTool("spotify-pause", pauseToolCall),
+        }),
+        execute: wrapTool("spotify-pause", input => pauseToolCall(input, userConfig)),
     };
 }

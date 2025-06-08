@@ -60,7 +60,7 @@ export async function streamResponseAsMessage(maxSteps: number, provider: string
         maxSteps,
         maxRetries: 0,
         onError: event => {
-            CLI.error(JSON.stringify(event));
+            CLI.error(`Unexpected error occurred: ${event.error.toString()}`);
         },
     });
 

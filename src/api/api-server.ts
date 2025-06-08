@@ -9,8 +9,6 @@ import {addUserMiddleware} from "./authentication/middleware.ts";
 
 dotenv.config();
 
-export let mcpApp: Application;
-
 export async function apiServer(app: Application) {
     app.use(cors({
         origin: "*",

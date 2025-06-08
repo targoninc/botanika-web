@@ -9,10 +9,12 @@ import {spotifyAddToQueueTool} from "./spotify/spotify-client/tools/addToQueue.t
 import {spotifyAddToSavedTracksTool} from "./spotify/spotify-client/tools/addToSavedTracks.tool.ts";
 import {spotifyGetArtistTopTracksTool} from "./spotify/spotify-client/tools/getArtistTopTracks.tool.ts";
 import {Configuration} from "../../../../models/Configuration.ts";
+import {spotifyAddToSavedAlbumsTool} from "./spotify/spotify-client/tools/addToSavedAlbums.tool.ts";
 
 export function getBuiltInTools(userConfig: Configuration) {
     return [
         googleSearchTool(userConfig),
+        spotifyAddToSavedAlbumsTool(userConfig),
         spotifySearchTool(userConfig),
         spotifyGetDevicesTool(userConfig),
         spotifyPlayTool(userConfig),
