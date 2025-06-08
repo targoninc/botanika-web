@@ -2,9 +2,10 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
+import {z} from "zod";
 
-async function getProfile(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
-    const api = await createClient();
+async function getProfile(userConfig: Configuration): Promise<SpotifyApi.CurrentUsersProfileResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.getMe();
 
@@ -15,10 +16,12 @@ async function getProfile(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
     }
 }
 
-async function getProfileToolCall() {
-    await checkIfEnabled();
+async function getProfileToolCall(userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    const result = await getProfile();
+    const result = await getProfile(userConfig);
     const country = result.country ? `, ${result.country}` : "";
 
     return <ChatToolResult>{
@@ -38,7 +41,7 @@ export function spotifyGetProfileTool(userConfig: Configuration) {
     return {
         id: "spotify-getProfile",
         description: "Get Spotify profile of the current user.",
-        parameters: {},
-        execute: wrapTool("spotify-getProfile", getProfileToolCall),
+        parameters: z.object({}),
+        execute: wrapTool("spotify-getProfile", () => getProfileToolCall(userConfig)),
     };
 }

@@ -4,8 +4,8 @@ import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
 import { Configuration } from "src/models/Configuration";
 
-async function play(deviceId: string, contextUri: string, uris: string[], positionMs: number): Promise<void> {
-    const api = await createClient();
+async function play(userConfig: Configuration, deviceId: string, contextUri: string, uris: string[], positionMs: number): Promise<void> {
+    const api = await createClient(userConfig);
     try {
         if (contextUri && contextUri.length > 0) {
             await api.play({
@@ -35,10 +35,12 @@ interface SpotifyPlayOptions {
     positionMs: number;
 }
 
-async function playToolCall(input: SpotifyPlayOptions) {
-    await checkIfEnabled();
+async function playToolCall(userConfig: Configuration, input: SpotifyPlayOptions) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    await play(input.deviceId, input.contextUri, input.uris, input.positionMs);
+    await play(userConfig, input.deviceId, input.contextUri, input.uris, input.positionMs);
 
     return <ChatToolResult>{
         text: `Started playback on Spotify`,
@@ -49,12 +51,12 @@ export function spotifyPlayTool(userConfig: Configuration) {
     return {
         id: "spotify-play",
         description: "Play a song, album or playlist on Spotify. If you don't know the URIs, use the Spotify search tool first.",
-        parameters: {
+        parameters: z.object({
             deviceId: z.string().describe('The device ID to play on'),
             contextUri: z.string().describe('The context URI to play on').optional(),
             uris: z.array(z.string()).describe('The URIs to play').optional(),
             positionMs: z.number().describe('The position in milliseconds to start playing from'),
-        },
-        execute: wrapTool("spotify-play", playToolCall),
+        }),
+        execute: wrapTool("spotify-play", input => playToolCall(userConfig, input)),
     };
 }

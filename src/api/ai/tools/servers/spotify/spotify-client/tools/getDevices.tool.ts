@@ -3,9 +3,10 @@ import {ResourceReference} from "../../../../../../../models/chat/ResourceRefere
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
+import {z} from "zod";
 
-async function getDevices(): Promise<SpotifyApi.UserDevicesResponse> {
-    const api = await createClient();
+async function getDevices(userConfig: Configuration): Promise<SpotifyApi.UserDevicesResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.getMyDevices();
 
@@ -16,10 +17,12 @@ async function getDevices(): Promise<SpotifyApi.UserDevicesResponse> {
     }
 }
 
-async function getDevicesToolCall() {
-    await checkIfEnabled();
+async function getDevicesToolCall(userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    const result = await getDevices();
+    const result = await getDevices(userConfig);
     const refs = result.devices.map(device => {
         return <ResourceReference>{
             type: "resource-reference",
@@ -38,7 +41,7 @@ export function spotifyGetDevicesTool(userConfig: Configuration) {
     return {
         id: "spotify-getDevices",
         description: "Get Spotify devices.",
-        parameters: {},
-        execute: wrapTool("spotify-getDevices", getDevicesToolCall),
+        parameters: z.object({}),
+        execute: wrapTool("spotify-getDevices", () => getDevicesToolCall(userConfig)),
     };
 }

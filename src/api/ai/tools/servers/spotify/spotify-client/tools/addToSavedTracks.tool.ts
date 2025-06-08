@@ -4,8 +4,8 @@ import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import { Configuration } from "src/models/Configuration";
 
-async function addToSavedTracks(trackIds: string[]): Promise<SpotifyApi.SaveTracksForUserResponse> {
-    const api = await createClient();
+async function addToSavedTracks(userConfig: Configuration, trackIds: string[]): Promise<SpotifyApi.SaveTracksForUserResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.addToMySavedTracks(trackIds);
 
@@ -16,10 +16,11 @@ async function addToSavedTracks(trackIds: string[]): Promise<SpotifyApi.SaveTrac
     }
 }
 
-async function addToSavedTracksToolCall(input: any) {
-    await checkIfEnabled();
-
-    await addToSavedTracks(input.trackIds);
+async function addToSavedTracksToolCall(input: any, userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
+    await addToSavedTracks(userConfig, input.trackIds);
 
     return <ChatToolResult>{
         text: "Added tracks to Spotify library",
@@ -31,9 +32,9 @@ export function spotifyAddToSavedTracksTool(userConfig: Configuration) {
     return {
         id: "spotify-addToSavedTracks",
         description: "Add a list of Spotify tracks to the library",
-        parameters: {
+        parameters: z.object({
             trackIds: z.array(z.string()).describe("List of Spotify track IDs")
-        },
-        execute: wrapTool("spotify-addToSavedTracks", addToSavedTracksToolCall),
+        }),
+        execute: wrapTool("spotify-addToSavedTracks", input => addToSavedTracksToolCall(input, userConfig)),
     };
 }

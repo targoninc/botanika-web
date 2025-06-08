@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 import {CLI} from "../../../../../CLI";
-import {mcpApp} from "../../../../../api-server.ts";
 import { Configuration } from "src/models/Configuration.ts";
+import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature.ts";
+import { app } from "src/ui-server/ui-server.ts";
 
 const SpotifyWebApi = require("spotify-web-api-node");
 
@@ -29,8 +30,8 @@ let token: string = process.env.SPOTIFY_TOKEN;
 async function authorize() {
     if (!token) {
         let code: string;
-        mcpApp.get('/mcp/spotify/callback', async (req, res) => {
-            code = req.query.code;
+        app.get('/mcp/spotify/callback', async (req, res) => {
+            code = req.query.code as string;
             if (!code) {
                 res.status(400).send('Missing code parameter');
                 return;
@@ -77,7 +78,7 @@ export async function createClient(userConfig: Configuration) {
         api = new SpotifyWebApi({
             clientId: userConfig.featureOptions.Spotify.clientId,
             clientSecret: userConfig.featureOptions.Spotify.clientSecret,
-            redirectUri: `http://localhost:${process.env.MCP_PORT}/mcp/spotify/callback`,
+            redirectUri: `${process.env.OIDC_BASE_URL}/mcp/spotify/callback`,
         });
     }
 
@@ -92,6 +93,6 @@ export async function createClient(userConfig: Configuration) {
     return api;
 }
 
-export async function checkIfEnabled() {
-    return true;
+export function checkIfEnabled(userConfig: Configuration) {
+    return userConfig.featureOptions[BotanikaFeature.Spotify].clientId && userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret;
 }

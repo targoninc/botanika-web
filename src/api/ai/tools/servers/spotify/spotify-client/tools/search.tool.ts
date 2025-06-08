@@ -22,7 +22,9 @@ async function search(userConfig: Configuration, query: string, searchTypes: Sea
 }
 
 async function searchToolCall(input: SpotifySearchOptions, userConfig: Configuration) {
-    await checkIfEnabled();
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
     const result = await search(userConfig, input.query, input.searchTypes);
     const refs = Object.keys(result).flatMap(key => {
@@ -55,10 +57,10 @@ export function spotifySearchTool(userConfig: Configuration) {
     return {
         id: "spotify-search",
         description: "Spotify search. Useful for when you need to search for music or podcasts.",
-        parameters: {
+        parameters: z.object({
             query: z.string().describe('What to search for'),
             searchTypes: z.array(z.nativeEnum(SearchType)).describe('What types to search for. Must be an array.'),
-        },
+        }),
         execute: wrapTool("spotify-search", input => searchToolCall(input, userConfig)),
     };
 }

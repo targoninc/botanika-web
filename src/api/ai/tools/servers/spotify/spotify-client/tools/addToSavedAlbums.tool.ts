@@ -2,9 +2,10 @@ import {checkIfEnabled, createClient} from "../createClient";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
+import {Configuration} from "../../../../../../../models/Configuration.ts";
 
-async function addToSavedAlbums(albumIds: string[]): Promise<SpotifyApi.AddToQueueResponse> {
-    const api = await createClient();
+async function addToSavedAlbums(userConfig: Configuration, albumIds: string[]): Promise<SpotifyApi.AddToQueueResponse> {
+    const api = await createClient(userConfig);
     try {
         const response = await api.addToMySavedAlbums(albumIds);
 
@@ -15,10 +16,12 @@ async function addToSavedAlbums(albumIds: string[]): Promise<SpotifyApi.AddToQue
     }
 }
 
-async function addToSavedAlbumsToolCall(input: any) {
-    await checkIfEnabled();
+async function addToSavedAlbumsToolCall(input: any, userConfig: Configuration) {
+    if (!checkIfEnabled(userConfig)) {
+        throw new Error("Spotify is not configured");
+    }
 
-    await addToSavedAlbums(input.albumIds);
+    await addToSavedAlbums(userConfig, input.albumIds);
 
     return <ChatToolResult>{
         text: "Added tracks to Spotify library",
@@ -26,13 +29,13 @@ async function addToSavedAlbumsToolCall(input: any) {
     };
 }
 
-export function spotifyAddToSavedAlbumsTool() {
+export function spotifyAddToSavedAlbumsTool(userConfig: Configuration) {
     return {
         id: "spotify-addToSavedAlbums",
         description: "Add a list of Spotify albums to the library",
-        parameters: {
+        parameters: z.object({
             albumIds: z.array(z.string()).describe("List of Spotify album IDs")
-        },
-        execute: wrapTool("spotify-addToSavedAlbums", addToSavedAlbumsToolCall),
+        }),
+        execute: wrapTool("spotify-addToSavedAlbums", input => addToSavedAlbumsToolCall(input, userConfig)),
     };
 }
