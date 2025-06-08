@@ -6,7 +6,7 @@ const apiKeyConfig = <SettingConfiguration>{
     icon: "key",
     description: "API Key",
     label: "API Key",
-    type: "string",
+    type: "password",
     validator: value => {
         return [];
     }
@@ -87,7 +87,7 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             icon: "key",
             description: "Client secret",
             label: "Client secret",
-            type: "string",
+            type: "password",
             validator: value => {
                 return [];
             }
