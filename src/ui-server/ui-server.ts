@@ -21,7 +21,8 @@ const port = APP_PORT;
 try {
     const test = await fetch(`http://localhost:${port}`);
     if (test.status === 200) {
-        throw new Error('Server already running on a different instance');
+        CLI.error("Server is already running");
+        process.exit(0);
     }
 } catch {
     // Ignore error if server is not running
