@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import {appDataPath} from "../../appData";
-import {getConfigKey} from "../../configuration";
 import {transcribeLocal} from "./localWhisper";
 import {transcribeOpenAI} from "./openaiWhisper";
 
@@ -20,9 +19,10 @@ export async function transcribeEndpoint(req: Request, res: Response) {
 
     const startTime = performance.now();
     try {
-        switch (getConfigKey("transcriptionProvider")) {
+        // TODO: depend on user config
+        switch ("openai") {
             case "openai":
-                await transcribeOpenAI(tmpFileName, res);
+                await transcribeOpenAI(req, tmpFileName, res);
                 break;
             case "local":
                 await transcribeLocal(tmpFileName, res);

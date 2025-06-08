@@ -1,14 +1,14 @@
 import fs from "fs";
 import {terminator} from "../../../models/chat/terminator";
 import {OpenAI} from "openai";
-import {Response} from "express";
-import {getConfig, getFeatureOption} from "../../configuration";
+import {Request, Response} from "express";
+import {getFeatureOption} from "../../configuration";
 import {BotanikaFeature} from "../../../models/features/BotanikaFeature";
 import {OpenAiFeatureKeys} from "./OpenAiFeatureKeys";
 
 let openAi: OpenAI;
 
-export async function transcribeOpenAI(file: string, res: Response) {
+export async function transcribeOpenAI(req: Request, file: string, res: Response) {
     if (!openAi) {
         openAi = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
@@ -16,7 +16,7 @@ export async function transcribeOpenAI(file: string, res: Response) {
     }
 
     const text = await openAi.audio.transcriptions.create({
-        model: getFeatureOption(BotanikaFeature.OpenAI, OpenAiFeatureKeys.ttsModel),
+        model: await getFeatureOption(req, BotanikaFeature.OpenAI, OpenAiFeatureKeys.ttsModel),
         file: fs.createReadStream(file),
         response_format: "text",
         stream: true,

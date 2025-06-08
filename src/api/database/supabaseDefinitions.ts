@@ -63,65 +63,6 @@ export type Database = {
           },
         ]
       }
-      configuration: {
-        Row: {
-          birthdate: string | null
-          botDescription: string
-          botname: string
-          created_at: string
-          display_hotkeys: boolean
-          displayname: string
-          enableTts: boolean
-          language: Database["public"]["Enums"]["Language"]
-          maxSteps: number
-          model: string
-          provider: string
-          tintColor: string
-          user_id: string
-          userDescription: string | null
-        }
-        Insert: {
-          birthdate?: string | null
-          botDescription?: string
-          botname?: string
-          created_at?: string
-          display_hotkeys?: boolean
-          displayname?: string
-          enableTts?: boolean
-          language?: Database["public"]["Enums"]["Language"]
-          maxSteps?: number
-          model?: string
-          provider?: string
-          tintColor?: string
-          user_id?: string
-          userDescription?: string | null
-        }
-        Update: {
-          birthdate?: string | null
-          botDescription?: string
-          botname?: string
-          created_at?: string
-          display_hotkeys?: boolean
-          displayname?: string
-          enableTts?: boolean
-          language?: Database["public"]["Enums"]["Language"]
-          maxSteps?: number
-          model?: string
-          provider?: string
-          tintColor?: string
-          user_id?: string
-          userDescription?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "configuration_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       messages: {
         Row: {
           chat_id: string
@@ -168,18 +109,21 @@ export type Database = {
       }
       users: {
         Row: {
+          configuration: Json
           created_at: string
           external_id: string
           id: string
           isAdmin: boolean
         }
         Insert: {
+          configuration?: Json
           created_at?: string
           external_id: string
           id?: string
           isAdmin?: boolean
         }
         Update: {
+          configuration?: Json
           created_at?: string
           external_id?: string
           id?: string
