@@ -16,6 +16,7 @@ import {toast} from "./ui";
 import {ToastType} from "../enums/ToastType";
 import {setRootCssVar} from "./setRootCssVar";
 import {signal} from "@targoninc/jess";
+import {Tables} from "../../models/supabaseDefinitions.ts";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -26,6 +27,7 @@ export const mcpConfig = signal<McpConfiguration|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
+export const currentUser = signal<Tables<"users">>(null);
 
 export function initializeStore() {
     configuration.subscribe(c => {
@@ -61,6 +63,13 @@ export function initializeStore() {
     Api.getMcpConfig().then(mcpConf => {
         if (mcpConf.success) {
             mcpConfig.value = mcpConf.data as McpConfiguration;
+        }
+    });
+
+    Api.getUser().then(r => {
+        if (r.success) {
+            console.log(r.data);
+            currentUser.value = r.data as Tables<"users">;
         }
     });
 

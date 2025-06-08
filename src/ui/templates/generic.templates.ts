@@ -1,5 +1,5 @@
 import {closeModal, createModal, toast} from "../classes/ui";
-import {Callback, configuration, target} from "../classes/store";
+import {Callback, configuration, currentUser, target} from "../classes/store";
 import {Tab} from "../../models/uiExtensions/Tab";
 import {TextSegment} from "../../models/uiExtensions/TextSegment";
 import {ToastType} from "../enums/ToastType";
@@ -475,6 +475,19 @@ export class GenericTemplates {
                 create("div")
                     .styles("transform", transform)
                     .classes("red-dot", classExt)
+                    .build()
+            ).build();
+    }
+
+    static user() {
+        const image = compute(u => u?.picture ?? ".", currentUser);
+
+        return create("div")
+            .classes("flex", "align-children")
+            .children(
+                GenericTemplates.icon(image, ["user-image"]),
+                create("span")
+                    .text(compute(u => u?.nickname ?? u?.name ?? "Not logged in", currentUser))
                     .build()
             ).build();
     }

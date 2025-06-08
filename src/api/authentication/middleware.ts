@@ -1,6 +1,7 @@
 import {Application, RequestHandler} from "express";
 import {db} from "../database/supabase.ts";
-import {Tables} from "../database/supabaseDefinitions.ts";
+import {Tables} from "../../models/supabaseDefinitions.ts";
+import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
 
 declare module "express-serve-static-core" {
     interface Request {
@@ -28,5 +29,14 @@ export function addUserMiddleware(app: Application) {
         }
 
         next();
+    });
+}
+
+export function addUserEndpoints(app: Application) {
+    app.get(ApiEndpoint.GET_USER, async (req, res) => {
+        return res.json({
+            ...req.user,
+            ...req.oidc.user
+        });
     });
 }

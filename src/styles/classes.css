@@ -742,3 +742,10 @@ pre {
 .restrict-width-small {
     max-width: 800px;
 }
+
+.user-image {
+    --user-image-size: 2em;
+    width: var(--user-image-size);
+    height: var(--user-image-size);
+    border-radius: 50%;
+}
