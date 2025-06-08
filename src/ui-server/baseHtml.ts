@@ -17,7 +17,7 @@ export async function baseHtml(req: Request) {
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"/>
 
     <!-- Highlight.js -->
-    <link rel="stylesheet" href="/src/styles/hljs-apathy.css">
+    <link rel="stylesheet" href="/hljs-apathy.css">
 
     <!-- Jess -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/targoninc/jess-components@0.0.15/src/src/jess-components.css"/>
