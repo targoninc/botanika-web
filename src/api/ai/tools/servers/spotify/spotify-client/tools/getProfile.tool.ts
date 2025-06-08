@@ -1,6 +1,7 @@
 import {checkIfEnabled, createClient} from "../createClient";
 import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
+import { Configuration } from "src/models/Configuration";
 
 async function getProfile(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
     const api = await createClient();
@@ -33,7 +34,7 @@ async function getProfileToolCall() {
     };
 }
 
-export function spotifyGetProfileTool() {
+export function spotifyGetProfileTool(userConfig: Configuration) {
     return {
         id: "spotify-getProfile",
         description: "Get Spotify profile of the current user.",

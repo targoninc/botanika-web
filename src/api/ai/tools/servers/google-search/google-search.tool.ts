@@ -1,18 +1,20 @@
 import {z} from "zod";
 import axios from "axios";
-import {GoogleSearchResult} from "./google-search.models";
-import {ResourceReference} from "../../../../../../../models/chat/ResourceReference";
+import {GoogleSearchResult} from "./google-search.models.ts";
+import {ResourceReference} from "../../../../../models/chat/ResourceReference.ts";
 import dotenv from "dotenv";
-import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
-import {featureEnabled} from "../../../../../../features/configuredFeatures";
-import {wrapTool} from "../../../../tooling";
-import {BotanikaFeature} from "../../../../../../../models/features/BotanikaFeature";
+import {ChatToolResult} from "../../../../../models/chat/ChatToolResult.ts";
+import {featureEnabled} from "../../../../features/configuredFeatures.ts";
+import {wrapTool} from "../../tooling.ts";
+import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts";
+import { Configuration } from "src/models/Configuration.ts";
 
 dotenv.config();
 
-async function search(query: string): Promise<GoogleSearchResult> {
+async function search(userConfig: Configuration, query: string): Promise<GoogleSearchResult> {
     try {
-        const apiKey = process.env.GOOGLE_API_KEY;
+        console.log(userConfig.featureOptions["Google Search"]);
+        const apiKey = userConfig.featureOptions["Google Search"]["apiKey"];
         const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
 
         if (!apiKey || !searchEngineId) {
@@ -35,12 +37,12 @@ async function search(query: string): Promise<GoogleSearchResult> {
     }
 }
 
-async function toolCall(input: any) {
+async function toolCall(input: any, userConfig: Configuration) {
     if (!await featureEnabled(BotanikaFeature.GoogleSearch)) {
         throw new Error("Google Search API is not enabled.");
     }
 
-    const result = await search(input.query);
+    const result = await search(userConfig, input.query);
     return <ChatToolResult>{
         text: `${result.items.length} Google search results`,
         references: result.items.map(i => {
@@ -55,13 +57,13 @@ async function toolCall(input: any) {
     };
 }
 
-export function googleSearchTool() {
+export function googleSearchTool(userConfig: Configuration) {
     return {
         id: "google-search-engine",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
         parameters: {
             query: z.string().describe('The query to search for'),
         },
-        execute: wrapTool("google-search-engine", toolCall),
+        execute: wrapTool("google-search-engine", input => toolCall(input, userConfig)),
     };
 }

@@ -6,7 +6,7 @@ import {ToolResultUnion, ToolSet} from "ai";
 import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 
 export function wrapTool(id: string, execute: (input: any) => Promise<any>) {
-    return async (input: any) => {
+    return async (input: any, ...args: any[]) => {
         const newMessage = <ChatMessage>{
             type: "tool",
             text: `Calling tool ${id}`,

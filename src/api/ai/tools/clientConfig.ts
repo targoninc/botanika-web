@@ -6,7 +6,7 @@ import {McpConfiguration} from "../../../models/mcp/McpConfiguration";
 import {defaultMcpConfig} from "./models/defaultMcpConfig";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig";
 
-const configPath = path.join(appDataPath, 'mcp-config.json');
+const configPath = path.join(appDataPath, 'tools-config.json');
 CLI.log('MCP Config path: ' + configPath);
 
 if (!fs.existsSync(appDataPath)) {
