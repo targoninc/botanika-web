@@ -62,7 +62,6 @@ export function addWebsocketServer(server: Server) {
     wss.on('connection', (ws: WebsocketConnection, req: CustomIncomingMessage) => {
         const userId = req.userId;
         CLI.log(`Client connected to WebSocket with userId: ${userId}`);
-
         ws.userId = userId;
 
         ws.on('message', async (msg: string) => {

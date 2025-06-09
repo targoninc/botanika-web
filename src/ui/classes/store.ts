@@ -100,10 +100,42 @@ export function loadChats() {
     });
 }
 
+export async function loadChat(id: string) {
+    const chat = await Api.getChat(id);
+    if (!chat.success) {
+        return;
+    }
+    chats.value = [
+        ...chats.value.filter(c => c.id !== id),
+        chat.data as ChatContext
+    ];
+}
+
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
 
 export function target(e: Event) {
     return e.target as HTMLInputElement;
+}
+
+export async function processUpdate(update: ChatUpdate) {
+    updateContext(chatContext.value, update, chatContext);
+    const cs = chats.value;
+    if (!cs.find(c => c.id === update.chatId)) {
+        await loadChat(update.chatId);
+    } else {
+        chats.value = chats.value.map(c => {
+            if (c.id === update.chatId) {
+                updateContext(c, update);
+            }
+            return c;
+        });
+    }
+
+    const playableMessage = update.messages?.find(m => m.hasAudio);
+    const isLast = playableMessage && update.messages.pop().id === playableMessage.id;
+    if (playableMessage && isLast) {
+        playAudio(playableMessage.id).then();
+    }
 }
 
 export async function updateContextFromStream(body: ReadableStream<Uint8Array>) {
@@ -132,24 +164,7 @@ export async function updateContextFromStream(body: ReadableStream<Uint8Array>) 
             continue;
         }
 
-        updateContext(chatContext.value, update, chatContext);
-        const cs = chats.value;
-        if (!cs.find(c => c.id === update.chatId)) {
-            loadChats();
-        } else {
-            chats.value = chats.value.map(c => {
-                if (c.id === update.chatId) {
-                    updateContext(c, update);
-                }
-                return c;
-            });
-        }
-
-        const playableMessage = update.messages?.find(m => m.hasAudio);
-        const isLast = playableMessage && update.messages.pop().id === playableMessage.id;
-        if (playableMessage && isLast) {
-            playAudio(playableMessage.id).then();
-        }
+        await processUpdate(update);
     }
 }
 

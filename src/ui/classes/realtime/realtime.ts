@@ -1,10 +1,9 @@
-import {toast} from "./ui";
-import {ToastType} from "../enums/ToastType";
-import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
-import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
+import {toast} from "../ui.ts";
+import {ToastType} from "../../enums/ToastType.ts";
+import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
+import {BotanikaClientEvent} from "../../../models/websocket/botanikaClientEvent.ts";
 import {handleMessage} from "./handleMessage.ts";
-import {BotanikaServerEvent} from "../../models/websocket/botanikaServerEvent.ts";
-import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
+import {BotanikaServerEvent} from "../../../models/websocket/botanikaServerEvent.ts";
 
 export class Realtime {
     private static instance: Realtime;
@@ -76,11 +75,11 @@ export class Realtime {
     /**
      * Handle WebSocket message event
      */
-    private handleMessage(event: MessageEvent): void {
+    private async handleMessage(event: MessageEvent): Promise<void> {
         try {
             const data = JSON.parse(event.data) as BotanikaServerEvent<any>;
             console.log('Received WebSocket message:', data);
-            handleMessage(data);
+            await handleMessage(data);
         } catch (error) {
             console.error('Error parsing WebSocket message:', error, event.data);
         }

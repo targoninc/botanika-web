@@ -122,6 +122,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
         throw new Error(`Model ${request.model} not found in provider ${request.provider}`);
     }
 
+    console.log(ws.userId);
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
     const chat = await getOrCreateChat(ws, request, model);
