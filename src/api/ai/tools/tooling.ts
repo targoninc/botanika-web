@@ -4,8 +4,9 @@ import {v4 as uuidv4} from "uuid";
 import {currentChatContext} from "../endpoints";
 import {ToolResultUnion, ToolSet} from "ai";
 import {ChatToolResult} from "../../../models/chat/ChatToolResult";
+import {sendChatUpdate, WebsocketConnection} from "src/ui-server/websocket-server/websocket";
 
-export function wrapTool(id: string, execute: (input: any) => Promise<any>) {
+export function wrapTool(id: string, execute: (input: any) => Promise<any>, ws: WebsocketConnection, chatId: string) {
     return async (input: any, ...args: any[]) => {
         const newMessage = <ChatMessage>{
             type: "tool",
@@ -20,10 +21,11 @@ export function wrapTool(id: string, execute: (input: any) => Promise<any>) {
             references: [],
             id: uuidv4()
         };
-        currentChatContext.value = {
-            ...currentChatContext.value,
-            history: [...currentChatContext.value.history, newMessage]
-        };
+        sendChatUpdate(ws, {
+            chatId,
+            timestamp: Date.now(),
+            messages: [newMessage]
+        });
         const start = performance.now();
         CLI.debug(`Calling tool ${id}`);
         let result;
@@ -37,30 +39,26 @@ export function wrapTool(id: string, execute: (input: any) => Promise<any>) {
         const diff = performance.now() - start;
         CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
         result.messageId = newMessage.id;
-        const chatContext = currentChatContext.value;
-        currentChatContext.value = {
-            ...chatContext,
-            // @ts-ignore
-            history: chatContext.history.map(m => {
-                if (m.id === newMessage.id) {
-                    return {
-                        ...m,
-                        time: Date.now(),
-                        finished: true,
-                        text: result.text,
-                        references: result.references,
-                        toolResult: {
-                            toolName: id,
-                            toolCallId: uuidv4(),
-                            result,
-                            type: "tool-result",
-                            args: input
-                        }
-                    };
+
+        sendChatUpdate(ws, {
+            chatId,
+            timestamp: Date.now(),
+            messages: [{
+                ...newMessage,
+                time: Date.now(),
+                finished: true,
+                text: result.text,
+                references: result.references,
+                // @ts-ignore
+                toolResult: {
+                    toolName: id,
+                    toolCallId: uuidv4(),
+                    result,
+                    type: "tool-result",
+                    args: input
                 }
-                return m;
-            })
-        };
+            }]
+        });
         return result;
     }
 }

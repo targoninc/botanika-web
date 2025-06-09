@@ -10,6 +10,7 @@ import {newMessageEventHandler} from "./newMessageEventHandler.ts";
 import {BotanikaServerEventType} from "../../models/websocket/botanikaServerEventType.ts";
 import {ServerErrorEvent} from "./serverErrorEvent.ts";
 import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
+import {ServerWarningEvent} from "./serverWarningEvent.ts";
 
 export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
     ws.send(JSON.stringify(message));
@@ -21,6 +22,16 @@ export function sendError(ws: WebsocketConnection, message: string) {
         type: BotanikaServerEventType.error,
         data: <ServerErrorEvent>{
             error: message
+        }
+    });
+}
+
+export function sendWarning(ws: WebsocketConnection, message: string) {
+    CLI.warning(`Warning in realtime: ${message}`);
+    send(ws, {
+        type: BotanikaServerEventType.warning,
+        data: <ServerWarningEvent>{
+            warning: message
         }
     });
 }
@@ -70,6 +81,7 @@ export function addWebsocketServer(server: Server) {
             try {
                 await handleMessage(message, ws);
             } catch (e) {
+                CLI.error(e);
                 sendError(ws, e);
             }
         });

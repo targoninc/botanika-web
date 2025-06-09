@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
 import { Configuration } from "src/models/Configuration";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function play(userConfig: Configuration, deviceId: string, contextUri: string, uris: string[], positionMs: number): Promise<void> {
     const api = await createClient(userConfig);
@@ -47,7 +48,7 @@ async function playToolCall(userConfig: Configuration, input: SpotifyPlayOptions
     };
 }
 
-export function spotifyPlayTool(userConfig: Configuration) {
+export function spotifyPlayTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-play",
         description: "Play a song, album or playlist on Spotify. If you don't know the URIs, use the Spotify search tool first.",

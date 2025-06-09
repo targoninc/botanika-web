@@ -6,6 +6,7 @@ import {SearchType} from "../models/SearchType";
 import {checkIfEnabled, createClient} from "../createClient";
 import {SpotifySearchOptions} from "../models/SpotifySearchOptions";
 import { Configuration } from "src/models/Configuration";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function search(userConfig: Configuration, query: string, searchTypes: SearchType[]): Promise<SpotifyApi.SearchResponse> {
     const api = await createClient(userConfig);
@@ -53,7 +54,7 @@ async function searchToolCall(input: SpotifySearchOptions, userConfig: Configura
     };
 }
 
-export function spotifySearchTool(userConfig: Configuration) {
+export function spotifySearchTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-search",
         description: "Spotify search. Useful for when you need to search for music or podcasts.",

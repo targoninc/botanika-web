@@ -71,7 +71,7 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
     [BotanikaFeature.OpenRouter]: [
         apiKeyConfig,
     ],
-    [BotanikaFeature.Spotify]: [
+    /*[BotanikaFeature.Spotify]: [
         {
             key: "clientId",
             icon: "key",
@@ -92,5 +92,5 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
                 return [];
             }
         },
-    ]
+    ]*/
 };

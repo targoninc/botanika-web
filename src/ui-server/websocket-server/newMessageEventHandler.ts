@@ -1,7 +1,7 @@
 import {LlmProvider} from "src/models/llms/llmProvider.ts";
 import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/newMessageEventData.ts";
-import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
+import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../../api/ai/llms/models.ts";
 import {getConfig} from "../../api/configuration.ts";
 import {CLI} from "../../api/CLI.ts";
@@ -17,13 +17,13 @@ import {ChatContext} from "../../models/chat/ChatContext.ts";
 import {getMcpTools} from "../../api/ai/initializer.ts";
 import {ModelCapability} from "../../models/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../../api/ai/tools/servers/allTools.ts";
-import { ModelDefinition } from "src/models/llms/ModelDefinition.ts";
+import {ModelDefinition} from "src/models/llms/ModelDefinition.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessageNew} from "../../api/ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
-import {ChatStorageNew} from "../../api/storage/ChatStorageNew.ts";
+import {ChatStorage} from "../../api/storage/ChatStorage.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
@@ -52,7 +52,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
         chat = await createNewChat(ws, request, model);
     } else {
         CLI.debug(`Getting existing chat`);
-        chat = await ChatStorageNew.readChatContext(ws.userId, request.chatId);
+        chat = await ChatStorage.readChatContext(ws.userId, request.chatId);
         if (!chat) {
             throw new Error("Chat not found");
         }
@@ -67,12 +67,12 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
     return chat;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     const mcpInfo = await getMcpTools();
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig);
+    const builtInTools = getBuiltInTools(userConfig, ws, chatId);
     return {
         mcpInfo,
         tools: Object.assign(builtInTools, mcpInfo.tools) as ToolSet
@@ -125,7 +125,12 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
     const chat = await getOrCreateChat(ws, request, model);
-    const toolInfo = await getTools(modelDefinition, userConfig);
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat.id);
+
+    /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
+        sendWarning(ws, `Model ${request.model} might not support tool calls`);
+        toolInfo.tools = {};
+    }*/
 
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig);
@@ -147,5 +152,5 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     await streamPromise;
     toolInfo.mcpInfo.onClose();
 
-    await ChatStorageNew.writeChatContext(ws.userId, chat);
+    await ChatStorage.writeChatContext(ws.userId, chat);
 }

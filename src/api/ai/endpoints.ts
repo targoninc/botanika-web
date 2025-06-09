@@ -3,12 +3,11 @@ import {ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {ChatContext} from "../../models/chat/ChatContext";
-import {ChatStorage} from "../storage/ChatStorage";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
 import {signal} from "@targoninc/jess";
 import {sendChatUpdate, WebsocketConnection} from "../../ui-server/websocket-server/websocket.ts";
-import {ChatStorageNew} from "../storage/ChatStorageNew.ts";
+import {ChatStorage} from "../storage/ChatStorage.ts";
 
 export const currentChatContext = signal<ChatContext>(null);
 
@@ -39,7 +38,7 @@ export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, 
 }
 
 export async function getChatIdsEndpoint(req: Request, res: Response) {
-    const chats = await ChatStorageNew.getUserChats(req.user.id);
+    const chats = await ChatStorage.getUserChats(req.user.id);
     res.send(chats);
 }
 
@@ -50,7 +49,7 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorageNew.readChatContext(req.user.id, chatId).then(chatContext => {
+    ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
         if (!chatContext) {
             res.status(404).send('Chat not found');
             return;
@@ -66,7 +65,7 @@ export function deleteChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorageNew.deleteChatContext(req.user.id, chatId).then(() => {
+    ChatStorage.deleteChatContext(req.user.id, chatId).then(() => {
         res.status(200).send('Chat deleted');
     });
 }
@@ -87,10 +86,10 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
         res.status(400).send('Missing chatId or messageId parameter');
     }
 
-    ChatStorage.readChatContext(chatId).then(async c => {
+    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
         const messageIndex = c.history.map(m => m.id).indexOf(messageId);
         c.history.splice(messageIndex);
-        await ChatStorage.writeChatContext(chatId, c);
+        await ChatStorage.writeChatContext(req.user.id, c);
         res.status(200).send();
     });
 }

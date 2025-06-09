@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
 import { Configuration } from "src/models/Configuration";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function pause(userConfig: Configuration, deviceId: string): Promise<void> {
     const api = await createClient(userConfig);
@@ -32,7 +33,7 @@ async function pauseToolCall(input: SpotifyPauseOptions, userConfig: Configurati
     };
 }
 
-export function spotifyPauseTool(userConfig: Configuration) {
+export function spotifyPauseTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-pause",
         description: "Pause Spotify playback.",
