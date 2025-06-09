@@ -4,6 +4,8 @@ import * as path from "path";
 import {CLI} from "../api/CLI.ts";
 import {apiServer} from "../api/api-server.ts";
 import express, {Application} from "express";
+import {addWebsocketServer} from "./websocket-server/websocket.ts";
+import http from "http";
 
 config();
 
@@ -35,6 +37,8 @@ export const app = express();
     app.use(express.static(dir));
 });
 
+export const userWebsocketMap = new Map();
+
 apiServer(app).then((app: Application) => {
     CLI.success(`API started!`);
 
@@ -48,7 +52,11 @@ apiServer(app).then((app: Application) => {
         }
     });
 
-    app.listen(port, () => {
+    const server = http.createServer(app);
+    addWebsocketServer(server);
+
+    server.listen(port, () => {
         console.log(`Server started: http://localhost:${port}`);
+        console.log(`WebSocket server available at: ws://localhost:${port}/ws`);
     });
 });
