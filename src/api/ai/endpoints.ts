@@ -1,190 +1,16 @@
 import {Application, Request, Response} from "express";
 import {ChatMessage} from "../../models/chat/ChatMessage";
-import {getAvailableModels, getModel, initializeLlms} from "./llms/models";
-import {ChatUpdate} from "../../models/chat/ChatUpdate";
-import {terminator} from "../../models/chat/terminator";
+import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
-import {createChat, getPromptMessages, getWorldContext, newAssistantMessage, newUserMessage} from "./llms/messages";
 import {ChatContext} from "../../models/chat/ChatContext";
 import {ChatStorage} from "../storage/ChatStorage";
-import {getMcpTools} from "./initializer";
-import {CLI} from "../CLI";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {getConfig} from "../configuration";
-import {getSimpleResponse, streamResponseAsMessage} from "./llms/calls";
-import {LanguageModelV1, StepResult, ToolSet} from "ai";
-import {Signal, signal} from "@targoninc/jess";
-import {ModelCapability} from "../../models/llms/ModelCapability";
-import {updateContext} from "../updateContext.ts";
-import {getBuiltInTools} from "./tools/servers/allTools.ts";
-import {Configuration} from "../../models/Configuration.ts";
+import {signal} from "@targoninc/jess";
 import {sendChatUpdate, WebsocketConnection} from "../../ui-server/websocket-server/websocket.ts";
 import {ChatStorageNew} from "../storage/ChatStorageNew.ts";
 
 export const currentChatContext = signal<ChatContext>(null);
-
-export function chunk(content: string) {
-    return `${content}${terminator}`;
-}
-
-export async function sendMessages(messages: ChatMessage[], chatContext: ChatContext, res: Response) {
-    const update = <ChatUpdate>{
-        chatId: chatContext.id,
-        timestamp: Date.now(),
-        messages: messages
-    };
-    res.write(chunk(JSON.stringify(update)));
-    chatContext = updateContext(chatContext, update);
-    return chatContext;
-}
-
-async function afterMessageFinished(m: ChatMessage, chatContext: ChatContext, res: Response) {
-    m.time = Date.now();
-    chatContext = await sendMessages([m], chatContext, res);
-    // TODO: Check if tts is enabled
-    if (false && m.text.length > 0) {
-        chatContext = await sendAudioAndStop(chatContext, m, res);
-    } else {
-        res.end();
-    }
-    return chatContext;
-}
-
-function sendError(chatId: string, e: string, res: Response) {
-    const update = <ChatUpdate>{
-        chatId,
-        timestamp: Date.now(),
-        error: e
-    };
-    res.write(chunk(JSON.stringify(update)));
-    res.end();
-}
-
-function onContextChange(res: Response, chatContext: ChatContext) {
-    return async (c: ChatContext, changed: boolean) => {
-        if (changed) {
-            chatContext = await sendMessages([...c.history], c, res);
-        }
-    };
-}
-
-async function processSteps(userConfig: Configuration,
-    streamResponse: {
-    message: Signal<ChatMessage>;
-    steps: Promise<Array<StepResult<ToolSet>>>
-}, maxSteps: number, model: LanguageModelV1, tools: ToolSet, chatContext: ChatContext, worldContext: Record<string, any>, provider: string, modelName: string, res: Response) {
-    const steps = await streamResponse.steps;
-    const toolResults = steps.flatMap(s => s.toolResults);
-    if (toolResults.length === maxSteps) {
-        const response = await getSimpleResponse(model, tools, getPromptMessages(chatContext.history, worldContext, userConfig));
-        const m = newAssistantMessage(response.text, provider, modelName);
-        chatContext = await afterMessageFinished(m, chatContext, res);
-    }
-    return chatContext;
-}
-
-export const chatEndpoint = async (req: Request, res: Response) => {
-    const message = req.body.message as string;
-    if (!message) {
-        res.status(400).send('Missing message parameter');
-        return;
-    }
-
-    //console.log(req.oidc.user);
-
-    const provider = req.body.provider ?? "groq";
-    const modelName = req.body.model ?? "llama-3.1-8b-instant";
-
-    const availableModels = await getAvailableModels(provider);
-    const modelDefinition = availableModels.find(m => m.id === modelName);
-    if (!modelDefinition) {
-        res.status(404).send('Model not found');
-        return;
-    }
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    const userConfig = await getConfig(req.user.id);
-    const model = getModel(provider, modelName, userConfig);
-
-    let chatId = req.body.chatId;
-    let chatContext: ChatContext;
-    if (!chatId) {
-        CLI.debug(`Creating chat`);
-        const chatMsg = newUserMessage(provider, modelName, message);
-        try {
-            chatContext = await createChat(req.user.id, model, chatMsg);
-        } catch (e) {
-            sendError(chatId, "An error occurred while creating the chat: " + e.toString(), res);
-            return;
-        }
-
-        res.write(chunk(JSON.stringify(<ChatUpdate>{
-            chatId,
-            timestamp: Date.now(),
-            messages: [chatMsg]
-        })));
-        chatId = chatContext.id;
-        CLI.debug(`Chat created`);
-    } else {
-        CLI.debug(`Getting existing chat`);
-        chatContext = await ChatStorage.readChatContext(chatId);
-        if (!chatContext) {
-            res.status(404).send('Chat not found');
-            return;
-        }
-
-        chatContext.history.push(newUserMessage(provider, modelName, message));
-        res.write(chunk(JSON.stringify(<ChatUpdate>{
-            chatId,
-            timestamp: Date.now(),
-            messages: chatContext.history
-        })));
-    }
-
-    try {
-        currentChatContext.value = chatContext;
-        const mcpInfo = await getMcpTools();
-        if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
-            mcpInfo.tools = {};
-        }
-        const builtInTools = getBuiltInTools(userConfig);
-        const tools = Object.assign(builtInTools, mcpInfo.tools);
-
-        const onChange = onContextChange(res, chatContext);
-        currentChatContext.subscribe(onChange);
-
-        const worldContext = getWorldContext();
-        const maxSteps = userConfig.maxSteps ?? 5;
-        const streamResponse = await streamResponseAsMessage(maxSteps, provider, modelName, model, tools, getPromptMessages(chatContext.history, worldContext, userConfig));
-
-        const streamPromise = new Promise<void>((resolve) => {
-            streamResponse.message.subscribe(async (m: ChatMessage) => {
-                chatContext = await sendMessages([m], chatContext, res);
-                if (m.finished) {
-                    chatContext = await afterMessageFinished(m, chatContext, res);
-                    resolve();
-                }
-            });
-        });
-
-        chatContext = await processSteps(userConfig, streamResponse, maxSteps, model, tools, chatContext, worldContext, provider, modelName, res);
-        await streamPromise;
-        currentChatContext.unsubscribe(onChange);
-        CLI.debug(`Closing MCP connections`);
-        mcpInfo.onClose();
-        await ChatStorage.writeChatContext(chatContext.id, chatContext);
-    } catch (e) {
-        sendError(chatId, "An error occurred while responding: " + e.toString(), res);
-    }
-
-    req.on('close', () => {
-        console.log(`Client disconnected from updates for chatId: ${chatId}`);
-        res.end();
-    });
-};
 
 export async function getAudio(lastMessage: ChatMessage): Promise<string> {
     if (lastMessage.type === "assistant") {
@@ -196,22 +22,7 @@ export async function getAudio(lastMessage: ChatMessage): Promise<string> {
     return null;
 }
 
-export async function sendAudioAndStop(chatContext: ChatContext, lastMessage: ChatMessage, res: Response) {
-    const audioUrl = await getAudio(lastMessage);
-    if (audioUrl) {
-        chatContext = await sendMessages([
-            {
-                ...lastMessage,
-                hasAudio: true
-            }
-        ], chatContext, res);
-    }
-
-    res.end();
-    return chatContext;
-}
-
-export async function sendAudioAndStopNew(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
+export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
         sendChatUpdate(ws, {
@@ -285,7 +96,6 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
 }
 
 export function addChatEndpoints(app: Application) {
-    app.post(ApiEndpoint.CHAT, chatEndpoint);
     app.get(`${ApiEndpoint.CHAT_BY_ID}:chatId`, getChatEndpoint);
     app.get(ApiEndpoint.CHATS, getChatIdsEndpoint);
     app.delete(`${ApiEndpoint.CHAT_BY_ID}:chatId`, deleteChatEndpoint);
