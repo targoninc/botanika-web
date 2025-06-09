@@ -1,5 +1,5 @@
 import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
-import {ChatMessage, MessageFile} from "../../../models/chat/ChatMessage";
+import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {CLI} from "../../CLI";
 import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
@@ -7,6 +7,7 @@ import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
 import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendError, WebsocketConnection} from "../../../ui-server/websocket-server/websocket.ts";
+import {MessageFile} from "../../../models/chat/MessageFile.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
     thoughts: string;

@@ -67,6 +67,7 @@ export type Database = {
         Row: {
           chat_id: string
           created_at: string
+          files: Json
           finished: boolean
           hasAudio: boolean
           id: string
@@ -79,6 +80,7 @@ export type Database = {
         Insert: {
           chat_id?: string
           created_at?: string
+          files?: Json
           finished?: boolean
           hasAudio?: boolean
           id?: string
@@ -91,6 +93,7 @@ export type Database = {
         Update: {
           chat_id?: string
           created_at?: string
+          files?: Json
           finished?: boolean
           hasAudio?: boolean
           id?: string

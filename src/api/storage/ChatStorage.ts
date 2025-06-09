@@ -5,6 +5,8 @@ import {CLI} from "../CLI";
 import {db} from "../database/supabase.ts";
 import {Tables} from "../../models/supabaseDefinitions.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
+import {ResourceReference} from "../../models/chat/ResourceReference.ts";
+import {MessageFile} from "../../models/chat/MessageFile.ts";
 
 export class ChatStorage {
     static async writeChatContext(userId: string, chat: ChatContext) {
@@ -70,8 +72,8 @@ export class ChatStorage {
                     type: m.type,
                     provider: m.provider,
                     hasAudio: m.hasAudio,
-                    references: m.references,
-                    files: m.files,
+                    references: m.references as ResourceReference[],
+                    files: m.files as MessageFile[],
                 };
             })
         }
