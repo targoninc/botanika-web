@@ -77,14 +77,20 @@ export function initializeStore() {
 
 export function loadChats() {
     chats.value = [];
-    Api.getChatIds().then(async chatIds => {
-        if (!chatIds.success) {
+    Api.getChats().then(async newChats => {
+        if (!newChats.success) {
             return;
         }
-        for (const chatId of chatIds.data) {
-            const chatContext = await Api.getChat(chatId);
+
+        const data = newChats.data as ChatContext[];
+        chats.value = data;
+        for (const chat of data) {
+            const chatContext = await Api.getChat(chat.id);
             if (chatContext.success) {
-                chats.value = [...chats.value, chatContext.data as ChatContext].sort((a, b) => b.createdAt - a.createdAt);
+                chats.value = [
+                    ...chats.value,
+                    chatContext.data as ChatContext
+                ].sort((a, b) => b.createdAt - a.createdAt);
             }
         }
     });
