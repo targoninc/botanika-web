@@ -1,5 +1,6 @@
 import { toast } from "./ui";
 import { ToastType } from "../enums/ToastType";
+import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
 
 export class Realtime {
     private static instance: Realtime;
@@ -27,17 +28,26 @@ export class Realtime {
     /**
      * Connect to the WebSocket server
      */
-    private connect(): void {
+    private async connect(): Promise<void> {
         if (this.socket || this.isConnecting) return;
-
         this.isConnecting = true;
-        const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
-        
-        console.log(`Connecting to WebSocket server at ${wsUrl}`);
-        
+
         try {
+            // First get the authentication token
+            const tokenResponse = await fetch(ApiEndpoint.WS_TOKEN);
+            if (!tokenResponse.ok) {
+                throw new Error('Failed to get WebSocket token');
+            }
+
+            const { token } = await tokenResponse.json();
+
+            // Use the token in the WebSocket URL
+            const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${token}`;
+
+            console.log(`Connecting to WebSocket server at ${wsUrl}`);
+
             this.socket = new WebSocket(wsUrl);
-            
+
             this.socket.onopen = this.handleOpen.bind(this);
             this.socket.onmessage = this.handleMessage.bind(this);
             this.socket.onerror = this.handleError.bind(this);
@@ -105,7 +115,7 @@ export class Realtime {
 
         const delay = this.calculateReconnectDelay();
         console.log(`Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-        
+
         this.reconnectTimer = window.setTimeout(() => {
             this.reconnectAttempts++;
             this.connect();

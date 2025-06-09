@@ -38,6 +38,7 @@ export const app = express();
 });
 
 export const userWebsocketMap = new Map();
+export const userWebsocketReverseMap = new Map();
 
 apiServer(app).then((app: Application) => {
     CLI.success(`API started!`);
