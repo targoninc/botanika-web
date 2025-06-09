@@ -3,20 +3,27 @@ import {WebSocketServer} from "ws";
 import {CLI} from "../../api/CLI.ts";
 import {userWebsocketMap} from "../ui-server.ts";
 import {URL} from "url";
-import {BotanikaEvent} from "../../models/websocket/botanikaEvent.ts";
+import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
 import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
+import {BotanikaServerEvent} from "../../models/websocket/botanikaServerEvent.ts";
+import {BotanikaServerEventType} from "../../models/websocket/botanikaServerEventType.ts";
 
-function handleMessage(message: BotanikaEvent<any>) {
+function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
+    ws.send(JSON.stringify(message));
+}
+
+function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
+    console.log(message.type);
+
     switch (message.type) {
         case BotanikaEventType.message:
-            break;
-        case BotanikaEventType.chatUpdate:
-            break;
-        case BotanikaEventType.error:
-            CLI.error(`Error from user: ${JSON.stringify(message.data)}`);
-            break;
-        case BotanikaEventType.log:
-            CLI.log(`Log from user: ${JSON.stringify(message.data)}`);
+            // TODO: handle chat message
+            /*send(ws, {
+                type: BotanikaServerEventType.chatUpdate,
+                data: {
+                    info: "Message received: " + JSON.stringify(message),
+                }
+            });*/
             break;
     }
 }
@@ -44,9 +51,10 @@ export function addWebsocketServer(server: Server) {
 
         ws.userId = userId;
 
-        ws.on('message', (message: BotanikaEvent<any>) => {
+        ws.on('message', (msg: string) => {
+            const message = JSON.parse(msg);
             CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
-            handleMessage(message);
+            handleMessage(message, ws);
         });
 
         ws.on('close', () => {
