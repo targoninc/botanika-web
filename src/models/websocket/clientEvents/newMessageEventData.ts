@@ -1,4 +1,4 @@
-import {LlmProvider} from "../llms/llmProvider.ts";
+import {LlmProvider} from "../../llms/llmProvider.ts";
 
 export interface NewMessageEventData {
     message: string;

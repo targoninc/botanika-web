@@ -3,14 +3,14 @@ import {WebSocketServer} from "ws";
 import {CLI} from "../../api/CLI.ts";
 import {userWebsocketMap} from "../ui-server.ts";
 import {URL} from "url";
-import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
-import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
-import {BotanikaServerEvent} from "../../models/websocket/botanikaServerEvent.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
+import {BotanikaServerEvent} from "../../models/websocket/serverEvents/botanikaServerEvent.ts";
 import {newMessageEventHandler} from "./newMessageEventHandler.ts";
-import {BotanikaServerEventType} from "../../models/websocket/botanikaServerEventType.ts";
-import {ServerErrorEvent} from "./serverErrorEvent.ts";
+import {BotanikaServerEventType} from "../../models/websocket/serverEvents/botanikaServerEventType.ts";
+import {ServerErrorEvent} from "../../models/websocket/serverEvents/serverErrorEvent.ts";
 import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
-import {ServerWarningEvent} from "./serverWarningEvent.ts";
+import {ServerWarningEvent} from "../../models/websocket/serverEvents/serverWarningEvent.ts";
 
 export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
     ws.send(JSON.stringify(message));
@@ -47,7 +47,7 @@ async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketCon
     console.log(message.type);
 
     switch (message.type) {
-        case BotanikaEventType.message:
+        case BotanikaClientEventType.message:
             await newMessageEventHandler(ws, message);
             break;
     }

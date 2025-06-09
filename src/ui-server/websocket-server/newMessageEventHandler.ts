@@ -1,6 +1,6 @@
 import {LlmProvider} from "src/models/llms/llmProvider.ts";
-import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
-import {NewMessageEventData} from "../../models/websocket/newMessageEventData.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../../api/ai/llms/models.ts";
 import {getConfig} from "../../api/configuration.ts";
@@ -24,13 +24,21 @@ import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatStorage} from "../../api/storage/ChatStorage.ts";
+import {v4 as uuidv4} from "uuid";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
+    const chatId = uuidv4();
     const chatMsg = newUserMessage(request.provider, request.model, request.message);
+    sendChatUpdate(ws, {
+        chatId: chatId,
+        timestamp: Date.now(),
+        messages: [chatMsg]
+    });
+
     let chat: ChatContext;
     try {
-        chat = await createChat(ws.userId, model, chatMsg);
+        chat = await createChat(ws.userId, model, chatMsg, chatId);
     } catch (e) {
         throw new Error("An error occurred while creating the chat", {
             cause: e
@@ -38,10 +46,11 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     }
 
     sendChatUpdate(ws, {
-        chatId: chat.id,
+        chatId: chatId,
         timestamp: Date.now(),
-        messages: [chatMsg]
+        name: chat.name
     });
+
     CLI.debug(`Chat created for user ${ws.userId}`);
     return chat;
 }

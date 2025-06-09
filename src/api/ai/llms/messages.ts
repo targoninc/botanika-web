@@ -39,8 +39,7 @@ export function newAssistantMessage(responseText: string, provider: string, mode
     };
 }
 
-export async function createChat(userId: string, model: LanguageModelV1, newMessage: ChatMessage): Promise<ChatContext> {
-    const chatId = uuidv4();
+export async function createChat(userId: string, model: LanguageModelV1, newMessage: ChatMessage, chatId: string): Promise<ChatContext> {
     // create chat
     const chatContext = <ChatContext>{
         id: chatId,

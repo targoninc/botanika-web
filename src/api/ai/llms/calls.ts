@@ -5,7 +5,7 @@ import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
-import {NewMessageEventData} from "../../../models/websocket/newMessageEventData.ts";
+import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendError, WebsocketConnection} from "../../../ui-server/websocket-server/websocket.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
