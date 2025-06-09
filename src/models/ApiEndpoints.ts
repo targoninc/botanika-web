@@ -4,6 +4,7 @@
  */
 export enum ApiEndpoint {
     // User endpoints
+    WS_TOKEN = "/api/ws-token",
     GET_USER = "/user/get",
 
     // Configuration endpoints

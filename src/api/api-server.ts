@@ -17,10 +17,10 @@ export async function apiServer(app: Application) {
         optionsSuccessStatus: 204,
     }));
 
-    app.use((req, res, next) => {
+    /*app.use((req, res, next) => {
         console.log(req.path);
         next();
-    });
+    });*/
 
     app.use(auth({
         authRequired: true,
