@@ -68,7 +68,6 @@ export function initializeStore() {
 
     Api.getUser().then(r => {
         if (r.success) {
-            console.log(r.data);
             currentUser.value = r.data as Tables<"users">;
         }
     });

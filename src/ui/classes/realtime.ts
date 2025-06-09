@@ -1,6 +1,10 @@
-import { toast } from "./ui";
-import { ToastType } from "../enums/ToastType";
+import {toast} from "./ui";
+import {ToastType} from "../enums/ToastType";
 import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
+import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
+import {handleMessage} from "./handleMessage.ts";
+import {BotanikaServerEvent} from "../../models/websocket/botanikaServerEvent.ts";
+import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
 
 export class Realtime {
     private static instance: Realtime;
@@ -74,8 +78,9 @@ export class Realtime {
      */
     private handleMessage(event: MessageEvent): void {
         try {
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(event.data) as BotanikaServerEvent<any>;
             console.log('Received WebSocket message:', data);
+            handleMessage(data);
         } catch (error) {
             console.error('Error parsing WebSocket message:', error, event.data);
         }
@@ -136,7 +141,7 @@ export class Realtime {
     /**
      * Send a message to the WebSocket server
      */
-    public send(data: any): boolean {
+    public send(data: BotanikaClientEvent<any>): boolean {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.error('Cannot send message: WebSocket is not connected');
             return false;
