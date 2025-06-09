@@ -1,5 +1,6 @@
 import {ResourceReference} from "./ResourceReference";
-import {GeneratedFile, ToolResultUnion, ToolSet} from "ai";
+import {ToolResultUnion, ToolSet} from "ai";
+import {MessageFile} from "./MessageFile.ts";
 
 export interface ChatMessage {
     type: "system" | "user" | "assistant" | "tool";
@@ -15,7 +16,3 @@ export interface ChatMessage {
     model?: string;
 }
 
-export interface MessageFile {
-    base64: string;
-    mimeType: string;
-}

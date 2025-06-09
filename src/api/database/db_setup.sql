@@ -49,18 +49,20 @@ grant delete, insert, references, select, trigger, truncate, update on public.ch
 
 create table if not exists public.messages
 (
-    id         uuid                     default gen_random_uuid() not null
+    id           uuid                     default gen_random_uuid() not null
         primary key,
-    chat_id    uuid                     default gen_random_uuid() not null
+    chat_id      uuid                     default gen_random_uuid() not null
         references public.chats
             on update cascade on delete cascade,
-    type       "MessageType"                                      not null,
-    text       text,
-    finished   boolean                  default false             not null,
-    "hasAudio" boolean                  default false             not null,
-    provider   text,
-    model      text,
-    created_at timestamp with time zone default now()             not null
+    type         "MessageType"                                      not null,
+    text         text,
+    finished     boolean                  default false             not null,
+    "hasAudio"   boolean                  default false             not null,
+    provider     text,
+    model        text,
+    created_at   timestamp with time zone default now()             not null,
+    "references" json                     default '[]'::json        not null,
+    files        json                     default '[]'::json        not null
 );
 
 alter table public.messages
