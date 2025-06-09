@@ -114,6 +114,7 @@ export type Database = {
           external_id: string
           id: string
           isAdmin: boolean
+          shortcuts: Json
         }
         Insert: {
           configuration?: Json
@@ -121,6 +122,7 @@ export type Database = {
           external_id: string
           id?: string
           isAdmin?: boolean
+          shortcuts?: Json
         }
         Update: {
           configuration?: Json
@@ -128,6 +130,7 @@ export type Database = {
           external_id?: string
           id?: string
           isAdmin?: boolean
+          shortcuts?: Json
         }
         Relationships: []
       }

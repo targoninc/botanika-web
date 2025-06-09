@@ -8,13 +8,14 @@ alter type public."Language" owner to postgres;
 
 create table if not exists public.users
 (
-    id            uuid                     default gen_random_uuid() not null
+    id            uuid                     default gen_random_uuid()                                                    not null
         primary key,
-    external_id   text                                               not null
+    external_id   text                                                                                                  not null
         unique,
-    created_at    timestamp with time zone default now()             not null,
-    "isAdmin"     boolean                  default false             not null,
-    configuration json                     default '{}'::json        not null
+    created_at    timestamp with time zone default now()                                                                not null,
+    "isAdmin"     boolean                  default false                                                                not null,
+    configuration json                     default '{}'::json                                                           not null,
+    shortcuts     json                     default '{   "newChat": "n",   "settings": "s",   "focusInput": " " }'::json not null
 );
 
 alter table public.users
