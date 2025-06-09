@@ -88,8 +88,12 @@ export function loadChats() {
             const chatContext = await Api.getChat(chat.id);
             if (chatContext.success) {
                 chats.value = [
-                    ...chats.value,
-                    chatContext.data as ChatContext
+                    ...chats.value.map(c => {
+                        if (c.id === chat.id) {
+                            return chatContext.data as ChatContext;
+                        }
+                        return c;
+                    }),
                 ].sort((a, b) => b.createdAt - a.createdAt);
             }
         }
