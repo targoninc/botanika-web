@@ -290,6 +290,7 @@ export class ChatTemplates {
         input.subscribe(() => {
             updateInputHeight();
         });
+        const voiceConfigured = compute(c => c && c.featureOptions && !!c.featureOptions[BotanikaFeature.OpenAI].transcriptionModel, configuration);
 
         return create("div")
             .classes("chat-input", "flex-v", "small-gap")
@@ -325,7 +326,7 @@ export class ChatTemplates {
                     .classes("flex", "space-between")
                     .children(
                         ChatTemplates.llmSelector(),
-                        AudioTemplates.voiceButton(),
+                        when(voiceConfigured, AudioTemplates.voiceButton()),
                     ).build(),
             ).build();
     }
