@@ -21,7 +21,7 @@ import { ModelDefinition } from "src/models/llms/ModelDefinition.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessageNew} from "../../api/ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {sendAudioAndStopNew} from "../../api/ai/endpoints.ts";
+import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatStorageNew} from "../../api/storage/ChatStorageNew.ts";
 
@@ -88,7 +88,7 @@ async function finishMessage(m: ChatMessage, ws: WebsocketConnection, chat: Chat
             messages: [m]
         });
         if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStopNew(ws, chat.id, m);
+            await sendAudioAndStop(ws, chat.id, m);
         }
     }
 }
@@ -122,7 +122,6 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
         throw new Error(`Model ${request.model} not found in provider ${request.provider}`);
     }
 
-    console.log(ws.userId);
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
     const chat = await getOrCreateChat(ws, request, model);

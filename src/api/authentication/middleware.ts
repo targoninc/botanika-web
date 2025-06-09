@@ -61,7 +61,7 @@ export function addUserMiddleware(app: Application) {
 
 export function addUserEndpoints(app: Application) {
     app.get(ApiEndpoint.GET_USER, async (req: Request, res: Response) => {
-        return res.json({
+        res.json({
             ...req.user,
             ...req.oidc.user
         });
@@ -69,10 +69,11 @@ export function addUserEndpoints(app: Application) {
 
     app.get(ApiEndpoint.WS_TOKEN, (req: Request, res: Response) => {
         if (!req.oidc?.user) {
-            return res.status(401).json({ error: 'Not authenticated' });
+            res.status(401).json({ error: 'Not authenticated' });
+            return;
         }
 
         const token = getWebsocketId(req.user.id);
-        return res.json({ token });
+        res.json({ token });
     });
 }
