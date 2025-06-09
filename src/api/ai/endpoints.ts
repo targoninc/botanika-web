@@ -114,7 +114,7 @@ export const chatEndpoint = async (req: Request, res: Response) => {
         CLI.debug(`Creating chat`);
         const chatMsg = newUserMessage(provider, modelName, message);
         try {
-            chatContext = await createChat(model, chatMsg);
+            chatContext = await createChat(req.user.id, model, chatMsg);
         } catch (e) {
             sendError(chatId, "An error occurred while creating the chat: " + e.toString(), res);
             return;

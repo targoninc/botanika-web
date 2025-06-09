@@ -12,7 +12,6 @@ import {
     newAssistantMessage,
     newUserMessage
 } from "../../api/ai/llms/messages.ts";
-import {ChatStorage} from "../../api/storage/ChatStorage.ts";
 import {LanguageModelV1, StepResult, ToolSet} from "ai";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
 import {getMcpTools} from "../../api/ai/initializer.ts";
@@ -22,16 +21,16 @@ import { ModelDefinition } from "src/models/llms/ModelDefinition.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessageNew} from "../../api/ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {sendAudioAndStop, sendAudioAndStopNew, sendMessages} from "../../api/ai/endpoints.ts";
+import {sendAudioAndStopNew} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
-import {Response} from "express";
+import {ChatStorageNew} from "../../api/storage/ChatStorageNew.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatMsg = newUserMessage(request.provider, request.model, request.message);
     let chat: ChatContext;
     try {
-        chat = await createChat(model, chatMsg);
+        chat = await createChat(ws.userId, model, chatMsg);
     } catch (e) {
         throw new Error("An error occurred while creating the chat", {
             cause: e
@@ -53,7 +52,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
         chat = await createNewChat(ws, request, model);
     } else {
         CLI.debug(`Getting existing chat`);
-        chat = await ChatStorage.readChatContext(request.chatId);
+        chat = await ChatStorageNew.readChatContext(ws.userId, request.chatId);
         if (!chat) {
             throw new Error("Chat not found");
         }
@@ -148,5 +147,5 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     await streamPromise;
     toolInfo.mcpInfo.onClose();
 
-    await ChatStorage.writeChatContext(chat.id, chat);
+    await ChatStorageNew.writeChatContext(ws.userId, chat);
 }

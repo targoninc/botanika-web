@@ -5,6 +5,7 @@ import {CoreMessage, LanguageModelV1} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
+import {ChatStorageNew} from "../../storage/ChatStorageNew.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -39,7 +40,7 @@ export function newAssistantMessage(responseText: string, provider: string, mode
     };
 }
 
-export async function createChat(model: LanguageModelV1, newMessage: ChatMessage): Promise<ChatContext> {
+export async function createChat(userId: string, model: LanguageModelV1, newMessage: ChatMessage): Promise<ChatContext> {
     const chatId = uuidv4();
     // create chat
     const chatContext = <ChatContext>{
@@ -48,7 +49,7 @@ export async function createChat(model: LanguageModelV1, newMessage: ChatMessage
         name: await getChatName(model, newMessage.text),
         history: [newMessage]
     };
-    ChatStorage.writeChatContext(chatId, chatContext).then();
+    ChatStorageNew.writeChatContext(userId, chatContext).then();
 
     return chatContext;
 }
