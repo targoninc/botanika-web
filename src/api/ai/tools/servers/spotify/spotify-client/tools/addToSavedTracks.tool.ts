@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import { Configuration } from "src/models/Configuration";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function addToSavedTracks(userConfig: Configuration, trackIds: string[]): Promise<SpotifyApi.SaveTracksForUserResponse> {
     const api = await createClient(userConfig);
@@ -28,7 +29,7 @@ async function addToSavedTracksToolCall(input: any, userConfig: Configuration) {
     };
 }
 
-export function spotifyAddToSavedTracksTool(userConfig: Configuration) {
+export function spotifyAddToSavedTracksTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-addToSavedTracks",
         description: "Add a list of Spotify tracks to the library",

@@ -10,19 +10,30 @@ import {spotifyAddToSavedTracksTool} from "./spotify/spotify-client/tools/addToS
 import {spotifyGetArtistTopTracksTool} from "./spotify/spotify-client/tools/getArtistTopTracks.tool.ts";
 import {Configuration} from "../../../../models/Configuration.ts";
 import {spotifyAddToSavedAlbumsTool} from "./spotify/spotify-client/tools/addToSavedAlbums.tool.ts";
+import {WebsocketConnection} from "src/ui-server/websocket-server/websocket.ts";
+import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 
-export function getBuiltInTools(userConfig: Configuration) {
-    return [
-        googleSearchTool(userConfig),
-        spotifyAddToSavedAlbumsTool(userConfig),
-        spotifySearchTool(userConfig),
-        spotifyGetDevicesTool(userConfig),
-        spotifyPlayTool(userConfig),
-        spotifyPauseTool(userConfig),
-        spotifyGetCurrentPlaybackTool(userConfig),
-        spotifyGetProfileTool(userConfig),
-        spotifyAddToQueueTool(userConfig),
-        spotifyAddToSavedTracksTool(userConfig),
-        spotifyGetArtistTopTracksTool(userConfig),
-    ]
+export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
+    let tools = [];
+
+    if (userConfig.featureOptions[BotanikaFeature.GoogleSearch].apiKey && userConfig.featureOptions[BotanikaFeature.GoogleSearch].searchEngineId) {
+        tools.push(googleSearchTool(userConfig, ws, chatId));
+    }
+    
+    /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
+        tools = tools.concat(
+            spotifyAddToSavedAlbumsTool(userConfig, ws, chatId),
+            spotifySearchTool(userConfig, ws, chatId),
+            spotifyGetDevicesTool(userConfig, ws, chatId),
+            spotifyPlayTool(userConfig, ws, chatId),
+            spotifyPauseTool(userConfig, ws, chatId),
+            spotifyGetCurrentPlaybackTool(userConfig, ws, chatId),
+            spotifyGetProfileTool(userConfig, ws, chatId),
+            spotifyAddToQueueTool(userConfig, ws, chatId),
+            spotifyAddToSavedTracksTool(userConfig, ws, chatId),
+            spotifyGetArtistTopTracksTool(userConfig, ws, chatId),
+        );
+    }*/
+
+    return tools;
 }

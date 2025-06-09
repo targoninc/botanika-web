@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
 import {z} from "zod";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function getCurrentPlayback(userConfig: Configuration): Promise<SpotifyApi.CurrentPlaybackResponse> {
     const api = await createClient(userConfig);
@@ -34,7 +35,7 @@ async function getCurrentPlaybackToolCall(userConfig: Configuration) {
     };
 }
 
-export function spotifyGetCurrentPlaybackTool(userConfig: Configuration) {
+export function spotifyGetCurrentPlaybackTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-getCurrentPlayback",
         description: "Get what is currently playing on Spotify.",

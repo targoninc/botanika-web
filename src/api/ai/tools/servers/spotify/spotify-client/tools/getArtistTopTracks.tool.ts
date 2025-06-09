@@ -4,6 +4,7 @@ import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import {CLI} from "../../../../../../CLI";
 import { Configuration } from "src/models/Configuration";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function getArtistTopTracks(userConfig: Configuration, artistId: string, countryCode: string): Promise<SpotifyApi.ArtistsTopTracksResponse> {
     const api = await createClient(userConfig);
@@ -37,7 +38,7 @@ async function getArtistTopTracksToolCall(input: any, userConfig: Configuration)
     };
 }
 
-export function spotifyGetArtistTopTracksTool(userConfig: Configuration) {
+export function spotifyGetArtistTopTracksTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-getArtistTopTracks",
         description: "Get a list of Spotify top tracks for an artist",

@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
 import {z} from "zod";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function getProfile(userConfig: Configuration): Promise<SpotifyApi.CurrentUsersProfileResponse> {
     const api = await createClient(userConfig);
@@ -37,7 +38,7 @@ async function getProfileToolCall(userConfig: Configuration) {
     };
 }
 
-export function spotifyGetProfileTool(userConfig: Configuration) {
+export function spotifyGetProfileTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-getProfile",
         description: "Get Spotify profile of the current user.",

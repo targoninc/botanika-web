@@ -4,7 +4,7 @@ import {CoreMessage, LanguageModelV1} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
-import {ChatStorageNew} from "../../storage/ChatStorageNew.ts";
+import {ChatStorage} from "../../storage/ChatStorage.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -48,7 +48,7 @@ export async function createChat(userId: string, model: LanguageModelV1, newMess
         name: await getChatName(model, newMessage.text),
         history: [newMessage]
     };
-    ChatStorageNew.writeChatContext(userId, chatContext).then();
+    ChatStorage.writeChatContext(userId, chatContext).then();
 
     return chatContext;
 }

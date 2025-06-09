@@ -4,6 +4,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
 import {z} from "zod";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
 
 async function getDevices(userConfig: Configuration): Promise<SpotifyApi.UserDevicesResponse> {
     const api = await createClient(userConfig);
@@ -37,7 +38,7 @@ async function getDevicesToolCall(userConfig: Configuration) {
     };
 }
 
-export function spotifyGetDevicesTool(userConfig: Configuration) {
+export function spotifyGetDevicesTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-getDevices",
         description: "Get Spotify devices.",

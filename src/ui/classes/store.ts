@@ -118,10 +118,13 @@ export function target(e: Event) {
 }
 
 export async function processUpdate(update: ChatUpdate) {
-    updateContext(chatContext.value, update, chatContext);
+    const newChat = updateContext(chatContext.value, update, chatContext);
     const cs = chats.value;
     if (!cs.find(c => c.id === update.chatId)) {
-        await loadChat(update.chatId);
+        chats.value = [
+            ...chats.value,
+            newChat
+        ];
     } else {
         chats.value = chats.value.map(c => {
             if (c.id === update.chatId) {

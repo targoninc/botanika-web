@@ -3,6 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import {Configuration} from "../../../../../../../models/Configuration.ts";
+import { WebsocketConnection } from "src/ui-server/websocket-server/websocket.ts";
 
 async function addToSavedAlbums(userConfig: Configuration, albumIds: string[]): Promise<SpotifyApi.AddToQueueResponse> {
     const api = await createClient(userConfig);
@@ -29,13 +30,13 @@ async function addToSavedAlbumsToolCall(input: any, userConfig: Configuration) {
     };
 }
 
-export function spotifyAddToSavedAlbumsTool(userConfig: Configuration) {
+export function spotifyAddToSavedAlbumsTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
     return {
         id: "spotify-addToSavedAlbums",
         description: "Add a list of Spotify albums to the library",
         parameters: z.object({
             albumIds: z.array(z.string()).describe("List of Spotify album IDs")
         }),
-        execute: wrapTool("spotify-addToSavedAlbums", input => addToSavedAlbumsToolCall(input, userConfig)),
+        execute: wrapTool("spotify-addToSavedAlbums", input => addToSavedAlbumsToolCall(input, userConfig), ws, chatId),
     };
 }
