@@ -65,8 +65,8 @@ export class ChatStorageNew {
         }
     }
 
-    static async deleteChatContext(chatId: string) {
-        await db.from("chats").delete().eq("id", chatId);
+    static async deleteChatContext(userId: string, chatId: string) {
+        await db.from("chats").delete().eq("id", chatId).eq("user_id", userId);
     }
 
     static async getUserChats(userId: string) {

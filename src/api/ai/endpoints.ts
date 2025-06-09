@@ -255,7 +255,7 @@ export function deleteChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.deleteChatContext(chatId).then(() => {
+    ChatStorageNew.deleteChatContext(req.user.id, chatId).then(() => {
         res.status(200).send('Chat deleted');
     });
 }
