@@ -34,7 +34,8 @@ export class ChatStorage {
                 text: message.text,
                 type: message.type,
                 hasAudio: message.hasAudio,
-                references: message.references
+                references: message.references,
+                files: message.files
             });
         }
     }
@@ -70,7 +71,7 @@ export class ChatStorage {
                     provider: m.provider,
                     hasAudio: m.hasAudio,
                     references: m.references,
-                    files: [],
+                    files: m.files,
                 };
             })
         }
