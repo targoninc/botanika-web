@@ -15,19 +15,26 @@ export class ChatStorage {
             created_at: (new Date(chat.createdAt)).toISOString(),
         });
 
-        // Dirty upsert, i'm not awake enough to write this properly
-        await db.from("messages").delete().eq("chat_id", chat.id);
-        for (const message of chat.history) {
+        const existingMsgs = (await db.from("messages")
+            .select("id")
+            .eq("chat_id", chat.id)).data;
+        const toAddMsgs = chat.history.filter(hm => existingMsgs.every(m => m.id !== hm.id));
+        CLI.debug(`Inserting ${toAddMsgs.length} messages`);
+
+        for (const message of toAddMsgs) {
+            const date = (new Date(message.time)).toISOString();
+
             await db.from("messages").insert({
                 id: message.id,
                 chat_id: chat.id,
                 provider: message.provider,
                 model: message.model,
-                created_at: (new Date(message.time)).toISOString(),
+                created_at: date,
                 finished: message.finished,
                 text: message.text,
                 type: message.type,
                 hasAudio: message.hasAudio,
+                references: message.references
             });
         }
     }
@@ -62,7 +69,7 @@ export class ChatStorage {
                     type: m.type,
                     provider: m.provider,
                     hasAudio: m.hasAudio,
-                    references: [],
+                    references: m.references,
                     files: [],
                 };
             })

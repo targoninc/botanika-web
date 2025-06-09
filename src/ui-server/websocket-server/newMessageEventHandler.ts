@@ -76,12 +76,12 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
     return chat;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
     const mcpInfo = await getMcpTools();
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig, ws, chatId);
+    const builtInTools = getBuiltInTools(userConfig, ws, chat);
     return {
         mcpInfo,
         tools: Object.assign(builtInTools, mcpInfo.tools) as ToolSet
@@ -96,6 +96,7 @@ async function finishMessage(m: ChatMessage, ws: WebsocketConnection, chat: Chat
             timestamp: Date.now(),
             messages: [m]
         });
+        chat.history.push(m);
         if (userConfig.enableTts && m.text.length > 0) {
             await sendAudioAndStop(ws, chat.id, m);
         }
@@ -134,7 +135,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
     const chat = await getOrCreateChat(ws, request, model);
-    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat.id);
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
 
     /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         sendWarning(ws, `Model ${request.model} might not support tool calls`);

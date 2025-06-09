@@ -1,4 +1,4 @@
-export interface ResourceReference {
+export interface ResourceReference extends Record<string, any> {
     type: "resource-reference";
     name: string;
     link?: string;

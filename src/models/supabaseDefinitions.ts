@@ -72,6 +72,7 @@ export type Database = {
           id: string
           model: string | null
           provider: string | null
+          references: Json
           text: string | null
           type: Database["public"]["Enums"]["MessageType"]
         }
@@ -83,6 +84,7 @@ export type Database = {
           id?: string
           model?: string | null
           provider?: string | null
+          references?: Json
           text?: string | null
           type: Database["public"]["Enums"]["MessageType"]
         }
@@ -94,6 +96,7 @@ export type Database = {
           id?: string
           model?: string | null
           provider?: string | null
+          references?: Json
           text?: string | null
           type?: Database["public"]["Enums"]["MessageType"]
         }
