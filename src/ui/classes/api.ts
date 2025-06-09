@@ -33,8 +33,8 @@ export class Api extends ApiBase {
         });
     }
 
-    static getChatIds() {
-        return this.get<string[]>(ApiEndpoint.CHATS);
+    static getChats() {
+        return this.get<ChatContext[]>(ApiEndpoint.CHATS);
     }
 
     static getChat(chatId: string) {

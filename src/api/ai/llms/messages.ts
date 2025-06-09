@@ -1,6 +1,5 @@
 import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {ChatStorage} from "../../storage/ChatStorage";
 import {CoreMessage, LanguageModelV1} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";

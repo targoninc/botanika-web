@@ -70,6 +70,14 @@ export class ChatStorageNew {
     }
 
     static async getUserChats(userId: string) {
-        return (await db.from("chats").select("*").eq("user_id", userId)).data;
+        const chats = (await db.from("chats").select("*").eq("user_id", userId)).data;
+        return chats.map(c => {
+            return <ChatContext>{
+                id: c.id,
+                name: c.name,
+                createdAt: new Date(c.created_at).getTime(),
+                updatedAt: new Date(c.created_at).getTime(),
+            }
+        })
     }
 }
