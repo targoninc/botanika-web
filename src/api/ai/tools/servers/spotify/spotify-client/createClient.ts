@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import {CLI} from "../../../../../CLI";
-import { Configuration } from "src/models/Configuration.ts";
+import { Configuration } from "../../../../../../models/Configuration.ts";
 import {BotanikaFeature} from "../../../../../../models/features/BotanikaFeature.ts";
-import { app } from "src/ui-server/ui-server.ts";
+import { app } from "../../../../../../index.ts";
 
 const SpotifyWebApi = require("spotify-web-api-node");
 
