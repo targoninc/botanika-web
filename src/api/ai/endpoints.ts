@@ -19,6 +19,7 @@ import {ModelCapability} from "../../models/llms/ModelCapability";
 import {updateContext} from "../updateContext.ts";
 import {getBuiltInTools} from "./tools/servers/allTools.ts";
 import {Configuration} from "../../models/Configuration.ts";
+import {sendChatUpdate, WebsocketConnection} from "../../ui-server/websocket-server/websocket.ts";
 
 export const currentChatContext = signal<ChatContext>(null);
 
@@ -104,7 +105,7 @@ export const chatEndpoint = async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    const userConfig = await getConfig(req);
+    const userConfig = await getConfig(req.oidc.user.sub);
     const model = getModel(provider, modelName, userConfig);
 
     let chatId = req.body.chatId;
@@ -207,6 +208,22 @@ export async function sendAudioAndStop(chatContext: ChatContext, lastMessage: Ch
 
     res.end();
     return chatContext;
+}
+
+export async function sendAudioAndStopNew(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
+    const audioUrl = await getAudio(lastMessage);
+    if (audioUrl) {
+        sendChatUpdate(ws, {
+            chatId,
+            timestamp: Date.now(),
+            messages: [
+                {
+                    ...lastMessage,
+                    hasAudio: true
+                }
+            ]
+        })
+    }
 }
 
 export async function getChatIdsEndpoint(req: Request, res: Response) {

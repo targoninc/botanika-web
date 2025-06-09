@@ -6,24 +6,38 @@ import {URL} from "url";
 import {BotanikaClientEvent} from "../../models/websocket/botanikaClientEvent.ts";
 import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
 import {BotanikaServerEvent} from "../../models/websocket/botanikaServerEvent.ts";
+import {newMessageEventHandler} from "./newMessageEventHandler.ts";
 import {BotanikaServerEventType} from "../../models/websocket/botanikaServerEventType.ts";
+import {ServerErrorEvent} from "./serverErrorEvent.ts";
+import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 
-function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
+export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
     ws.send(JSON.stringify(message));
 }
 
-function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
+export function sendError(ws: WebsocketConnection, message: string) {
+    CLI.error(`Error in realtime: ${message}`);
+    send(ws, {
+        type: BotanikaServerEventType.error,
+        data: <ServerErrorEvent>{
+            error: message
+        }
+    });
+}
+
+export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
+    send(ws, {
+        type: BotanikaServerEventType.chatUpdate,
+        data: update
+    });
+}
+
+async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
     console.log(message.type);
 
     switch (message.type) {
         case BotanikaEventType.message:
-            // TODO: handle chat message
-            /*send(ws, {
-                type: BotanikaServerEventType.chatUpdate,
-                data: {
-                    info: "Message received: " + JSON.stringify(message),
-                }
-            });*/
+            await newMessageEventHandler(ws, message);
             break;
     }
 }
@@ -51,10 +65,14 @@ export function addWebsocketServer(server: Server) {
 
         ws.userId = userId;
 
-        ws.on('message', (msg: string) => {
+        ws.on('message', async (msg: string) => {
             const message = JSON.parse(msg);
             CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
-            handleMessage(message, ws);
+            try {
+                await handleMessage(message, ws);
+            } catch (e) {
+                sendError(ws, e);
+            }
         });
 
         ws.on('close', () => {
