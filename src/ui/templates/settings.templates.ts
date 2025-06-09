@@ -12,6 +12,7 @@ import {featureOptions} from "../../models/features/featureOptions";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
+import {ToastType} from "../enums/ToastType.ts";
 
 export class SettingsTemplates {
     static settings() {
@@ -115,7 +116,7 @@ export class SettingsTemplates {
 
     static setting(sc: SettingConfiguration, loading: Signal<boolean>, getter: (config: Configuration) => any, updateFunction: (config: Configuration, key: string, value: any) => Configuration) {
         const errors = signal<string[]>([]);
-        async function updateKey(key: string, value: any) {
+        async function updateKey(key: string, value: any, notifyOnChange = true) {
             if (sc.validator) {
                 const valErrors = sc.validator(value);
                 errors.value = valErrors;
@@ -127,10 +128,21 @@ export class SettingsTemplates {
             loading.value = true;
             configuration.value = updateFunction(configuration.value, key, value);
             await Api.setConfig(configuration.value);
+            if (notifyOnChange) {
+                toast("Configuration updated", null, ToastType.positive);
+            }
             loading.value = false;
         }
 
         const value = compute(c => getter(c) ?? null, configuration);
+        if (sc.type === "color") {
+            value.subscribe((val, changed) => {
+                if (!changed) {
+                    return;
+                }
+                updateKey(sc.key, val, false).then();
+            });
+        }
         const changed = compute((v, c) => v !== (getter(c) ?? null), value, configuration);
 
         return create("div")
@@ -370,6 +382,7 @@ export class SettingsTemplates {
                                                 Api.getMcpConfig().then(mcpConf => {
                                                     if (mcpConf.data) {
                                                         mcpConfig.value = mcpConf.data as McpConfiguration;
+                                                        toast("MCP config updated", null, ToastType.positive);
                                                     }
                                                 });
                                             });
@@ -457,6 +470,7 @@ export class SettingsTemplates {
                                         ...shortCutConfig.value,
                                         [action]: key.value
                                     };
+                                    toast("Shortcuts updated", null, ToastType.positive);
                                 }
                             })
                         ).build();
