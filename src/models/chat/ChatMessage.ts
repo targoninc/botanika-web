@@ -4,7 +4,7 @@ import {GeneratedFile, ToolResultUnion, ToolSet} from "ai";
 export interface ChatMessage {
     type: "system" | "user" | "assistant" | "tool";
     references: ResourceReference[];
-    files: GeneratedFile[];
+    files: MessageFile[];
     toolResult?: ToolResultUnion<ToolSet>;
     text: string;
     time: number;
@@ -13,4 +13,9 @@ export interface ChatMessage {
     hasAudio?: boolean;
     provider?: string;
     model?: string;
+}
+
+export interface MessageFile {
+    base64: string;
+    mimeType: string;
 }

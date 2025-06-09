@@ -6,7 +6,7 @@ A local LLM + tooling (with MCP support) client. All data is stored locally. Bri
 
 | Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App |
 |----------|-----|-----|-------------|-------------|-------------|---------|
-| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ❌       |
+| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       |
 | ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
 | Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
 | Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       |

@@ -19,7 +19,7 @@ import {ModelCapability} from "../../models/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../../api/ai/tools/servers/allTools.ts";
 import {ModelDefinition} from "src/models/llms/ModelDefinition.ts";
 import {Configuration} from "../../models/Configuration.ts";
-import {getSimpleResponse, streamResponseAsMessageNew} from "../../api/ai/llms/calls.ts";
+import {getSimpleResponse, streamResponseAsMessage} from "../../api/ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
@@ -145,7 +145,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessageNew(ws, maxSteps, request, model, toolInfo.tools, promptMessages);
+    const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages);
 
     const streamPromise = new Promise<void>((resolve) => {
         streamResponse.message.subscribe(async (m: ChatMessage) => {
