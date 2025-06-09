@@ -25,8 +25,15 @@ async function initializeConfig() {
 }
 
 export async function getConfig(userId: string) {
-    const shortCutConfig = await db.from("users").select("shortcuts").eq("id", userId);
-    return Object.assign(defaultShortcuts, shortCutConfig);
+    const shortCutConfig = (await db.from("users")
+        .select("shortcuts")
+        .eq("id", userId))
+        .data[0].shortcuts;
+    let out = {};
+    for (const key of Object.keys(defaultShortcuts)) {
+        out[key] = shortCutConfig[key] ?? defaultShortcuts[key];
+    }
+    return out;
 }
 
 export async function setConfig(userId: string, sc: ShortcutConfiguration) {
@@ -41,7 +48,7 @@ export function addShortcutEndpoints(app: Application) {
     initializeConfig().then();
 
     app.get(ApiEndpoint.SHORTCUT_CONFIG, async (req, res) => {
-        res.status(200).send(getConfig(req.user.id));
+        res.status(200).send(await getConfig(req.user.id));
     });
 
     app.post(ApiEndpoint.SHORTCUT_CONFIG, async (req, res) => {
