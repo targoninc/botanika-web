@@ -100,7 +100,7 @@ export class SettingsTemplates {
                                 GenericTemplates.user(),
                                 GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
                                     window.location.href = "/logout";
-                                }),
+                                }, ["negative"]),
                             ).build(),
                         GenericTemplates.heading(2, "General"),
                         ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
@@ -110,6 +110,7 @@ export class SettingsTemplates {
                         SettingsTemplates.shortcuts(),
                         SettingsTemplates.configuredFeatures(),
                         when(mcpConfig, SettingsTemplates.mcpConfig()),
+                        GenericTemplates.spacer()
                     ).build()
             ).build();
     }
@@ -136,11 +137,20 @@ export class SettingsTemplates {
 
         const value = compute(c => getter(c) ?? null, configuration);
         if (sc.type === "color") {
+            let debounceTimeout: number | null = null;
             value.subscribe((val, changed) => {
                 if (!changed) {
                     return;
                 }
-                updateKey(sc.key, val, false).then();
+
+                if (debounceTimeout) {
+                    clearTimeout(debounceTimeout);
+                }
+
+                debounceTimeout = setTimeout(() => {
+                    updateKey(sc.key, val, false).then();
+                    debounceTimeout = null;
+                }, 200);
             });
         }
         const changed = compute((v, c) => v !== (getter(c) ?? null), value, configuration);
@@ -444,7 +454,7 @@ export class SettingsTemplates {
                             create("b")
                                 .text(shortcutNames[action])
                                 .build(),
-                            GenericTemplates.hotkey("CTRL", true),
+                            GenericTemplates.hotkey("SHIFT", true),
                             create("span")
                                 .text("+")
                                 .build(),

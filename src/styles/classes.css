@@ -749,3 +749,14 @@ pre {
     height: var(--user-image-size);
     border-radius: 50%;
 }
+
+.spacer {
+    min-height: 50dvh;
+}
+
+.monospace {
+    font-family: monospace;
+    background: var(--bg);
+    padding: var(--input-padding-v) var(--input-padding-h);
+    border-radius: var(--input-border-radius);
+}

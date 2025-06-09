@@ -488,7 +488,17 @@ export class GenericTemplates {
                 GenericTemplates.icon(image, ["user-image"]),
                 create("span")
                     .text(compute(u => u?.nickname ?? u?.name ?? "Not logged in", currentUser))
-                    .build()
+                    .build(),
+                create("span")
+                    .classes("monospace")
+                    .text(compute(u => u?.external_id, currentUser))
+                    .build(),
             ).build();
+    }
+
+    static spacer() {
+        return create("div")
+            .classes("spacer")
+            .build();
     }
 }

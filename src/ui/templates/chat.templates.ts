@@ -304,7 +304,7 @@ export class ChatTemplates {
                             .id("chat-input-field")
                             .classes("flex-grow", "chat-input-field")
                             .styles("resize", "none")
-                            .placeholder(compute(c => `[Ctrl] + [${c.focusInput}] to focus`, shortCutConfig))
+                            .placeholder(compute(c => `[Shift] + [${c.focusInput}] to focus`, shortCutConfig))
                             .value(input)
                             .oninput((e: any) => {
                                 input.value = target(e).value;
