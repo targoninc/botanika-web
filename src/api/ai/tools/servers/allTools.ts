@@ -12,14 +12,15 @@ import {Configuration} from "../../../../models/Configuration.ts";
 import {spotifyAddToSavedAlbumsTool} from "./spotify/spotify-client/tools/addToSavedAlbums.tool.ts";
 import {WebsocketConnection} from "src/ui-server/websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
+import {ChatContext} from "../../../../models/chat/ChatContext.ts";
 
-export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
+export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
     let tools = [];
 
     if (userConfig.featureOptions[BotanikaFeature.GoogleSearch].apiKey && userConfig.featureOptions[BotanikaFeature.GoogleSearch].searchEngineId) {
-        tools.push(googleSearchTool(userConfig, ws, chatId));
+        tools.push(googleSearchTool(userConfig, ws, chat));
     }
-    
+
     /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
         tools = tools.concat(
             spotifyAddToSavedAlbumsTool(userConfig, ws, chatId),

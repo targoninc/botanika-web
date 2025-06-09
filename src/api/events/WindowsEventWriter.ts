@@ -14,7 +14,7 @@ if (process.platform === 'win32') {
 
 export class WindowsEventWriter extends EventWriter {
     static logEntry(eventType: 'Information' | 'Error' | 'Warning', message: string): void {
-        const cleanMessage = message.replaceAll("'", "''");
+        const cleanMessage = (message.toString()).replaceAll("'", "''");
         const cmd = `powershell.exe Write-EventLog -LogName Application -Source '${APP_NAME}' -EntryType ${eventType} -EventId ${EventType.Unknown} -Message '${cleanMessage}'`;
         exec(cmd);
     }

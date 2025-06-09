@@ -8,6 +8,7 @@ import {wrapTool} from "../../tooling.ts";
 import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts";
 import { Configuration } from "src/models/Configuration.ts";
 import { WebsocketConnection } from "src/ui-server/websocket-server/websocket.ts";
+import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
 
 dotenv.config();
 
@@ -52,13 +53,13 @@ async function toolCall(input: any, userConfig: Configuration) {
     };
 }
 
-export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
+export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
     return {
         id: "google-search-engine",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
         parameters: z.object({
             query: z.string().describe('The query to search for'),
         }),
-        execute: wrapTool("google-search-engine", input => toolCall(input, userConfig), ws, chatId),
+        execute: wrapTool("google-search-engine", input => toolCall(input, userConfig), ws, chat),
     };
 }
