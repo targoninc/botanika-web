@@ -10,8 +10,9 @@ import {db} from "./database/supabase.ts";
 export async function getConfig(userId: string): Promise<Configuration> {
     const config = await db.from("users")
         .select("configuration")
-        .eq("id", userId);
-    return config.data[0].configuration as Configuration;
+        .eq("id", userId)
+        .single();
+    return config.data.configuration as Configuration;
 }
 
 export async function setConfig(req: Request, newConfig: Configuration) {
