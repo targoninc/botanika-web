@@ -4,8 +4,8 @@ import {toast} from "../ui";
 import {chatContext, configuration, currentText, updateContextFromStream} from "../store";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
-import {BotanikaEventType} from "../../../models/websocket/botanikaEventType.ts";
-import {NewMessageEventData} from "../../../models/websocket/newMessageEventData.ts";
+import {BotanikaClientEventType} from "../../../models/websocket/clientEvents/botanikaClientEventType.ts";
+import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 
 export class VoiceRecorder {
     private readonly threshold = 0.015;
@@ -153,7 +153,7 @@ export class VoiceRecorder {
                     currentText.value = obj.text;
                     try {
                         realtime.send({
-                            type: BotanikaEventType.message,
+                            type: BotanikaClientEventType.message,
                             data: <NewMessageEventData>{
                                 chatId: chatContext.value.id,
                                 provider: config.provider,

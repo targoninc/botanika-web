@@ -13,6 +13,11 @@ export function updateContext(c: ChatContext, update: ChatUpdate, signal?: Signa
         c.id = update.chatId;
     }
 
+    if (c.name !== update.name && update.name) {
+        c.name = update.name;
+        c.createdAt = Date.now();
+    }
+
     if (!c.history) {
         c.history = [];
     }

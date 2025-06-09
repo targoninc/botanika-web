@@ -128,7 +128,7 @@ export async function processUpdate(update: ChatUpdate) {
     } else {
         chats.value = chats.value.map(c => {
             if (c.id === update.chatId) {
-                updateContext(c, update);
+                return updateContext(c, update);
             }
             return c;
         });
