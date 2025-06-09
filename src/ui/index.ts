@@ -1,7 +1,7 @@
 import {LayoutTemplates} from "./templates/layout.templates";
 import {activePage, initializeStore} from "./classes/store";
 import {addShortCutListener} from "./classes/shortcuts/shortcuts";
-import {Realtime} from "./classes/realtime";
+import {Realtime} from "./classes/realtime/realtime.ts";
 
 initializeStore();
 
@@ -10,4 +10,4 @@ const app = LayoutTemplates.app(activePage);
 content.appendChild(app);
 
 addShortCutListener();
-Realtime.getInstance();
+export const realtime = Realtime.getInstance();

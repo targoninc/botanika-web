@@ -30,6 +30,7 @@ async function upsertAndGetUser(req: Request) {
 
 function getWebsocketId(userId: string) {
     if (userWebsocketReverseMap.has(userId)) {
+        CLI.log(`Cached for ${userId}`);
         return userWebsocketReverseMap.get(userId);
     }
 
@@ -47,7 +48,7 @@ export function addUserMiddleware(app: Application) {
         if (req.oidc?.user) {
             if (!userMap.has(req.oidc.user.sub)) {
                 req.user = await upsertAndGetUser(req);
-                getWebsocketId(req.oidc.user.sub);
+                getWebsocketId(req.user.id);
                 userMap.set(req.oidc.user.sub, req.user);
             } else {
                 req.user = userMap.get(req.oidc.user.sub);
@@ -71,7 +72,7 @@ export function addUserEndpoints(app: Application) {
             return res.status(401).json({ error: 'Not authenticated' });
         }
 
-        const token = getWebsocketId(req.oidc.user.sub);
+        const token = getWebsocketId(req.user.id);
         return res.json({ token });
     });
 }

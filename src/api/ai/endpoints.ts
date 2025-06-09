@@ -106,7 +106,7 @@ export const chatEndpoint = async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    const userConfig = await getConfig(req.user.external_id);
+    const userConfig = await getConfig(req.user.id);
     const model = getModel(provider, modelName, userConfig);
 
     let chatId = req.body.chatId;
@@ -239,7 +239,7 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(chatId).then(chatContext => {
+    ChatStorageNew.readChatContext(req.user.id, chatId).then(chatContext => {
         if (!chatContext) {
             res.status(404).send('Chat not found');
             return;

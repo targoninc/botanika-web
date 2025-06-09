@@ -31,6 +31,9 @@ import {button} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
+import {realtime} from "../index.ts";
+import {BotanikaEventType} from "../../models/websocket/botanikaEventType.ts";
+import {NewMessageEventData} from "../../models/websocket/newMessageEventData.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -259,7 +262,15 @@ export class ChatTemplates {
         const model = compute(c => c.model, configuration);
         const send = () => {
             try {
-                Api.sendMessage(input.value, provider.value, model.value, chatId.value).then(updateContextFromStream);
+                realtime.send({
+                    type: BotanikaEventType.message,
+                    data: <NewMessageEventData>{
+                        chatId: chatId.value,
+                        provider: provider.value,
+                        model: model.value,
+                        message: input.value,
+                    }
+                });
             } catch (e) {
                 toast(e.toString());
             }
