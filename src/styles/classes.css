@@ -263,7 +263,7 @@
 
 iframe {
     border: none;
-    height: 100vh;
+    max-height: 30dvh;
 }
 
 .navigation-button.active {
@@ -474,6 +474,23 @@ kbd {
     border-radius: var(--input-border-radius);
     padding: var(--gap-v);
     background: var(--gradient-1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input.drag-over {
+    border-color: var(--tint-present);
+    box-shadow: 0 0 10px var(--tint-transpresent);
+}
+
+.chat-input.drag-over:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--input-border-radius);
+    background: var(--tint-transpresent);
 }
 
 .chat-input-field {
@@ -617,8 +634,8 @@ pre {
     border-radius: var(--input-border-radius);
     overflow: hidden;
     margin: var(--gap-v) 0;
+    padding: var(--gap-v);
 }
-
 
 .property-key {
     font-weight: bold;

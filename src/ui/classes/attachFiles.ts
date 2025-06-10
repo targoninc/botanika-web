@@ -29,6 +29,7 @@ export function attachFiles(files: Signal<MessageFile[]>) {
 
             messageFiles.push({
                 id: uuidv4(),
+                name: file.name,
                 base64,
                 mimeType: file.type
             });

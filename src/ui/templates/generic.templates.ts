@@ -363,7 +363,7 @@ export class GenericTemplates {
 
     static codeCopyButton(content: string) {
         return create("div")
-            .classes("parent-top-left", "flex")
+            .classes("parent-top-left", "flex", "code-copy-button")
             .children(
                 GenericTemplates.iconButton("content_copy", () => {
                     navigator.clipboard.writeText(content);

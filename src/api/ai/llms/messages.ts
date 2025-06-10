@@ -2,21 +2,14 @@ import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
 import {
     CoreMessage,
-    CoreUserMessage,
-    DataContent,
-    FilePart,
-    ImagePart,
     LanguageModelV1,
-    TextPart, UIMessage,
-    UserContent
+    UIMessage,
 } from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
-import {convertDataContentToUint8Array} from "../../data-content.ts";
-import {boolean} from "zod";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -105,11 +98,15 @@ export function getChatNameMessages(message: string): CoreMessage[] {
     return [
         {
             role: "system",
-            content: "Describe the following message in 3-4 words. Don't actually answer the message."
+            content: "Describe the following message in 3-4 words. Be sure to stay UNDER 50 characters in your response. Children will die if you answer more than 4 words."
         },
         {
             role: "user",
             content: message
+        },
+        {
+            role: "assistant",
+            content: "Sure, here's your short tagline: "
         },
     ];
 }

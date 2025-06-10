@@ -21,6 +21,7 @@
     --blue: #0b72bc;
     --tint-main: color-mix(in oklab, #bdbdbd, var(--tint) calc(var(--tint-strength) * 2));
     --tint-present: color-mix(in oklab, #a9a9a9, var(--tint) calc(var(--tint-strength) * 2));
+    --tint-transpresent: color-mix(in oklab, rgba(0, 0, 0, 0), var(--tint) calc(var(--tint-strength) * 2));
     --tint-muted: color-mix(in oklab, #525252, var(--tint) var(--tint-strength));
     --red: #c43e40;
     --yellow: #f0c929ff;
@@ -293,6 +294,10 @@ button:hover {
     justify-content: center;
     align-items: center;
     z-index: 999;
+}
+
+.center-content {
+    justify-content: center;
 }
 
 .toast {
