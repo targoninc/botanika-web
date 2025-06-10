@@ -20,6 +20,7 @@ dotenv.config();
 const outDir = path.join(process.cwd(), "out");
 const styleDir = path.join(process.cwd(), "src/styles");
 const uiDir = path.join(process.cwd(), "src/ui");
+const assetsDir = path.join(process.cwd(), "src/assets");
 
 const APP_PORT = Number(process.env.PORT || "3001");
 try {
@@ -35,7 +36,7 @@ try {
 export const app = express();
 
 // Static files
-[outDir, uiDir, styleDir].forEach(dir => {
+[outDir, uiDir, styleDir, assetsDir].forEach(dir => {
     app.use(express.static(dir));
 });
 
