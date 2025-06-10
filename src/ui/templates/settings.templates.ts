@@ -150,6 +150,7 @@ export class SettingsTemplates {
                     clearTimeout(debounceTimeout);
                 }
 
+                // @ts-expect-error because ts is stupid here
                 debounceTimeout = setTimeout(() => {
                     updateKey(sc.key, val, false).then();
                     debounceTimeout = null;
@@ -168,7 +169,6 @@ export class SettingsTemplates {
                             .children(
                                 GenericTemplates.icon(sc.icon),
                             ).build() : null,
-                        // @ts-ignore
                         SettingsTemplates.settingImplementation(sc, value, (_, val) => value.value = val),
                         when(changed, button({
                             icon: {icon: "save"},
