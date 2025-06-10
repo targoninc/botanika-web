@@ -5,6 +5,7 @@ import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
+import {sendChatUpdate} from "../../../ui-server/websocket-server/websocket.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -39,14 +40,15 @@ export function newAssistantMessage(responseText: string, provider: string, mode
     };
 }
 
-export async function createChat(userId: string, model: LanguageModelV1, newMessage: ChatMessage, chatId: string): Promise<ChatContext> {
+export async function createChat(userId: string, newMessage: ChatMessage, chatId: string): Promise<ChatContext> {
     // create chat
     const chatContext = <ChatContext>{
         id: chatId,
         createdAt: Date.now(),
-        name: await getChatName(model, newMessage.text),
+        name: "New chat",
         history: [newMessage]
     };
+
     ChatStorage.writeChatContext(userId, chatContext).then();
 
     return chatContext;

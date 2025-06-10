@@ -1,8 +1,9 @@
-import {Application, Request, Response, RequestHandler} from "express";
+import {Application, Request, RequestHandler, Response} from "express";
 import {db} from "../database/supabase.ts";
 import {Tables} from "../../models/supabaseDefinitions.ts";
 import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
 import {auth, Session} from "express-openid-connect";
+import {base64Decode} from "./base64Decode.ts";
 
 declare module "express-serve-static-core" {
     interface Request {
@@ -27,10 +28,6 @@ async function upsertAndGetUser(externalId: string) {
             external_id: externalId
         });
     return (await db.from("users").select("*").eq("external_id", externalId).single()).data;
-}
-
-function base64Decode(input: string) {
-    return Buffer.from(input, "base64").toString();
 }
 
 export function extractExternalId(idToken: string) {

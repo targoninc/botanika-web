@@ -1,12 +1,11 @@
-import {LlmProvider} from "src/models/llms/llmProvider.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
+import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../../api/ai/llms/models.ts";
 import {getConfig} from "../../api/configuration.ts";
 import {CLI} from "../../api/CLI.ts";
 import {
-    createChat,
+    createChat, getChatName,
     getPromptMessages,
     getWorldContext,
     newAssistantMessage,
@@ -17,7 +16,6 @@ import {ChatContext} from "../../models/chat/ChatContext.ts";
 import {getMcpTools} from "../../api/ai/initializer.ts";
 import {ModelCapability} from "../../models/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../../api/ai/tools/servers/allTools.ts";
-import {ModelDefinition} from "src/models/llms/ModelDefinition.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../../api/ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
@@ -25,6 +23,8 @@ import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatStorage} from "../../api/storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
+import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
+import {LlmProvider} from "../../models/llms/llmProvider.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
@@ -38,7 +38,15 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
 
     let chat: ChatContext;
     try {
-        chat = await createChat(ws.userId, model, chatMsg, chatId);
+        chat = await createChat(ws.userId, chatMsg, chatId);
+        getChatName(model, chatMsg.text).then(name => {
+            sendChatUpdate(ws, {
+                chatId: chat.id,
+                timestamp: Date.now(),
+                name
+            });
+            chat.name = name;
+        });
     } catch (e) {
         throw new Error("An error occurred while creating the chat", {
             cause: e
