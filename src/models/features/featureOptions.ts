@@ -15,17 +15,6 @@ const apiKeyConfig = <SettingConfiguration>{
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
     [BotanikaFeature.OpenAI]: [
         apiKeyConfig,
-        {
-            key: "transcriptionModel",
-            icon: "transcribe",
-            description: "Which OpenAI transcription model to use.",
-            label: "Transcription Model",
-            type: "string",
-            validator: value => {
-                const modelOptions = ["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper"];
-                return modelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${modelOptions.join(",")}`];
-            }
-        }
     ],
     [BotanikaFeature.GoogleSearch]: [
         apiKeyConfig,

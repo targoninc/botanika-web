@@ -289,7 +289,7 @@ export class ChatTemplates {
         input.subscribe(() => {
             updateInputHeight();
         });
-        const voiceConfigured = compute(c => c && c.featureOptions && !!c.featureOptions[BotanikaFeature.OpenAI].transcriptionModel, configuration);
+        const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
 
         return create("div")
             .classes("chat-input", "flex-v", "small-gap")

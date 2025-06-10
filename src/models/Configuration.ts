@@ -12,6 +12,7 @@ export interface Configuration extends Record<string, any> {
     model: string;
     enableTts: boolean;
     maxSteps: number;
+    transcriptionModel: string;
     featureOptions: {
         [BotanikaFeature.GoogleSearch]: {
             apiKey: string,
@@ -19,7 +20,6 @@ export interface Configuration extends Record<string, any> {
         },
         [BotanikaFeature.OpenAI]: {
             apiKey: string,
-            transcriptionModel: string,
         },
         [BotanikaFeature.Groq]: {
             apiKey: string,

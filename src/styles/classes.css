@@ -763,3 +763,8 @@ pre {
     padding: var(--input-padding-v) var(--input-padding-h);
     border-radius: var(--input-border-radius);
 }
+
+.fixed {
+    position: fixed;
+    z-index: 999;
+}
