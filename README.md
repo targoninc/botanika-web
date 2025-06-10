@@ -16,37 +16,32 @@ A local LLM + tooling (with MCP support) client. All data is stored locally. Bri
 
 If you want to use any of these integrations, add them on the "Settings" page.
 
-| Integration name | MCP Server URL                               |
-|------------------|----------------------------------------------|
-| Google Search    | http://localhost:3001/mcp/sse/google/search |
-| Spotify          | http://localhost:3001/mcp/sse/spotify       |
+| Integration name | Required settings         |
+|------------------|---------------------------|
+| Google Search    | API key, Search engine ID |
+| Spotify          | Client ID, Client Secret  |
 
 ### Supported LLM providers
 
-| Provider   | Notes          | API key link                                           | Environment variable               |
-|------------|----------------|--------------------------------------------------------|------------------------------------|
-| OpenAI     |                | [OpenAI](https://platform.openai.com/account/api-keys) | OPENAI_API_KEY                     |
-| Groq       |                | [Groq](https://console.groq.com/keys)                  | GROQ_API_KEY                       |
-| OpenRouter |                | [OpenRouter](https://openrouter.ai/settings/keys)      | OPENROUTER_API_KEY                 |
-| Azure      |                |                                                        | AZURE_RESOURCE_NAME, AZURE_API_KEY |
-| Ollama     | Might not work |                                                        | OLLAMA_URL                         |
+Depending on the provider and model you select, requests might not work reliably.
+
+| Provider   | API key link                                           | Environment variable               |
+|------------|--------------------------------------------------------|------------------------------------|
+| OpenAI     | [OpenAI](https://platform.openai.com/account/api-keys) | OPENAI_API_KEY                     |
+| Groq       | [Groq](https://console.groq.com/keys)                  | GROQ_API_KEY                       |
+| OpenRouter | [OpenRouter](https://openrouter.ai/settings/keys)      | OPENROUTER_API_KEY                 |
+| Azure      |                                                        | AZURE_RESOURCE_NAME, AZURE_API_KEY |
+| Ollama     |                                                        | OLLAMA_URL                         |
 
 ### Transcription
 
-If you **don't** want to use OpenAI, you can use Whisper locally. This requires a bit of setup:
+If you **don't** want to use OpenAI for transcription, you can use Whisper locally. This requires a bit of setup:
 
 Install [pnpm](https://pnpm.io/installation), then run the following command and wait until the model is downloaded:
 
 ```bash
 pnpm whisper-tnode download --model large-v1
 ```
-
-## Screenshots
-
-![A screenshot of the chat interface](https://github.com/user-attachments/assets/8ea3df6a-00f6-4c6e-aea7-4562551af144)
-
-![A screenshot of the settings interface](https://github.com/user-attachments/assets/07c61f0c-1d23-4e98-9b15-305f131c8908)
-
 
 # Run
 

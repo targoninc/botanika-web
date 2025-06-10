@@ -29,8 +29,12 @@ async function upsertAndGetUser(externalId: string) {
     return (await db.from("users").select("*").eq("external_id", externalId).single()).data;
 }
 
+function base64Decode(input: string) {
+    return Buffer.from(input, "base64").toString();
+}
+
 export function extractExternalId(idToken: string) {
-    return JSON.parse(atob(idToken.split(".", 3)[1])).sub;
+    return JSON.parse(base64Decode(idToken.split(".", 3)[1])).sub;
 }
 
 export function addAuthenticationMiddleware(app: Application) {
