@@ -1,6 +1,6 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
+import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../../api/ai/llms/models.ts";
 import {getConfig} from "../../api/configuration.ts";
 import {CLI} from "../../api/CLI.ts";
@@ -65,7 +65,7 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     return chat;
 }
 
-async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
+async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1, modelSupportsFiles: boolean) {
     let chat: ChatContext;
     if (!request.chatId) {
         chat = await createNewChat(ws, request, model);
@@ -76,7 +76,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
             throw new Error("Chat not found");
         }
 
-        chat.history.push(newUserMessage(request.provider, request.model, request.message, request.files));
+        chat.history.push(newUserMessage(request.provider, request.model, request.message, modelSupportsFiles ? request.files : []));
         sendChatUpdate(ws, {
             chatId: chat.id,
             timestamp: Date.now(),
@@ -141,10 +141,14 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     if (!modelDefinition) {
         throw new Error(`Model ${request.model} not found in provider ${request.provider}`);
     }
+    const modelSupportsFiles = modelDefinition.capabilities.includes(ModelCapability.fileInput);
+    if (!modelSupportsFiles && request.files.length > 0) {
+        sendWarning(ws, "Model does not support file input, files will be ignored");
+    }
 
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
-    const chat = await getOrCreateChat(ws, request, model);
+    const chat = await getOrCreateChat(ws, request, model, modelSupportsFiles);
     const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
 
     /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
@@ -153,7 +157,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     }*/
 
     const worldContext = getWorldContext();
-    const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, true);
+    const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
     const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages);
 

@@ -102,19 +102,12 @@ export class SettingsTemplates {
                         }, ["fixed"]),
                         create("h1")
                             .classes("flex")
-                            .styles("margin-top", "2em")
+                            .styles("margin-top", "1.5em")
                             .children(
                                 create("span")
                                     .text("Settings")
                                     .build(),
                                 when(loading, GenericTemplates.spinner()),
-                            ).build(),
-                        create("div")
-                            .classes("flex-v")
-                            .children(
-                                GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
-                                    window.location.href = "/logout";
-                                }, ["negative"]),
                             ).build(),
                         GenericTemplates.heading(2, "General"),
                         ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
