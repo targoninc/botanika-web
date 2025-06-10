@@ -36,6 +36,7 @@ import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botan
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {attachFiles} from "../classes/attachFiles.ts";
+import {pasteFile} from "../classes/pasteFile.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -311,7 +312,7 @@ export class ChatTemplates {
                             .classes("flex-v", "flex-grow")
                             .children(
                                 when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
-                                ChatTemplates.actualChatInput(input, send),
+                                ChatTemplates.actualChatInput(input, send, files),
                             ).build(),
                     ).build(),
                 create("div")
@@ -346,7 +347,7 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static actualChatInput(input: Signal<string>, send: () => void) {
+    private static actualChatInput(input: Signal<string>, send: () => void, files: Signal<MessageFile[]>) {
         return create("textarea")
             .attributes("rows", "3")
             .id("chat-input-field")
@@ -363,6 +364,7 @@ export class ChatTemplates {
                     send();
                 }
             })
+            .onpaste((e: ClipboardEvent) => pasteFile(e, files))
             .build();
     }
 
