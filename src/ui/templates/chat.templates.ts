@@ -1,5 +1,5 @@
 import {
-    activateChat,
+    activateChat, activePage,
     availableModels,
     chatContext,
     chats,
@@ -9,7 +9,6 @@ import {
     deleteChat,
     shortCutConfig,
     target,
-    updateContextFromStream
 } from "../classes/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
@@ -422,17 +421,24 @@ export class ChatTemplates {
         return create("div")
             .classes("flex-v", "bordered-panel", "chat-list")
             .children(
-                button({
-                    disabled: newDisabled,
-                    icon: {
-                        icon: "create"
-                    },
-                    text: "New chat",
-                    classes: ["flex", "align-center", "positive"],
-                    onclick: () => {
-                        chatContext.value = INITIAL_CONTEXT;
-                    }
-                }),
+                create("div")
+                    .classes("flex")
+                    .children(
+                        button({
+                            disabled: newDisabled,
+                            icon: {
+                                icon: "create"
+                            },
+                            text: "New chat",
+                            classes: ["flex", "align-center", "positive"],
+                            onclick: () => {
+                                chatContext.value = INITIAL_CONTEXT;
+                            }
+                        }),
+                        GenericTemplates.buttonWithIcon("settings", "Settings", async () => {
+                            activePage.value = "settings";
+                        }),
+                    ).build(),
                 compute(c => ChatTemplates.chatListItems(c), chats),
             ).build();
     }

@@ -2,19 +2,15 @@ import {GenericTemplates} from "./generic.templates";
 import {pages} from "../enums/pages";
 import {SettingsTemplates} from "./settings.templates";
 import {ChatTemplates} from "./chat.templates";
-import {AnyNode, create, signal, Signal} from "@targoninc/jess";
+import {AnyNode, compute, create, signal, Signal, when} from "@targoninc/jess";
 
 export class LayoutTemplates {
     static app(activePage: Signal<string>) {
-        const tabs = [
-            ChatTemplates.chat(),
-            SettingsTemplates.settings(),
-        ];
-
         return create("div")
             .classes("app", "no-wrap", "padded-big", "flex-v")
             .children(
-                GenericTemplates.tabs(tabs, signal(pages), activePage),
+                when(compute(p => p === "chat", activePage), ChatTemplates.chat()),
+                when(compute(p => p === "settings", activePage), SettingsTemplates.settings()),
             ).build();
     }
 
