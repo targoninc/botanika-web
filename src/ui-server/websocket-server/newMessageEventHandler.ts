@@ -122,7 +122,7 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
     const steps = await streamResponse.steps;
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
-        const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig));
+        const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
         const m = newAssistantMessage(response.text, request.provider, request.model);
         await finishMessage(m, ws, chat, userConfig);
     }
@@ -151,7 +151,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     }*/
 
     const worldContext = getWorldContext();
-    const promptMessages = getPromptMessages(chat.history, worldContext, userConfig);
+    const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, true);
     const maxSteps = userConfig.maxSteps ?? 5;
     const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages);
 
