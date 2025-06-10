@@ -473,7 +473,7 @@ export class ChatTemplates {
                             icon: {
                                 icon: "delete",
                             },
-                            classes: ["negative", "flex", "align-center"],
+                            classes: ["flex", "align-center"],
                             onclick: (e) => {
                                 e.stopPropagation();
                                 createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
