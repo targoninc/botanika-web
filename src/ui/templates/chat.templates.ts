@@ -89,6 +89,7 @@ export class ChatTemplates {
             }
             return prev;
         }, []);
+        const lastMessageIsUser = dedupHistory.at(-1)?.type === "user";
 
         return create("div")
             .classes("flex-v", "flex-grow", "chat-history")
@@ -99,7 +100,8 @@ export class ChatTemplates {
                     .children(
                         ...dedupHistory
                             .sort((a, b) => a.time - b.time)
-                            .map(message => ChatTemplates.chatMessage(message))
+                            .map(message => ChatTemplates.chatMessage(message)),
+                        when(lastMessageIsUser, GenericTemplates.spinner())
                     ).build()
             ).build();
     }
@@ -306,7 +308,7 @@ export class ChatTemplates {
                     .onclick(focusInput)
                     .children(
                         create("div")
-                            .classes("flex-v")
+                            .classes("flex-v", "flex-grow")
                             .children(
                                 when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
                                 ChatTemplates.actualChatInput(input, send),
@@ -348,7 +350,7 @@ export class ChatTemplates {
         return create("textarea")
             .attributes("rows", "3")
             .id("chat-input-field")
-            .classes("flex-grow", "chat-input-field")
+            .classes("flex-grow", "chat-input-field", "full-width")
             .styles("resize", "none")
             .placeholder(compute(c => `[Shift] + [${c.focusInput}] to focus`, shortCutConfig))
             .value(input)

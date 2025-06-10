@@ -16,6 +16,7 @@ import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {convertDataContentToUint8Array} from "../../data-content.ts";
+import {boolean} from "zod";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -64,7 +65,7 @@ export async function createChat(userId: string, newMessage: ChatMessage, chatId
     return chatContext;
 }
 
-export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration): CoreMessage[] {
+export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): CoreMessage[] {
     return [
         {
             role: "system",
@@ -91,10 +92,10 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
             return <UIMessage>{
                 role: m.type,
                 content: m.text,
-                experimental_attachments: m.files.map(f => ({
+                experimental_attachments: addAttachments ? m.files.map(f => ({
                     contentType: f.mimeType,
                     url: `data:${f.mimeType};base64,${f.base64}`
-                }))
+                })) : []
             }
         }) as CoreMessage[]
     ];
