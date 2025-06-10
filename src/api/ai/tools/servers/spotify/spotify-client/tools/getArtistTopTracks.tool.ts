@@ -4,7 +4,7 @@ import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import {CLI} from "../../../../../../CLI";
 import { Configuration } from "src/models/Configuration";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
+import { WebsocketConnection } from "src/api/websocket-server/websocket";
 
 async function getArtistTopTracks(userConfig: Configuration, artistId: string, countryCode: string): Promise<SpotifyApi.ArtistsTopTracksResponse> {
     const api = await createClient(userConfig);

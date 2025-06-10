@@ -10,7 +10,7 @@ import { addMcpEndpoints } from "./api/ai/tools/endpoints.ts";
 import {addChatEndpoints} from "./api/ai/endpoints.ts";
 import {addConfigEndpoints} from "./api/configuration.ts";
 import {CLI} from "./api/CLI.ts";
-import {addWebsocketServer} from "./ui-server/websocket-server/websocket.ts";
+import {addWebsocketServer} from "./api/websocket-server/websocket.ts";
 import * as http from "node:http";
 import path from "node:path";
 import {ApiEndpoint} from "./models/ApiEndpoints.ts";

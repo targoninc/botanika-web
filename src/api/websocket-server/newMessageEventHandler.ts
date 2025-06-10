@@ -1,27 +1,27 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
-import {getAvailableModels, getModel} from "../../api/ai/llms/models.ts";
-import {getConfig} from "../../api/configuration.ts";
-import {CLI} from "../../api/CLI.ts";
+import {getAvailableModels, getModel} from "../ai/llms/models.ts";
+import {getConfig} from "../configuration.ts";
+import {CLI} from "../CLI.ts";
 import {
     createChat, getChatName,
     getPromptMessages,
     getWorldContext,
     newAssistantMessage,
     newUserMessage
-} from "../../api/ai/llms/messages.ts";
+} from "../ai/llms/messages.ts";
 import {LanguageModelV1, StepResult, ToolSet} from "ai";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
-import {getMcpTools} from "../../api/ai/initializer.ts";
+import {getMcpTools} from "../ai/initializer.ts";
 import {ModelCapability} from "../../models/llms/ModelCapability.ts";
-import {getBuiltInTools} from "../../api/ai/tools/servers/allTools.ts";
+import {getBuiltInTools} from "../ai/tools/servers/allTools.ts";
 import {Configuration} from "../../models/Configuration.ts";
-import {getSimpleResponse, streamResponseAsMessage} from "../../api/ai/llms/calls.ts";
+import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {sendAudioAndStop} from "../../api/ai/endpoints.ts";
+import {sendAudioAndStop} from "../ai/endpoints.ts";
 import {Signal} from "@targoninc/jess";
-import {ChatStorage} from "../../api/storage/ChatStorage.ts";
+import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";

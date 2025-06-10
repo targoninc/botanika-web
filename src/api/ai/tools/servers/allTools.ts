@@ -1,6 +1,6 @@
 import {googleSearchTool} from "./google-search/google-search.tool.ts";
 import {Configuration} from "../../../../models/Configuration.ts";
-import {WebsocketConnection} from "../../../../ui-server/websocket-server/websocket.ts";
+import {WebsocketConnection} from "../../../websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 import {ChatContext} from "../../../../models/chat/ChatContext.ts";
 

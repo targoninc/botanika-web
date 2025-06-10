@@ -8,14 +8,15 @@ alter type public."Language" owner to postgres;
 
 create table if not exists public.users
 (
-    id            uuid                     default gen_random_uuid()                                                    not null
+    id                    uuid                     default gen_random_uuid()                                                    not null
         primary key,
-    external_id   text                                                                                                  not null
+    external_id           text                                                                                                  not null
         unique,
-    created_at    timestamp with time zone default now()                                                                not null,
-    "isAdmin"     boolean                  default false                                                                not null,
-    configuration json                     default '{}'::json                                                           not null,
-    shortcuts     json                     default '{   "newChat": "n",   "settings": "s",   "focusInput": " " }'::json not null
+    created_at            timestamp with time zone default now()                                                                not null,
+    "isAdmin"             boolean                  default false                                                                not null,
+    configuration         json                     default '{}'::json                                                           not null,
+    shortcuts             json                     default '{   "newChat": "n",   "settings": "s",   "focusInput": " " }'::json not null,
+    branched_from_chat_id uuid
 );
 
 alter table public.users
@@ -29,13 +30,14 @@ grant delete, insert, references, select, trigger, truncate, update on public.us
 
 create table if not exists public.chats
 (
-    id         uuid                     default gen_random_uuid() not null
+    id                    uuid                     default gen_random_uuid() not null
         primary key,
-    user_id    uuid                     default gen_random_uuid() not null
+    user_id               uuid                     default gen_random_uuid() not null
         references public.users
             on update cascade on delete cascade,
-    name       text,
-    created_at timestamp with time zone default now()             not null
+    name                  text,
+    created_at            timestamp with time zone default now()             not null,
+    branched_from_chat_id uuid
 );
 
 alter table public.chats

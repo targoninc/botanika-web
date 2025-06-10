@@ -3,7 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {checkIfEnabled, createClient} from "../createClient";
 import { Configuration } from "src/models/Configuration";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
+import { WebsocketConnection } from "src/api/websocket-server/websocket";
 
 async function pause(userConfig: Configuration, deviceId: string): Promise<void> {
     const api = await createClient(userConfig);

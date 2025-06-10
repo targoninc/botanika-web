@@ -3,7 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import {Configuration} from "../../../../../../../models/Configuration.ts";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket.ts";
+import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
 
 async function addToSavedAlbums(userConfig: Configuration, albumIds: string[]): Promise<SpotifyApi.AddToQueueResponse> {
     const api = await createClient(userConfig);

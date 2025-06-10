@@ -6,8 +6,9 @@ import {ChatContext} from "../../models/chat/ChatContext";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
 import {signal} from "@targoninc/jess";
-import {sendChatUpdate, WebsocketConnection} from "../../ui-server/websocket-server/websocket.ts";
+import {sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
+import {v4} from "uuid";
 
 export const currentChatContext = signal<ChatContext>(null);
 
@@ -94,10 +95,28 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
     });
 }
 
+function branchChatEndpoint(req: Request, res: Response) {
+    const chatId = req.body.chatId;
+    const messageId = req.body.messageId;
+    if (!chatId || !messageId) {
+        res.status(400).send('Missing chatId or messageId parameter');
+    }
+
+    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
+        const messageIndex = c.history.map(m => m.id).indexOf(messageId);
+        c.history.splice(messageIndex);
+        c.branched_from_chat_id = c.id;
+        c.id = v4();
+        await ChatStorage.writeChatContext(req.user.id, c);
+        res.status(200).send(c);
+    });
+}
+
 export function addChatEndpoints(app: Application) {
     app.get(`${ApiEndpoint.CHAT_BY_ID}:chatId`, getChatEndpoint);
     app.get(ApiEndpoint.CHATS, getChatIdsEndpoint);
     app.delete(`${ApiEndpoint.CHAT_BY_ID}:chatId`, deleteChatEndpoint);
     app.post(ApiEndpoint.DELETE_AFTER_MESSAGE, deleteAfterMessageEndpoint);
     app.get(ApiEndpoint.MODELS, getModelsEndpoint);
+    app.post(ApiEndpoint.BRANCH_CHAT, branchChatEndpoint);
 }
