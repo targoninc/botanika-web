@@ -13,7 +13,7 @@
         "@targoninc/jess": "^0.0.15",
         "@targoninc/jess-components": "^0.0.15",
         "@types/uuid": "^10.0.0",
-        "ai": "^4.3.9",
+        "ai": "^4.3.16",
         "axios": "^1.8.4",
         "bun": "^1.2.15",
         "cors": "^2.8.5",

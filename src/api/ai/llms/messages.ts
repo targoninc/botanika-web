@@ -1,18 +1,19 @@
 import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {CoreMessage, LanguageModelV1} from "ai";
+import {CoreMessage, CoreUserMessage, DataContent, LanguageModelV1} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
-import {sendChatUpdate} from "../../../ui-server/websocket-server/websocket.ts";
+import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {convertDataContentToUint8Array} from "../../data-content.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
     return response.text;
 }
 
-export function newUserMessage(provider: string, model: string, message: string): ChatMessage {
+export function newUserMessage(provider: string, model: string, message: string, files: MessageFile[]): ChatMessage {
     return {
         id: uuidv4(),
         type: "user",
@@ -20,7 +21,7 @@ export function newUserMessage(provider: string, model: string, message: string)
         time: Date.now(),
         finished: true,
         references: [],
-        files: [],
+        files,
         provider,
         model
     };
@@ -76,6 +77,20 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                     role: m.type,
                     content: [m.toolResult]
                 };
+            }
+
+            if (m.files.length > 0) {
+                return {
+                    role: m.type,
+                    content: [
+                        m.text,
+                        m.files.map(f => ({
+                            type: 'file',
+                            data: f.base64,
+                            mimeType: f.mimeType,
+                        }))
+                    ]
+                }
             }
 
             return {

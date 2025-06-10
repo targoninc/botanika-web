@@ -26,7 +26,7 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, nullElement, Signal, signal, when} from "@targoninc/jess";
+import {AnyNode, compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
@@ -279,6 +279,7 @@ export class ChatTemplates {
                 toast(e.toString());
             }
             input.value = "";
+            files.value = [];
         }
         const focusInput = () => {
             document.getElementById("chat-input-field")?.focus();
@@ -305,10 +306,25 @@ export class ChatTemplates {
                     .onclick(focusInput)
                     .children(
                         create("div")
-                            .classes("flex-v", "no-gap")
+                            .classes("flex-v")
                             .children(
                                 when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
                                 ChatTemplates.actualChatInput(input, send),
+                            ).build(),
+                    ).build(),
+                create("div")
+                    .classes("flex", "align-center", "space-between")
+                    .children(
+                        create("div")
+                            .classes("flex")
+                            .children(
+                                create("div")
+                                    .classes("relative")
+                                    .children(
+                                        GenericTemplates.buttonWithIcon("settings", model, () => flyoutVisible.value = !flyoutVisible.value),
+                                        when(flyoutVisible, ChatTemplates.settingsFlyout()),
+                                    ).build(),
+                                GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                             ).build(),
                         create("div")
                             .classes("flex", "align-center")
@@ -316,17 +332,6 @@ export class ChatTemplates {
                                 when(voiceConfigured, AudioTemplates.voiceButton()),
                                 GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button"]),
                             ).build(),
-                    ).build(),
-                create("div")
-                    .classes("flex")
-                    .children(
-                        create("div")
-                            .classes("relative")
-                            .children(
-                                GenericTemplates.buttonWithIcon("settings", model, () => flyoutVisible.value = !flyoutVisible.value),
-                                when(flyoutVisible, ChatTemplates.settingsFlyout()),
-                            ).build(),
-                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                     ).build(),
             ).build();
     }
@@ -570,7 +575,42 @@ export class ChatTemplates {
 
     private static filesDisplay(files: Signal<MessageFile[]>) {
         return create("div")
-            .text(compute(f => f.length.toString(), files))
-            .build();
+            .children(
+                signalMap(files, create("div").classes("flex"), f => ChatTemplates.fileDisplay(files, f))
+            ).build();
+    }
+
+    private static fileDisplay(files: Signal<MessageFile[]>, file: MessageFile) {
+        let content: AnyNode;
+        let width = "5em";
+        if (file.mimeType.startsWith("image/")) {
+            content = create("img")
+                .classes("file-display-image")
+                .src(`data:${file.mimeType};base64,` + file.base64)
+                .build();
+        } else if (file.mimeType.startsWith("audio/")) {
+            width = "10em";
+            content = create("audio")
+                .attributes("controls", "")
+                .classes("file-display-image")
+                .src(`data:${file.mimeType};base64,` + file.base64)
+                .build();
+        } else {
+            content = create("span")
+                .text(file.mimeType)
+                .build();
+        }
+
+        return create("div")
+            .classes("file-display", "relative")
+            .styles("min-width", width, "max-width", width)
+            .children(
+                content,
+                create("div")
+                    .classes("file-actions")
+                    .children(
+                        GenericTemplates.buttonWithIcon("close", "", () => files.value = files.value.filter(f => f.id !== file.id)),
+                    ).build()
+            ).build();
     }
 }
