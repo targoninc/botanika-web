@@ -167,14 +167,14 @@ export class ChatTemplates {
                     if (f.mimeType.startsWith("image/")) {
                         return create("img")
                             .classes("message-content-image")
-                            .src(f.base64)
+                            .src(`data:${f.mimeType};base64,` + f.base64)
                             .build();
                     }
 
                     if (f.mimeType === "application/pdf") {
                         return create("iframe")
                             .classes("message-content-pdf")
-                            .src(f.base64)
+                            .src(`data:${f.mimeType};base64,` + f.base64)
                             .build();
                     }
 

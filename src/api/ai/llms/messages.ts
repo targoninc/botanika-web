@@ -1,6 +1,15 @@
 import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {CoreMessage, CoreUserMessage, DataContent, LanguageModelV1} from "ai";
+import {
+    CoreMessage,
+    CoreUserMessage,
+    DataContent,
+    FilePart,
+    ImagePart,
+    LanguageModelV1,
+    TextPart, UIMessage,
+    UserContent
+} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
@@ -79,23 +88,13 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                 };
             }
 
-            if (m.files.length > 0) {
-                return {
-                    role: m.type,
-                    content: [
-                        m.text,
-                        m.files.map(f => ({
-                            type: 'file',
-                            data: f.base64,
-                            mimeType: f.mimeType,
-                        }))
-                    ]
-                }
-            }
-
-            return {
+            return <UIMessage>{
                 role: m.type,
-                content: m.text
+                content: m.text,
+                experimental_attachments: m.files.map(f => ({
+                    contentType: f.mimeType,
+                    url: `data:${f.mimeType};base64,${f.base64}`
+                }))
             }
         }) as CoreMessage[]
     ];
