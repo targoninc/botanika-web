@@ -60,7 +60,7 @@ export class ChatTemplates {
             .children(
                 GenericTemplates.icon("person"),
                 create("span")
-                    .text(compute(c => c.botname, configuration))
+                    .text(compute(c => c.botname ?? "Botanika", configuration))
                     .build()
             ).build();
     }
@@ -422,7 +422,7 @@ export class ChatTemplates {
             .classes("flex-v", "bordered-panel", "chat-list")
             .children(
                 create("div")
-                    .classes("flex")
+                    .classes("flex", "space-between")
                     .children(
                         button({
                             disabled: newDisabled,

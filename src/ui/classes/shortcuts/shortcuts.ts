@@ -21,7 +21,7 @@ export function addShortCutListener() {
 
         const isNumber = e.key.match(/^[0-9]+$/);
         if (isNumber) {
-            activePage.value = pages.find((p, i) => p.hotkey === e.key)?.id ?? "chat";
+            activePage.value = pages.find((p, _) => p.hotkey === e.key)?.id ?? "chat";
         }
 
         if (e.key === "Escape") {
