@@ -29,7 +29,7 @@ import {LlmProvider} from "../../models/llms/llmProvider.ts";
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
-    const chatMsg = newUserMessage(request.provider, request.model, request.message);
+    const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
     sendChatUpdate(ws, {
         chatId: chatId,
         timestamp: Date.now(),
@@ -74,7 +74,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
             throw new Error("Chat not found");
         }
 
-        chat.history.push(newUserMessage(request.provider, request.model, request.message));
+        chat.history.push(newUserMessage(request.provider, request.model, request.message, request.files));
         sendChatUpdate(ws, {
             chatId: chat.id,
             timestamp: Date.now(),

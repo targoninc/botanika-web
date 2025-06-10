@@ -797,3 +797,22 @@ pre {
 .flyout.right {
     left: 0;
 }
+
+.file-display {
+    --file-size: 5em;
+    min-height: var(--file-size);
+    max-height: var(--file-size);
+}
+
+.file-display-image {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--input-border-radius);
+    object-fit: contain;
+}
+
+.file-actions {
+    position: absolute;
+    top: calc(-1 * var(--gap-h));
+    right: calc(-1 * var(--gap-h));
+}

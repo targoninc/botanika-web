@@ -1,5 +1,6 @@
 import {Signal} from "@targoninc/jess";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {v4 as uuidv4} from "uuid";
 
 export function attachFiles(files: Signal<MessageFile[]>) {
     // Create a file input element
@@ -27,6 +28,7 @@ export function attachFiles(files: Signal<MessageFile[]>) {
             });
 
             messageFiles.push({
+                id: uuidv4(),
                 base64,
                 mimeType: file.type
             });
