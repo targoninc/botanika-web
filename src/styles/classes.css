@@ -635,6 +635,7 @@ pre {
     display: none;
     background: var(--bg);
     border-radius: var(--input-border-radius);
+    padding-top: 0;
 }
 
 .reference.expanded .reference-preview {
