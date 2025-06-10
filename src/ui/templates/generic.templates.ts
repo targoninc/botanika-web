@@ -501,4 +501,26 @@ export class GenericTemplates {
             .classes("spacer")
             .build();
     }
+
+    static userPopup() {
+        return create("div")
+            .classes("flex-v", "flyout", "below", "left")
+            .children(
+                GenericTemplates.user(),
+                GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
+                    window.location.href = "/logout";
+                }, ["negative"]),
+            ).build();
+    }
+
+    static userIcon(userPopupVisible: Signal<boolean>) {
+        const image = compute(u => u?.picture ?? ".", currentUser);
+
+        return create("div")
+            .classes("clickable")
+            .onclick(() => userPopupVisible.value = !userPopupVisible.value)
+            .children(
+                GenericTemplates.icon(image, ["user-image"])
+            ).build();
+    }
 }

@@ -469,12 +469,13 @@ export class ChatTemplates {
 
     private static chatList() {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
+        const userPopupVisible = signal(false);
 
         return create("div")
             .classes("flex-v", "bordered-panel", "chat-list")
             .children(
                 create("div")
-                    .classes("flex", "space-between")
+                    .classes("flex", "space-between", "align-children")
                     .children(
                         button({
                             disabled: newDisabled,
@@ -487,9 +488,15 @@ export class ChatTemplates {
                                 chatContext.value = INITIAL_CONTEXT;
                             }
                         }),
-                        GenericTemplates.buttonWithIcon("settings", "Settings", async () => {
-                            activePage.value = "settings";
-                        }),
+                        create("div")
+                            .classes("flex", "relative", "align-children")
+                            .children(
+                                GenericTemplates.buttonWithIcon("settings", "Settings", async () => {
+                                    activePage.value = "settings";
+                                }),
+                                GenericTemplates.userIcon(userPopupVisible),
+                                when(userPopupVisible, GenericTemplates.userPopup()),
+                            ).build(),
                     ).build(),
                 compute(c => ChatTemplates.chatListItems(c), chats),
             ).build();

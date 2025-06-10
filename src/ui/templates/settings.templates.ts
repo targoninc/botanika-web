@@ -112,7 +112,6 @@ export class SettingsTemplates {
                         create("div")
                             .classes("flex-v")
                             .children(
-                                GenericTemplates.user(),
                                 GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
                                     window.location.href = "/logout";
                                 }, ["negative"]),
@@ -241,11 +240,6 @@ export class SettingsTemplates {
             .classes("flex-v")
             .children(
                 GenericTemplates.heading(2, "Configured APIs"),
-                create("div")
-                    .classes("card")
-                    .children(
-                        GenericTemplates.warning("You might have to restart the application after changing API configuration")
-                    ).build(),
                 ...Object.keys(featureOptions).map((api: BotanikaFeature) => {
                     const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
                     const fOptions = featureOptions[api];
