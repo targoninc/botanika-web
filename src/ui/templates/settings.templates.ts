@@ -1,6 +1,6 @@
 import {GenericTemplates} from "./generic.templates";
 import {Api} from "../classes/api";
-import {configuration, mcpConfig, shortCutConfig} from "../classes/store";
+import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/store";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
 import {McpConfiguration} from "../../models/mcp/McpConfiguration";
 import {createModal, toast} from "../classes/ui";
@@ -86,6 +86,9 @@ export class SettingsTemplates {
                 create("div")
                     .classes("flex-v", "restrict-width")
                     .children(
+                        GenericTemplates.buttonWithIcon("chevron_left", "Back to chat", async () => {
+                            activePage.value = "chat";
+                        }),
                         create("h1")
                             .classes("flex")
                             .children(
