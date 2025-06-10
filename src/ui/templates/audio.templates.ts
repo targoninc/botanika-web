@@ -1,7 +1,6 @@
 import {GenericTemplates} from "./generic.templates";
 import {VoiceRecorder} from "../classes/audio/VoiceRecorder";
 import {compute, create, signal} from "@targoninc/jess";
-import {button} from "@targoninc/jess-components";
 
 const currentLoudness = signal(0);
 let recorder: VoiceRecorder;
@@ -13,23 +12,15 @@ export class AudioTemplates {
         }
         const onState = signal(false);
         const iconState = compute(o => o ? "mic" : "mic_off", onState);
-        const textState = compute(o => o ? "Mute yourself" : "Unmute yourself", onState);
 
         return create("div")
-            .classes("flex", "align-children")
+            .classes("flex", "align-children", "no-gap")
             .children(
                 GenericTemplates.redDot(onState, currentLoudness),
-                button({
-                    text: textState,
-                    icon: {icon: iconState},
-                    classes: ["flex", "align-children"],
-                    title: "Currently only OpenAI is supported",
-                    disabled: true,
-                    onclick: () => {
-                        recorder.toggleRecording();
-                        onState.value = !onState.value;
-                    }
-                }),
+                GenericTemplates.verticalButtonWithIcon(iconState, "", () => {
+                    recorder.toggleRecording();
+                    onState.value = !onState.value;
+                }, ["voice-button"]),
             ).build();
     }
 }

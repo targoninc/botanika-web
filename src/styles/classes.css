@@ -515,13 +515,13 @@ kbd {
     max-height: max-content;
 }
 
-.send-button {
+.send-button, .voice-button {
     border-radius: var(--input-border-radius);
     background: var(--gradient-1);
     color: var(--tint-present);
     border: 1px solid var(--tint-muted);
-    height: 1.5em;
-    width: 1.5em;
+    height: 2.5rem;
+    width: 2.5rem;
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -530,7 +530,11 @@ kbd {
     transition: background var(--animation-duration) ease;
 }
 
-.send-button:hover {
+.voice-button {
+    font-size: 1.2em;
+}
+
+.send-button:hover, .voice-button:hover {
     background: var(--gradient-2);
     box-shadow: 0 0 20px -5px color-mix(in oklab, var(--tint-present) 50%, transparent 50%);
 }
