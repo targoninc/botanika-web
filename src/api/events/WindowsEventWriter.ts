@@ -1,6 +1,7 @@
 import {exec } from "node:child_process";
 import {EventWriter} from "./EventWriter";
 import {EventType} from "./EventType";
+import { CLI } from "../CLI";
 
 const APP_NAME = 'Botanika';
 
@@ -16,7 +17,12 @@ export class WindowsEventWriter extends EventWriter {
     static logEntry(eventType: 'Information' | 'Error' | 'Warning', message: string): void {
         const cleanMessage = (message.toString()).replaceAll("'", "''");
         const cmd = `powershell.exe Write-EventLog -LogName Application -Source '${APP_NAME}' -EntryType ${eventType} -EventId ${EventType.Unknown} -Message '${cleanMessage}'`;
-        exec(cmd);
+        try {
+            exec(cmd);
+        } catch (e) {
+            CLI.warning(`Could not log message`);
+            // ignore
+        }
     }
 
     static info(message: string, data: any): void {
