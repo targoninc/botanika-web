@@ -40,7 +40,8 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     try {
         chat = await createChat(ws.userId, chatMsg, chatId);
         getChatName(model, chatMsg.text).then(name => {
-            name = name.substring(0, name.indexOf("\n")).substring(0, 100);
+            const newLineIndex = name.indexOf("\n");
+            name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
             sendChatUpdate(ws, {
                 chatId: chat.id,
                 timestamp: Date.now(),
