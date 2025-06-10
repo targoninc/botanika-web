@@ -1,8 +1,7 @@
 import {GenericTemplates} from "./generic.templates";
-import {pages} from "../enums/pages";
 import {SettingsTemplates} from "./settings.templates";
 import {ChatTemplates} from "./chat.templates";
-import {AnyNode, compute, create, signal, Signal, when} from "@targoninc/jess";
+import {AnyNode, compute, create, Signal, when} from "@targoninc/jess";
 
 export class LayoutTemplates {
     static app(activePage: Signal<string>) {
