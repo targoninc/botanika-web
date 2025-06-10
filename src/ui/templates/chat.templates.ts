@@ -1,5 +1,6 @@
 import {
-    activateChat, activePage,
+    activateChat,
+    activePage,
     availableModels,
     chatContext,
     chats,
@@ -25,7 +26,7 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, nullElement, signal, when} from "@targoninc/jess";
+import {compute, create, nullElement, Signal, signal, when} from "@targoninc/jess";
 import {button} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
@@ -33,6 +34,8 @@ import {SettingConfiguration} from "../../models/uiExtensions/SettingConfigurati
 import {realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
+import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {attachFiles} from "../classes/attachFiles.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -259,6 +262,7 @@ export class ChatTemplates {
         const chatId = compute(c => c?.id, chatContext);
         const provider = compute(c => c.provider, configuration);
         const model = compute(c => c.model, configuration);
+        const files = signal<MessageFile[]>([]);
         const send = () => {
             try {
                 realtime.send({
@@ -268,6 +272,7 @@ export class ChatTemplates {
                         provider: provider.value,
                         model: model.value,
                         message: input.value,
+                        files: files.value,
                     }
                 });
             } catch (e) {
@@ -290,6 +295,7 @@ export class ChatTemplates {
             updateInputHeight();
         });
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
+        const flyoutVisible = signal(false);
 
         return create("div")
             .classes("chat-input", "flex-v", "small-gap")
@@ -298,23 +304,12 @@ export class ChatTemplates {
                     .classes("flex", "space-between")
                     .onclick(focusInput)
                     .children(
-                        create("textarea")
-                            .attributes("rows", "3")
-                            .id("chat-input-field")
-                            .classes("flex-grow", "chat-input-field")
-                            .styles("resize", "none")
-                            .placeholder(compute(c => `[Shift] + [${c.focusInput}] to focus`, shortCutConfig))
-                            .value(input)
-                            .oninput((e: any) => {
-                                input.value = target(e).value;
-                            })
-                            .onkeydown((e: any) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    send();
-                                }
-                            })
-                            .build(),
+                        create("div")
+                            .classes("flex-v", "no-gap")
+                            .children(
+                                when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
+                                ChatTemplates.actualChatInput(input, send),
+                            ).build(),
                         create("div")
                             .classes("flex", "align-center")
                             .children(
@@ -323,11 +318,45 @@ export class ChatTemplates {
                             ).build(),
                     ).build(),
                 create("div")
-                    .classes("flex", "space-between")
+                    .classes("flex")
                     .children(
-                        ChatTemplates.llmSelector(),
+                        create("div")
+                            .classes("relative")
+                            .children(
+                                GenericTemplates.buttonWithIcon("settings", model, () => flyoutVisible.value = !flyoutVisible.value),
+                                when(flyoutVisible, ChatTemplates.settingsFlyout()),
+                            ).build(),
+                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                     ).build(),
             ).build();
+    }
+
+    static settingsFlyout() {
+        return create("div")
+            .classes("flex-v", "flyout", "above", "right")
+            .children(
+                ChatTemplates.llmSelector(),
+            ).build();
+    }
+
+    private static actualChatInput(input: Signal<string>, send: () => void) {
+        return create("textarea")
+            .attributes("rows", "3")
+            .id("chat-input-field")
+            .classes("flex-grow", "chat-input-field")
+            .styles("resize", "none")
+            .placeholder(compute(c => `[Shift] + [${c.focusInput}] to focus`, shortCutConfig))
+            .value(input)
+            .oninput((e: any) => {
+                input.value = target(e).value;
+            })
+            .onkeydown((e: any) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                }
+            })
+            .build();
     }
 
     static llmSelector() {
@@ -375,7 +404,7 @@ export class ChatTemplates {
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
 
         return create("div")
-            .classes("flex", "select-container", "big-gap")
+            .classes("flex-v", "select-container")
             .children(
                 when(anyProvider, create("div")
                     .classes("flex")
@@ -537,5 +566,11 @@ export class ChatTemplates {
                         ).build()
                     : null,
             ).build();
+    }
+
+    private static filesDisplay(files: Signal<MessageFile[]>) {
+        return create("div")
+            .text(compute(f => f.length.toString(), files))
+            .build();
     }
 }

@@ -520,3 +520,7 @@ label.required {
     border-radius: 20px;
     border: transparent;
 }
+
+.relative {
+    position: relative;
+}

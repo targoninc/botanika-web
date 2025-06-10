@@ -768,3 +768,32 @@ pre {
     position: fixed;
     z-index: 999;
 }
+
+.flyout {
+    position: absolute;
+    background: var(--bg-2);
+    border-radius: var(--input-border-radius);
+    border: 1px solid var(--tint-muted);
+    padding: var(--gap-v);
+    z-index: 999;
+    min-width: max-content;
+    min-height: max-content;
+    max-width: max-content;
+    max-height: max-content;
+}
+
+.flyout.above {
+    bottom: 100%;
+}
+
+.flyout.below {
+    top: 100%;
+}
+
+.flyout.left {
+    right: 0;
+}
+
+.flyout.right {
+    left: 0;
+}
