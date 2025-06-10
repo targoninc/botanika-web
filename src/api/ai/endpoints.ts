@@ -107,8 +107,9 @@ function branchChatEndpoint(req: Request, res: Response) {
         c.history.splice(messageIndex);
         c.branched_from_chat_id = c.id;
         c.id = v4();
+        c.createdAt = Date.now();
         await ChatStorage.writeChatContext(req.user.id, c);
-        res.status(200).send(c);
+        res.status(200).json(c);
     });
 }
 

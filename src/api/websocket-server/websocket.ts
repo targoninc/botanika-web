@@ -44,8 +44,6 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
 }
 
 async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
-    console.log(message.type);
-
     switch (message.type) {
         case BotanikaClientEventType.message:
             await newMessageEventHandler(ws, message);

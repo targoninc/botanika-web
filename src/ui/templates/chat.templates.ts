@@ -9,7 +9,7 @@ import {
     currentText,
     deleteChat,
     shortCutConfig,
-    target,
+    target, updateChats,
 } from "../classes/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
@@ -200,6 +200,7 @@ export class ChatTemplates {
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
         const modelInfo = "Through API from " + message.provider + ", model: " + message.model;
+        const branchableTypes = ["user", "assistant"];
 
         return create("div")
             .classes("flex", "align-center")
@@ -232,6 +233,18 @@ export class ChatTemplates {
                             chatContext.value = c;
                         }
                     }));
+                })),
+                when(branchableTypes.includes(message.type), ChatTemplates.messageAction("graph_1", "Branch from here", async (e) => {
+                    e.stopPropagation();
+                    const r = await Api.branchFromMessage(chatContext.value.id, message.id);
+                    if (r.success) {
+                        const newContext = r.data as ChatContext;
+                        updateChats([
+                            ...chats.value,
+                            newContext
+                        ]);
+                        chatContext.value = newContext;
+                    }
                 })),
                 GenericTemplates.icon("info", [], modelInfo)
             ).build();

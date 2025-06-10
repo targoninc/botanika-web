@@ -9,7 +9,6 @@ export function addShortCutListener() {
         const shortcutConfig = shortCutConfig.value;
         for (const [action, func] of Object.entries(shortCutActions)) {
             if (e.shiftKey && e.key.toLowerCase() === shortcutConfig[action].toLowerCase()) {
-                console.log(shortcutConfig[action]);
                 e.preventDefault();
                 func();
             }

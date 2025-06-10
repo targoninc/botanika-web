@@ -83,32 +83,21 @@ export function loadChats() {
         }
 
         const data = newChats.data as ChatContext[];
-        chats.value = data;
+        updateChats(data);
         for (const chat of data) {
             const chatContext = await Api.getChat(chat.id);
             if (chatContext.success) {
-                chats.value = [
+                updateChats([
                     ...chats.value.map(c => {
                         if (c.id === chat.id) {
                             return chatContext.data as ChatContext;
                         }
                         return c;
                     }),
-                ].sort((a, b) => b.createdAt - a.createdAt);
+                ]);
             }
         }
     });
-}
-
-export async function loadChat(id: string) {
-    const chat = await Api.getChat(id);
-    if (!chat.success) {
-        return;
-    }
-    chats.value = [
-        ...chats.value.filter(c => c.id !== id),
-        chat.data as ChatContext
-    ];
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -117,21 +106,25 @@ export function target(e: Event) {
     return e.target as HTMLInputElement;
 }
 
+export function updateChats(newChats: ChatContext[]) {
+    chats.value = newChats.sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export async function processUpdate(update: ChatUpdate) {
     const newChat = updateContext(chatContext.value, update, chatContext);
     const cs = chats.value;
     if (!cs.find(c => c.id === update.chatId)) {
-        chats.value = [
+        updateChats([
             ...chats.value,
             newChat
-        ].sort((a, b) => b.createdAt - a.createdAt);
+        ]);
     } else {
-        chats.value = chats.value.map(c => {
+        updateChats(chats.value.map(c => {
             if (c.id === update.chatId) {
                 return updateContext(c, update);
             }
             return c;
-        }).sort((a, b) => b.createdAt - a.createdAt);
+        }));
     }
 
     const playableMessage = update.messages?.find(m => m.hasAudio);
