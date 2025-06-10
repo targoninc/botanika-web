@@ -1,9 +1,6 @@
 import {ChatContext} from "../../models/chat/ChatContext";
-import fs from "fs";
-import {appDataPath} from "../appData";
 import {CLI} from "../CLI";
 import {db} from "../database/supabase.ts";
-import {Tables} from "../../models/supabaseDefinitions.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {ResourceReference} from "../../models/chat/ResourceReference.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
@@ -21,7 +18,8 @@ export class ChatStorage {
             .select("id")
             .eq("chat_id", chat.id)).data;
         const toAddMsgs = chat.history.filter(hm => existingMsgs.every(m => m.id !== hm.id));
-        CLI.debug(`Inserting ${toAddMsgs.length} messages`);
+        const toDeleteMsgs = existingMsgs.filter(hm => chat.history.every(m => m.id !== hm.id));
+        CLI.debug(`Updating chat messages +${toAddMsgs.length} | -${toDeleteMsgs.length}`);
 
         for (const message of toAddMsgs) {
             const date = (new Date(message.time)).toISOString();
@@ -39,6 +37,12 @@ export class ChatStorage {
                 references: message.references,
                 files: message.files
             });
+        }
+
+        for (const message of toDeleteMsgs) {
+            await db.from("messages")
+                .delete()
+                .eq("id", message.id);
         }
     }
 

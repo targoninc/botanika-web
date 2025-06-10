@@ -95,6 +95,13 @@ export class Api extends ApiBase {
         });
     }
 
+    static branchFromMessage(chatId: string, messageId: string) {
+        return this.post(ApiEndpoint.BRANCH_CHAT, {
+            chatId,
+            messageId,
+        });
+    }
+
     static getUser() {
         return this.get(ApiEndpoint.GET_USER);
     }
