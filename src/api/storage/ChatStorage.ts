@@ -15,11 +15,16 @@ export class ChatStorage {
         });
 
         const existingMsgs = (await db.from("messages")
-            .select("id")
+            .select("*")
             .eq("chat_id", chat.id)).data;
         const toAddMsgs = chat.history.filter(hm => existingMsgs.every(m => m.id !== hm.id));
         const toDeleteMsgs = existingMsgs.filter(hm => chat.history.every(m => m.id !== hm.id));
-        CLI.debug(`Updating chat messages +${toAddMsgs.length} | -${toDeleteMsgs.length}`);
+
+        for (const message of toDeleteMsgs) {
+            await db.from("messages")
+                .delete()
+                .eq("id", message.id);
+        }
 
         for (const message of toAddMsgs) {
             const date = (new Date(message.time)).toISOString();
@@ -37,12 +42,6 @@ export class ChatStorage {
                 references: message.references,
                 files: message.files
             });
-        }
-
-        for (const message of toDeleteMsgs) {
-            await db.from("messages")
-                .delete()
-                .eq("id", message.id);
         }
     }
 

@@ -76,6 +76,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
             throw new Error("Chat not found");
         }
 
+        CLI.debug(`${chat.history.length} existing messages`);
         chat.history.push(newUserMessage(request.provider, request.model, request.message, modelSupportsFiles ? request.files : []));
         sendChatUpdate(ws, {
             chatId: chat.id,
