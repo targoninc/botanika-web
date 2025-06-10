@@ -15,7 +15,7 @@ import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
 import {ChatMessage} from "../../models/chat/ChatMessage";
 import {Api} from "../classes/api";
-import {attachCodeCopyButtons, createModal, scrollToLastMessage, toast} from "../classes/ui";
+import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
@@ -50,11 +50,13 @@ export class ChatTemplates {
     }
 
     static chatBox() {
+        const scrollPosition = signal(0);
+
         return create("div")
             .classes("flex-v", "flex-grow", "bordered-panel", "relative", "chat-box", "no-gap")
             .children(
                 ChatTemplates.botName(),
-                compute(c => ChatTemplates.chatHistory(c), chatContext),
+                compute(c => ChatTemplates.chatHistory(c, scrollPosition), chatContext),
                 ChatTemplates.chatInput(),
             ).build();
     }
@@ -70,7 +72,7 @@ export class ChatTemplates {
             ).build();
     }
 
-    static chatHistory(context: ChatContext) {
+    static chatHistory(context: ChatContext, scrollPosition: Signal<number>) {
         if (!context || !context.history) {
             return create("div")
                 .classes("flex-v", "flex-grow")
@@ -78,13 +80,6 @@ export class ChatTemplates {
                 .text("No messages yet")
                 .build();
         }
-
-        const oldScrollTop = document.querySelector(".chat-history")?.scrollTop ?? 0;
-        setTimeout(() => {
-            hljs.highlightAll();
-            attachCodeCopyButtons();
-            scrollToLastMessage(oldScrollTop);
-        });
 
         const dedupHistory = context.history.reduce((prev, cur) => {
             if (!prev.some(h => h.id === cur.id)) {
@@ -94,9 +89,14 @@ export class ChatTemplates {
         }, []);
         const lastMessageIsUser = dedupHistory.at(-1)?.type === "user";
 
-        return create("div")
+        const hist = create("div")
             .classes("flex-v", "flex-grow", "chat-history")
             .styles("overflow-y", "auto")
+            .onwheel(() => {
+                if (hist.scrollHeight > 0) {
+                    scrollPosition.value = hist.scrollTop;
+                }
+            })
             .children(
                 create("div")
                     .classes("restrict-width-small", "flex-v")
@@ -104,9 +104,17 @@ export class ChatTemplates {
                         ...dedupHistory
                             .sort((a, b) => a.time - b.time)
                             .map(message => ChatTemplates.chatMessage(message)),
-                        when(lastMessageIsUser, GenericTemplates.spinner())
+                        when(lastMessageIsUser, GenericTemplates.spinner()),
+                        GenericTemplates.spacer()
                     ).build()
             ).build();
+
+        setTimeout(() => {
+            hljs.highlightAll();
+            attachCodeCopyButtons();
+        });
+
+        return hist;
     }
 
     private static chatMessage(message: ChatMessage) {

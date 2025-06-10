@@ -567,7 +567,6 @@ kbd {
 }
 
 .message-content > div {
-    line-break: anywhere;
     max-width: 100%;
 }
 

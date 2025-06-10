@@ -103,13 +103,3 @@ export function attachCodeCopyButtons() {
         }
     }
 }
-
-export function scrollToLastMessage(scrollPosition: number) {
-    const history = document.querySelector(".chat-history");
-    history.scrollTop = scrollPosition;
-
-    const messages = document.querySelectorAll(".chat-message");
-    if (messages.length > 0) {
-        messages[messages.length - 1].scrollIntoView(true);
-    }
-}
