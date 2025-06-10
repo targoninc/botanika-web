@@ -318,6 +318,7 @@ export class ChatTemplates {
                         create("div")
                             .classes("flex", "align-center")
                             .children(
+                                when(voiceConfigured, AudioTemplates.voiceButton()),
                                 GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button"]),
                             ).build(),
                     ).build(),
@@ -325,7 +326,6 @@ export class ChatTemplates {
                     .classes("flex", "space-between")
                     .children(
                         ChatTemplates.llmSelector(),
-                        when(voiceConfigured, AudioTemplates.voiceButton()),
                     ).build(),
             ).build();
     }
