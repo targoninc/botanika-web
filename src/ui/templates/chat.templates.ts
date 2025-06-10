@@ -27,7 +27,7 @@ import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {AnyNode, compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button} from "@targoninc/jess-components";
+import {button, icon} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
@@ -37,6 +37,7 @@ import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessag
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {attachFiles} from "../classes/attachFiles.ts";
 import {pasteFile} from "../classes/pasteFile.ts";
+import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -78,10 +79,11 @@ export class ChatTemplates {
                 .build();
         }
 
+        const oldScrollTop = document.querySelector(".chat-history")?.scrollTop ?? 0;
         setTimeout(() => {
             hljs.highlightAll();
             attachCodeCopyButtons();
-            scrollToLastMessage();
+            scrollToLastMessage(oldScrollTop);
         });
 
         const dedupHistory = context.history.reduce((prev, cur) => {
@@ -175,10 +177,9 @@ export class ChatTemplates {
                     }
 
                     if (f.mimeType === "application/pdf") {
-                        return create("iframe")
-                            .classes("message-content-pdf")
-                            .src(`data:${f.mimeType};base64,` + f.base64)
-                            .build();
+                        return ChatTemplates.fillButton("open_in_new", f.name, () => {
+                            window.open(`data:${f.mimeType};base64,` + f.base64, "_blank");
+                        });
                     }
 
                     return button({
@@ -300,9 +301,22 @@ export class ChatTemplates {
         });
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
         const flyoutVisible = signal(false);
+        const isDraggingOver = signal(false);
 
         return create("div")
-            .classes("chat-input", "flex-v", "small-gap")
+            .classes("chat-input", "relative", "flex-v", "small-gap")
+            .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
+            .ondragover((e: DragEvent) => {
+                e.preventDefault();
+                isDraggingOver.value = true;
+            })
+            .ondragleave(() => {
+                isDraggingOver.value = false;
+            })
+            .ondrop((e: DragEvent) => {
+                isDraggingOver.value = false;
+                handleDroppedFiles(e, files);
+            })
             .children(
                 create("div")
                     .classes("flex", "space-between")
@@ -599,9 +613,14 @@ export class ChatTemplates {
                 .classes("file-display-image")
                 .src(`data:${file.mimeType};base64,` + file.base64)
                 .build();
+        } else if (file.mimeType === "application/pdf") {
+            width = "10em";
+            content = ChatTemplates.fillButton("open_in_new", file.name, () => {
+                window.open(`data:${file.mimeType};base64,` + file.base64, "_blank");
+            });
         } else {
             content = create("span")
-                .text(file.mimeType)
+                .text(file.name ?? file.mimeType)
                 .build();
         }
 
@@ -614,6 +633,25 @@ export class ChatTemplates {
                     .classes("file-actions")
                     .children(
                         GenericTemplates.buttonWithIcon("close", "", () => files.value = files.value.filter(f => f.id !== file.id)),
+                    ).build()
+            ).build();
+    }
+
+    private static fillButton(iconStr: string, text: string, onclick: () => void) {
+        return create("div")
+            .classes("full-width", "full-height", "flex", "card", "clickable", "align-children", "center-content")
+            .onclick(onclick)
+            .children(
+                create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        icon({
+                            icon: iconStr,
+                        }),
+                        create("span")
+                            .classes("text-small")
+                            .text(text)
+                            .build()
                     ).build()
             ).build();
     }

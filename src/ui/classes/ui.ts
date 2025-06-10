@@ -97,11 +97,17 @@ export function attachCodeCopyButtons() {
     for (const codeBlock of preCodes) {
         const pre = codeBlock.parentElement;
         pre.classList.add("relative");
-        pre.appendChild(GenericTemplates.codeCopyButton(codeBlock.textContent));
+        pre.classList.add("hljs");
+        if (!pre.lastElementChild.classList.contains("code-copy-button")) {
+            pre.appendChild(GenericTemplates.codeCopyButton(codeBlock.textContent));
+        }
     }
 }
 
-export function scrollToLastMessage() {
+export function scrollToLastMessage(scrollPosition: number) {
+    const history = document.querySelector(".chat-history");
+    history.scrollTop = scrollPosition;
+
     const messages = document.querySelectorAll(".chat-message");
     if (messages.length > 0) {
         messages[messages.length - 1].scrollIntoView(true);
