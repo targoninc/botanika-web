@@ -60,7 +60,7 @@ export class ChatTemplates {
             .children(
                 GenericTemplates.icon("person"),
                 create("span")
-                    .text(compute(c => c.botname ?? "Botanika", configuration))
+                    .text(compute(c => c.botname ?? "Anika", configuration))
                     .build()
             ).build();
     }

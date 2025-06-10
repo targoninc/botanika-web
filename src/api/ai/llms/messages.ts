@@ -58,7 +58,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
     return [
         {
             role: "system",
-            content: `You are ${configuration.botname}, an assistant. Only call tools if absolutely necessary or explicitly requested. Never call tools twice. Here is a description of you: ${configuration.botDescription}`
+            content: `You are ${configuration.botname ?? "Anika"}, an assistant. Only call tools if absolutely necessary or explicitly requested. Never call tools twice. Here is a description of you: ${configuration.botDescription}`
         },
         {
             role: "system",
