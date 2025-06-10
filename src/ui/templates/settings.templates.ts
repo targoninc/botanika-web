@@ -71,6 +71,17 @@ export class SettingsTemplates {
                 type: "number",
             },
             {
+                key: "transcriptionModel",
+                icon: "transcribe",
+                label: "Transcription Model",
+                description: "Which OpenAI transcription model to use.",
+                type: "string",
+                validator: value => {
+                    const modelOptions = ["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper"];
+                    return modelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${modelOptions.join(",")}`];
+                }
+            },
+            {
                 key: "tintColor",
                 icon: "colors",
                 label: "UI tint color",
@@ -88,9 +99,10 @@ export class SettingsTemplates {
                     .children(
                         GenericTemplates.buttonWithIcon("chevron_left", "Back to chat", async () => {
                             activePage.value = "chat";
-                        }),
+                        }, ["fixed"]),
                         create("h1")
                             .classes("flex")
+                            .styles("margin-top", "2em")
                             .children(
                                 create("span")
                                     .text("Settings")
