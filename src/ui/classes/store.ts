@@ -124,7 +124,7 @@ export async function processUpdate(update: ChatUpdate) {
         chats.value = [
             ...chats.value,
             newChat
-        ];
+        ].sort((a, b) => b.createdAt - a.createdAt);
     } else {
         chats.value = chats.value.map(c => {
             if (c.id === update.chatId) {
