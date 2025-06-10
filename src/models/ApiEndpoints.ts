@@ -14,8 +14,9 @@ export enum ApiEndpoint {
     // Chat endpoints
     CHAT = "/chat",
     CHATS = "/chats",
-    CHAT_BY_ID = "/chat/", // Used with parameter: chatId,
+    CHAT_BY_ID = "/chat/", // Used with parameter: chatId
     DELETE_AFTER_MESSAGE = "/clearChatAfterMessage", // Used with parameters: chatId, messageId
+    BRANCH_CHAT = "/api/branch-chat", // Used with parameter: chatId
 
     // Models endpoint
     MODELS = "/models",

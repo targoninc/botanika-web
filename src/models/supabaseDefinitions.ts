@@ -36,18 +36,21 @@ export type Database = {
     Tables: {
       chats: {
         Row: {
+          branched_from_chat_id: string | null
           created_at: string
           id: string
           name: string | null
           user_id: string
         }
         Insert: {
+          branched_from_chat_id?: string | null
           created_at?: string
           id?: string
           name?: string | null
           user_id?: string
         }
         Update: {
+          branched_from_chat_id?: string | null
           created_at?: string
           id?: string
           name?: string | null
@@ -115,6 +118,7 @@ export type Database = {
       }
       users: {
         Row: {
+          branched_from_chat_id: string | null
           configuration: Json
           created_at: string
           external_id: string
@@ -123,6 +127,7 @@ export type Database = {
           shortcuts: Json
         }
         Insert: {
+          branched_from_chat_id?: string | null
           configuration?: Json
           created_at?: string
           external_id: string
@@ -131,6 +136,7 @@ export type Database = {
           shortcuts?: Json
         }
         Update: {
+          branched_from_chat_id?: string | null
           configuration?: Json
           created_at?: string
           external_id?: string

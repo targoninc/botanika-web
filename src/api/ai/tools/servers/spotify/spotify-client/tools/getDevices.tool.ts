@@ -4,7 +4,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import { Configuration } from "src/models/Configuration";
 import {z} from "zod";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
+import { WebsocketConnection } from "src/api/websocket-server/websocket";
 
 async function getDevices(userConfig: Configuration): Promise<SpotifyApi.UserDevicesResponse> {
     const api = await createClient(userConfig);

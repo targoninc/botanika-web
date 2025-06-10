@@ -3,7 +3,7 @@ import {ChatToolResult} from "../../../../../../../models/chat/ChatToolResult";
 import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import { Configuration } from "src/models/Configuration";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
+import { WebsocketConnection } from "src/api/websocket-server/websocket";
 
 async function addToSavedTracks(userConfig: Configuration, trackIds: string[]): Promise<SpotifyApi.SaveTracksForUserResponse> {
     const api = await createClient(userConfig);

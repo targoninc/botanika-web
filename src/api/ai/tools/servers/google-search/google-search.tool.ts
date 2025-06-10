@@ -7,7 +7,7 @@ import {ChatToolResult} from "../../../../../models/chat/ChatToolResult.ts";
 import {wrapTool} from "../../tooling.ts";
 import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts";
 import { Configuration } from "src/models/Configuration.ts";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket.ts";
+import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
 import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
 
 dotenv.config();

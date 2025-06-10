@@ -4,7 +4,7 @@ import {v4 as uuidv4} from "uuid";
 import {ToolResultUnion, ToolSet} from "ai";
 import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {sendChatUpdate, WebsocketConnection} from "../../../ui-server/websocket-server/websocket.ts";
+import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
 
 export function wrapTool(id: string, execute: (input: any) => Promise<any>, ws: WebsocketConnection, chat: ChatContext) {
     return async (input: any, ...args: any[]) => {

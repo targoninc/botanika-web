@@ -1,6 +1,6 @@
 import {IncomingMessage, Server} from "http";
 import {WebSocketServer} from "ws";
-import {CLI} from "../../api/CLI.ts";
+import {CLI} from "../CLI.ts";
 import {URL} from "url";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";

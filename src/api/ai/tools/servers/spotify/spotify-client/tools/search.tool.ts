@@ -6,7 +6,7 @@ import {SearchType} from "../models/SearchType";
 import {checkIfEnabled, createClient} from "../createClient";
 import {SpotifySearchOptions} from "../models/SpotifySearchOptions";
 import { Configuration } from "src/models/Configuration";
-import { WebsocketConnection } from "src/ui-server/websocket-server/websocket";
+import { WebsocketConnection } from "src/api/websocket-server/websocket";
 
 async function search(userConfig: Configuration, query: string, searchTypes: SearchType[]): Promise<SpotifyApi.SearchResponse> {
     const api = await createClient(userConfig);
