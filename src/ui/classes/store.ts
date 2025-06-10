@@ -131,7 +131,7 @@ export async function processUpdate(update: ChatUpdate) {
                 return updateContext(c, update);
             }
             return c;
-        });
+        }).sort((a, b) => b.createdAt - a.createdAt);
     }
 
     const playableMessage = update.messages?.find(m => m.hasAudio);
