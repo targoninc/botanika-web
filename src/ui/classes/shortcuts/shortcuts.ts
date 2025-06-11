@@ -8,7 +8,7 @@ export function addShortCutListener() {
     document.addEventListener("keydown", (e) => {
         const shortcutConfig = shortCutConfig.value;
         for (const [action, func] of Object.entries(shortCutActions)) {
-            if (e.shiftKey && e.key.toLowerCase() === shortcutConfig[action].toLowerCase()) {
+            if (e.ctrlKey && e.key.toLowerCase() === shortcutConfig[action].toLowerCase()) {
                 e.preventDefault();
                 func();
             }

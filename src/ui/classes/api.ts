@@ -6,6 +6,7 @@ import {McpServerConfig} from "../../models/mcp/McpServerConfig";
 import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
+import {Tables} from "../../models/supabaseDefinitions.ts";
 
 export class Api extends ApiBase {
     static getConfig() {
@@ -33,8 +34,9 @@ export class Api extends ApiBase {
         });
     }
 
-    static getChats() {
-        return this.get<ChatContext[]>(ApiEndpoint.CHATS);
+    static getNewestChats(from?: Date) {
+        // TODO: Implement from handling
+        return this.get<ChatContext[]>(`${ApiEndpoint.CHATS}?from=${from?.toISOString() ?? ""}`);
     }
 
     static getChat(chatId: string) {
@@ -103,6 +105,6 @@ export class Api extends ApiBase {
     }
 
     static getUser() {
-        return this.get(ApiEndpoint.GET_USER);
+        return this.get<Tables<"users">>(ApiEndpoint.GET_USER);
     }
 }

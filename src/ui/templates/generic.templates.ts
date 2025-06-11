@@ -100,10 +100,14 @@ export class GenericTemplates {
     static hotkey(hotkey: StringOrSignal, alwaysDisplay = false) {
         const show = compute(c => alwaysDisplay || (c.display_hotkeys === true && hotkey != null), configuration);
 
-        return when(show, create("kbd")
+        return when(show, GenericTemplates.pill(hotkey)) as AnyElement;
+    }
+
+    static pill(pillText: StringOrSignal) {
+        return create("kbd")
             .classes("hotkey")
-            .text(hotkey)
-            .build()) as AnyElement;
+            .text(pillText)
+            .build();
     }
 
     static spinner(circleCount = 4, delay = 0.2) {
@@ -191,7 +195,7 @@ export class GenericTemplates {
             ).build();
     }
 
-    static confirmModalWithContent(title: StringOrSignal, content: AnyNode | AnyNode[], confirmText = "Confirm", cancelText = "Cancel",
+    static confirmModalWithContent(title: StringOrSignal, content: AnyNode, confirmText = "Confirm", cancelText = "Cancel",
                                    confirmCallback = () => {
                                    }, cancelCallback = () => {
         }) {

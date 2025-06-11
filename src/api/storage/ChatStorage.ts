@@ -86,8 +86,15 @@ export class ChatStorage {
         await db.from("chats").delete().eq("id", chatId).eq("user_id", userId);
     }
 
-    static async getUserChats(userId: string) {
-        const chats = (await db.from("chats").select("*").eq("user_id", userId)).data;
+    static async getUserChats(userId: string, from: Date = null): Promise<ChatContext[]> {
+        let query = db.from("chats").select("*").eq("user_id", userId);
+
+        if (from) {
+            // TODO: Implement new column and update it once a chat is updated!
+            // query = query.gt("updated_at", from.toISOString());
+        }
+
+        const chats = (await query).data;
         return chats.map(c => {
             return <ChatContext>{
                 id: c.id,
