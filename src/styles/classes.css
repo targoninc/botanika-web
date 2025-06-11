@@ -298,12 +298,10 @@ iframe {
 
 .modal-close {
     position: absolute;
-    top: 0;
-    right: 0;
-    padding: var(--gap-v);
+    top: var(--gap-v);
+    right: var(--gap-v);
     box-sizing: border-box;
-    background: var(--bg-2);
-    border-radius: 0 0 var(--input-border-radius) var(--input-border-radius);
+    z-index: 999;
 }
 
 .toggle-container {
@@ -576,6 +574,12 @@ kbd {
     border-radius: var(--attachment-border-radius);
 }
 
+.modal-image {
+    max-height: 90dvh;
+    max-width: 90dvw;
+    border-radius: var(--attachment-border-radius);
+}
+
 .chat-message.user {
     align-self: flex-end;
     align-items: flex-end;
@@ -837,4 +841,23 @@ pre {
     position: absolute;
     top: calc(-1 * var(--gap-h));
     right: calc(-1 * var(--gap-h));
+}
+
+.image-hover {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-radius: var(--attachment-border-radius);
+}
+
+.image-hover:hover {
+    background: var(--tint-transpresent);
+}
+
+.showOnParentHover {
+    display: none !important;
+}
+
+div:hover > .showOnParentHover {
+    display: flex !important;
 }

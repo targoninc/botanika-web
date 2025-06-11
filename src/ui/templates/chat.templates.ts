@@ -178,10 +178,7 @@ export class ChatTemplates {
             .children(
                 ...message.files.map(f => {
                     if (f.mimeType.startsWith("image/")) {
-                        return create("img")
-                            .classes("message-content-image")
-                            .src(`data:${f.mimeType};base64,` + f.base64)
-                            .build();
+                        return GenericTemplates.messageImage(f);
                     }
 
                     if (f.mimeType === "application/pdf") {

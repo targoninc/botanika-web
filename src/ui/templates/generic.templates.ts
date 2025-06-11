@@ -15,7 +15,8 @@ import {
     TypeOrSignal,
     when
 } from "@targoninc/jess";
-import {button, input, textarea, toggle} from "@targoninc/jess-components";
+import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
+import {MessageFile} from "../../models/chat/MessageFile.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -525,6 +526,30 @@ export class GenericTemplates {
             .onclick(() => userPopupVisible.value = !userPopupVisible.value)
             .children(
                 GenericTemplates.icon(image, ["user-image"])
+            ).build();
+    }
+
+    static messageImage(f: MessageFile) {
+        return create("div")
+            .classes("relative")
+            .children(
+                create("img")
+                    .classes("message-content-image")
+                    .src(`data:${f.mimeType};base64,` + f.base64)
+                    .build(),
+                create("div")
+                    .classes("image-hover", "flex", "full-height", "full-width", "align-center", "center-content", "showOnParentHover")
+                    .onclick(() => {
+                        createModal(create("img")
+                            .classes("modal-image")
+                            .src(`data:${f.mimeType};base64,` + f.base64)
+                            .build());
+                    })
+                    .children(
+                        icon({
+                            icon: "visibility",
+                        })
+                    ).build()
             ).build();
     }
 }
