@@ -1,15 +1,15 @@
 import {Application, Request, RequestHandler, Response} from "express";
-import {db} from "../database/supabase.ts";
-import {Tables} from "../../models/supabaseDefinitions.ts";
+import {db} from "../database/db.ts";
 import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
 import {auth, Session} from "express-openid-connect";
 import {base64Decode} from "./base64Decode.ts";
+import { User } from "@prisma/client";
 
 declare module "express-serve-static-core" {
     interface Request {
-        user?: Tables<"users">,
+        user?: User,
         appSession: Session & {
-            user?: Tables<"users">
+            user?: User
         }
     }
 }
@@ -23,11 +23,15 @@ export const isAdmin: RequestHandler = (req, res, next) => {
 };
 
 async function upsertAndGetUser(externalId: string) {
-    await db.from("users")
-        .upsert({
-            external_id: externalId
-        });
-    return (await db.from("users").select("*").eq("external_id", externalId).single()).data;
+    await db.user.upsert({
+        where: { externalId },
+        update: {},
+        create: { externalId }
+    });
+
+    return await db.user.findUnique({
+        where: { externalId }
+    });
 }
 
 export function extractExternalId(idToken: string) {
@@ -46,7 +50,9 @@ export function addAuthenticationMiddleware(app: Application) {
         idpLogout: true,
         afterCallback: async (req, res, session) => {
             const userId = extractExternalId(session.id_token);
-            const user = (await db.from("users").select("*").eq("external_id", userId).single()).data;
+            const user = await db.user.findUnique({
+                where: { externalId: userId }
+            });
             return {
                 ...session,
                 user

@@ -4,22 +4,22 @@ import {Application, Request} from "express";
 import {ApiEndpoint} from "../models/ApiEndpoints";
 import {execSync} from "child_process";
 import {BotanikaFeature} from "../models/features/BotanikaFeature";
-import {db} from "./database/supabase.ts";
+import {db} from "./database/db.ts";
 
 
 export async function getConfig(userId: string): Promise<Configuration> {
-    const config = await db.from("users")
-        .select("configuration")
-        .eq("id", userId)
-        .single();
-    return config.data.configuration as Configuration;
+    const user = await db.user.findUnique({
+        where: { id: userId },
+        select: { configuration: true }
+    });
+    return user.configuration as unknown as Configuration;
 }
 
 export async function setConfig(req: Request, newConfig: Configuration) {
-    await db.from("users")
-        .update({
-            configuration: newConfig
-        }).eq("external_id", req.oidc.user.sub);
+    await db.user.update({
+        where: { externalId: req.oidc.user.sub },
+        data: { configuration: newConfig as any }
+    });
 }
 
 export async function getFeatureOption(req: Request, feature: BotanikaFeature, optionKey: string) {
