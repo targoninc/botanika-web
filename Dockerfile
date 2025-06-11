@@ -19,5 +19,5 @@ RUN bunx prisma generate
 # Build the UI
 RUN bun run build-prod
 
-# Define the command to run the app
-CMD ["bun", "run", "start-prod"]
+# Define the command to run the app with database initialization
+CMD ["bun", "run", "start-with-db"]

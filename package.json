@@ -13,7 +13,9 @@
     "build-dev": "bun build src/ui/index.ts --outdir ./out --sourcemap=linked --watch",
     "start-dev": "bun --watch src/index.ts",
     "build-prod": "bun build src/ui/index.ts --outdir ./out --sourcemap=linked --minify",
-    "start-prod": "bun src/index.ts"
+    "start-prod": "bun src/index.ts",
+    "init-db": "bun src/api/database/initDb.ts",
+    "start-with-db": "bun run init-db && bun src/index.ts"
   },
   "author": {
     "name": "alexa",

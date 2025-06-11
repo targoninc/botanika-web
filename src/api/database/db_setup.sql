@@ -10,7 +10,7 @@ create table if not exists public.users
 (
     id                    uuid                     default gen_random_uuid()                                                    not null
     primary key,
-    external_id           text                                                                                                  not null
+    externalId           text                                                                                                  not null
     unique,
     created_at            timestamp with time zone default now()                                                                not null,
     "isAdmin"             boolean                  default false                                                                not null,

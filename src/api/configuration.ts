@@ -4,21 +4,19 @@ import {Application, Request} from "express";
 import {ApiEndpoint} from "../models/ApiEndpoints";
 import {execSync} from "child_process";
 import {BotanikaFeature} from "../models/features/BotanikaFeature";
-import {db} from "./database/db.ts";
-
+import {db, updateUser} from "./database/db.ts";
 
 export async function getConfig(userId: string): Promise<Configuration> {
     const user = await db.user.findUnique({
         where: { id: userId },
         select: { configuration: true }
     });
-    return user.configuration as unknown as Configuration;
+    return (user?.configuration ?? {}) as Configuration;
 }
 
 export async function setConfig(req: Request, newConfig: Configuration) {
-    await db.user.update({
-        where: { externalId: req.oidc.user.sub },
-        data: { configuration: newConfig as any }
+    await updateUser(req.user.id, {
+        configuration: newConfig
     });
 }
 

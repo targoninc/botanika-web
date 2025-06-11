@@ -29,8 +29,8 @@ async function upsertAndGetUser(externalId: string) {
         create: { externalId }
     });
 
-    return await db.user.findUnique({
-        where: { externalId }
+    return db.user.findUnique({
+        where: {externalId}
     });
 }
 
@@ -62,7 +62,7 @@ export function addAuthenticationMiddleware(app: Application) {
 
     app.use(async (req, res, next) => {
         if (req.oidc?.user) {
-            if(!req.appSession.user) {
+            if (!req.appSession.user) {
                 req.appSession.user = await upsertAndGetUser(extractExternalId(req.oidc.idToken));
             }
             req.user = req.appSession.user;
