@@ -22,12 +22,6 @@ create table if not exists public.users
 alter table public.users
     owner to postgres;
 
-grant delete, insert, references, select, trigger, truncate, update on public.users to anon;
-
-grant delete, insert, references, select, trigger, truncate, update on public.users to authenticated;
-
-grant delete, insert, references, select, trigger, truncate, update on public.users to service_role;
-
 create table if not exists public.chats
 (
     id                    uuid                     default gen_random_uuid() not null
@@ -43,12 +37,6 @@ create table if not exists public.chats
 
 alter table public.chats
     owner to postgres;
-
-grant delete, insert, references, select, trigger, truncate, update on public.chats to anon;
-
-grant delete, insert, references, select, trigger, truncate, update on public.chats to authenticated;
-
-grant delete, insert, references, select, trigger, truncate, update on public.chats to service_role;
 
 create table if not exists public.messages
 (
@@ -70,10 +58,3 @@ create table if not exists public.messages
 
 alter table public.messages
     owner to postgres;
-
-grant delete, insert, references, select, trigger, truncate, update on public.messages to anon;
-
-grant delete, insert, references, select, trigger, truncate, update on public.messages to authenticated;
-
-grant delete, insert, references, select, trigger, truncate, update on public.messages to service_role;
-

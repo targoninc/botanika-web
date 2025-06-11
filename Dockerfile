@@ -7,12 +7,14 @@ WORKDIR /usr/src/app
 COPY package.json bun.lock ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy the rest of the application
 COPY ./src ./src
-COPY ./package.json .
-COPY ./bun.lock .
+COPY ./prisma ./prisma
+
+# Generate Prisma client
+RUN bunx prisma generate
 
 # Build the UI
 RUN bun run build-prod
