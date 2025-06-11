@@ -1,11 +1,11 @@
 import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
 import {BotanikaServerEventType} from "../../../models/websocket/serverEvents/botanikaServerEventType.ts";
-import {processUpdate} from "../store.ts";
 import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
 import {toast} from "../ui.ts";
 import {ServerErrorEvent} from "../../../models/websocket/serverEvents/serverErrorEvent.ts";
 import {ToastType} from "../../enums/ToastType.ts";
 import {ServerWarningEvent} from "../../../models/websocket/serverEvents/serverWarningEvent.ts";
+import {processUpdate} from "../state/store.ts";
 
 export async function handleMessage(event: BotanikaServerEvent<any>) {
     switch (event.type) {

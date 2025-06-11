@@ -1,12 +1,13 @@
 import { ApiBase } from "./api.base";
-import {Configuration} from "../../models/Configuration";
-import {ChatContext} from "../../models/chat/ChatContext";
-import {McpConfiguration} from "../../models/mcp/McpConfiguration";
-import {McpServerConfig} from "../../models/mcp/McpServerConfig";
-import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
-import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
-import {ApiEndpoint} from "../../models/ApiEndpoints";
-import {Tables} from "../../models/supabaseDefinitions.ts";
+import {Configuration} from "../../../models/Configuration.ts";
+import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
+import {ChatContext} from "../../../models/chat/ChatContext.ts";
+import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
+import {McpConfiguration} from "../../../models/mcp/McpConfiguration.ts";
+import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
+import {Tables} from "../../../models/supabaseDefinitions.ts";
+import {UserinfoResponse} from "openid-client";
 
 export class Api extends ApiBase {
     static getConfig() {
@@ -104,6 +105,6 @@ export class Api extends ApiBase {
     }
 
     static getUser() {
-        return this.get<Tables<"users">>(ApiEndpoint.GET_USER);
+        return this.get<Tables<"users"> & UserinfoResponse>(ApiEndpoint.GET_USER);
     }
 }

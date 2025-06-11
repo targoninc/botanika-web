@@ -1,5 +1,5 @@
-import {ApiBase} from "../api.base";
-import {currentlyPlayingAudio} from "../store";
+import {currentlyPlayingAudio} from "../state/store.ts";
+import {ApiBase} from "../state/api.base.ts";
 
 let audio;
 

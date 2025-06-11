@@ -1,24 +1,23 @@
 import {Api} from "./api";
-import {Configuration} from "../../models/Configuration";
-import {language} from "./i8n/translation";
-import {Language} from "./i8n/language";
-import {ChatContext} from "../../models/chat/ChatContext";
-import {terminator} from "../../models/chat/terminator";
-import {updateContext} from "./updateContext.ts";
-import {INITIAL_CONTEXT} from "../../models/chat/initialContext";
-import {McpConfiguration} from "../../models/mcp/McpConfiguration";
-import {playAudio} from "./audio/audio";
-import {ChatUpdate} from "../../models/chat/ChatUpdate";
-import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
-import {defaultShortcuts} from "../../models/shortcuts/defaultShortcuts";
-import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
-import {toast} from "./ui";
-import {ToastType} from "../enums/ToastType";
-import {setRootCssVar} from "./setRootCssVar";
-import {Signal, signal} from "@targoninc/jess";
-import {Tables} from "../../models/supabaseDefinitions.ts";
+import {signal} from "@targoninc/jess";
 import {ApiResponse} from "./api.base.ts";
-import {response} from "express";
+import {tryLoadFromCache} from "./tryLoadFromCache.ts";
+import { Configuration } from "../../../models/Configuration";
+import {ChatContext} from "../../../models/chat/ChatContext.ts";
+import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
+import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
+import {McpConfiguration} from "../../../models/mcp/McpConfiguration.ts";
+import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
+import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
+import {Tables} from "../../../models/supabaseDefinitions.ts";
+import {Language} from "../i8n/language.ts";
+import { language } from "../i8n/translation.ts";
+import {setRootCssVar} from "../setRootCssVar.ts";
+import { asyncSemaphore } from "../asyncSemaphore.ts";
+import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
+import {updateContext} from "../updateContext.ts";
+import {playAudio} from "../audio/audio.ts";
+import {UserinfoResponse} from "openid-client";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -29,7 +28,7 @@ export const mcpConfig = signal<McpConfiguration|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
-export const currentUser = signal<Tables<"users">>(null);
+export const currentUser = signal<Tables<"users"> & UserinfoResponse>(null);
 
 export function initializeStore() {
     configuration.subscribe(c => {
@@ -64,69 +63,7 @@ export function initializeStore() {
     tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
     tryLoadFromCache<McpConfiguration>("mcpConfig", mcpConfig, Api.getMcpConfig());
     tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
-    tryLoadFromCache<Tables<"users">>("currentUser", currentUser, Api.getUser());
-}
-
-function tryLoadFromCache<T>(key: string, value: Signal<T>, apiRequest: Promise<ApiResponse<T | string>>, getUpdateData: (data: T) => T = null){
-    const storeCacheKey = "storeCache_" + key;
-    const cachedValue = localStorage.getItem(storeCacheKey);
-
-    value.subscribe(newValue => {
-        localStorage.setItem(storeCacheKey, JSON.stringify(newValue));
-    })
-
-    if (cachedValue) {
-        try {
-            value.value = JSON.parse(cachedValue) as T;
-        } catch (e) {
-            console.error(`Error parsing cached value for ${storeCacheKey}:`, e);
-        }
-    }
-
-    if (!getUpdateData) {
-        getUpdateData = (data: T) => {
-            return data;
-        };
-    }
-
-    apiRequest.then(response => {
-        if (response.success && response.data) {
-            value.value = getUpdateData(response.data as T);
-        }
-    });
-}
-
-function asyncSemaphore(maxCount: number){
-    let currentCount = 0;
-    const releaseMethods: (() => void)[] = [];
-
-    const release = () => {
-        currentCount--;
-        if (releaseMethods.length > 0) {
-            const nextRelease = releaseMethods.shift();
-            if (nextRelease) {
-                nextRelease();
-            }
-        }
-    };
-
-    return {
-        async acquire(): Promise<() => void>  {
-            if (currentCount < maxCount) {
-                currentCount++;
-                return release;
-            }
-
-            return await new Promise<() => void>((resolve) => {
-                currentCount++;
-                releaseMethods.push(() => resolve(release));
-            });
-        },
-    };
-}
-
-function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    tryLoadFromCache<Tables<"users"> & UserinfoResponse>("currentUser", currentUser, Api.getUser());
 }
 
 export async function loadAllChats(newChats: ChatContext[]) {
@@ -201,36 +138,6 @@ export async function processUpdate(update: ChatUpdate) {
     const isLast = playableMessage && update.messages.pop().id === playableMessage.id;
     if (playableMessage && isLast) {
         playAudio(playableMessage.id).then();
-    }
-}
-
-export async function updateContextFromStream(body: ReadableStream<Uint8Array>) {
-    const reader = body.getReader();
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-            break;
-        }
-        const decodedUpdates = new TextDecoder().decode(value).split(terminator).filter(s => s.length > 0);
-        const lastUpdate = decodedUpdates.pop();
-        if (!lastUpdate) {
-            continue;
-        }
-        let update: ChatUpdate;
-        try {
-            update = JSON.parse(lastUpdate.trim());
-        } catch (e) {
-            console.log("Error parsing update: ", lastUpdate, e.toString());
-            continue;
-        }
-
-        if (update.error) {
-            toast(update.error, null, ToastType.negative);
-            continue;
-        }
-
-        await processUpdate(update);
     }
 }
 

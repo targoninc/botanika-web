@@ -1,6 +1,4 @@
 import {GenericTemplates} from "./generic.templates";
-import {Api} from "../classes/api";
-import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/store";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
 import {McpConfiguration} from "../../models/mcp/McpConfiguration";
 import {createModal, toast} from "../classes/ui";
@@ -13,6 +11,8 @@ import {compute, create, InputType, nullElement, Signal, signal, signalMap, when
 import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {ToastType} from "../enums/ToastType.ts";
+import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
+import {Api} from "../classes/state/api.ts";
 
 export class SettingsTemplates {
     static settings() {

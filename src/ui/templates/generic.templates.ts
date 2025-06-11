@@ -1,5 +1,5 @@
 import {closeModal, createModal, toast} from "../classes/ui";
-import {Callback, configuration, currentUser, target} from "../classes/store";
+import {Callback, configuration, currentUser, target} from "../classes/state/store";
 import {Tab} from "../../models/uiExtensions/Tab";
 import {TextSegment} from "../../models/uiExtensions/TextSegment";
 import {ToastType} from "../enums/ToastType";

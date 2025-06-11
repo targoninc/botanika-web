@@ -1,4 +1,4 @@
-import {activePage, shortCutConfig, target} from "../store";
+import {activePage, shortCutConfig, target} from "../state/store";
 import {shortCutActions} from "./shortCutActions";
 import {pages} from "../../enums/pages";
 import {closeModal} from "../ui";

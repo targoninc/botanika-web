@@ -11,11 +11,10 @@ import {
     shortCutConfig,
     target,
     updateChats,
-} from "../classes/store";
+} from "../classes/state/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
 import {ChatMessage} from "../../models/chat/ChatMessage";
-import {Api} from "../classes/api";
 import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
@@ -40,6 +39,7 @@ import {attachFiles} from "../classes/attachFiles.ts";
 import {pasteFile} from "../classes/pasteFile.ts";
 import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
+import {Api} from "../classes/state/api.ts";
 
 export class ChatTemplates {
     static chat() {
