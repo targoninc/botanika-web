@@ -17,7 +17,7 @@ export const db = prisma;
 })();
 
 export async function updateUser(id: string, update: Partial<User>) {
-    const user = await db.user.findOne({ where: { id: id } });
+    const user = await db.user.findUnique({ where: { id: id } });
     if (!user) {
         return;
     }
