@@ -497,7 +497,7 @@ export class GenericTemplates {
                     .build(),
                 create("span")
                     .classes("monospace")
-                    .text(compute(u => u?.external_id, currentUser))
+                    .text(compute(u => u?.externalId, currentUser))
                     .build(),
             ).build();
     }

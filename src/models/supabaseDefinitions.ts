@@ -124,7 +124,7 @@ export type Database = {
           branched_from_chat_id: string | null
           configuration: Json
           created_at: string
-          external_id: string
+          externalId: string
           id: string
           isAdmin: boolean
           shortcuts: Json
@@ -133,7 +133,7 @@ export type Database = {
           branched_from_chat_id?: string | null
           configuration?: Json
           created_at?: string
-          external_id: string
+          externalId: string
           id?: string
           isAdmin?: boolean
           shortcuts?: Json
@@ -142,7 +142,7 @@ export type Database = {
           branched_from_chat_id?: string | null
           configuration?: Json
           created_at?: string
-          external_id?: string
+          externalId?: string
           id?: string
           isAdmin?: boolean
           shortcuts?: Json

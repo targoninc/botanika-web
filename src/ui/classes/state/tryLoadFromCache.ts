@@ -18,9 +18,7 @@ export function tryLoadFromCache<T>(key: string, value: Signal<T>, apiRequest: P
     }
 
     if (!getUpdateData) {
-        getUpdateData = (data: T) => {
-            return data;
-        };
+        getUpdateData = (data: T) => data;
     }
 
     apiRequest.then(response => {

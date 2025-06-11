@@ -27,11 +27,17 @@ bun install
 # Generate Prisma client
 bunx prisma generate
 
+# Initialize the database (if needed)
+bun run init-db
+
 # Continuous build
 bun build-ui-dev
 
 # Start the app
 bun start-ui-dev
+
+# Or start the app with automatic database initialization
+bun run start-with-db
 ```
 
 ### Docker Compose
@@ -47,6 +53,8 @@ docker-compose down
 ```
 
 The PostgreSQL database will be initialized with the schema defined in `src/api/database/db_setup.sql`. The database data will be persisted in a Docker volume.
+
+The application is configured to automatically initialize the database if it's fresh. It will wait for the database to be ready before starting, and then run the initialization script if needed. This ensures that the application always has the required database tables available.
 
 ### Database Configuration
 

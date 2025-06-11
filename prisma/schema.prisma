@@ -23,44 +23,44 @@ enum Language {
 }
 
 model User {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  externalId          String   @unique @map("external_id")
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
-  isAdmin             Boolean  @default(false) @map("isAdmin")
-  configuration       Json     @default("{}") @db.Json
-  shortcuts           Json     @default("{   \"newChat\": \"n\",   \"settings\": \"s\",   \"focusInput\": \" \" }") @db.Json
-  branchedFromChatId  String?  @map("branched_from_chat_id") @db.Uuid
-  chats               Chat[]
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  externalId         String   @unique @map("externalId")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  isAdmin            Boolean  @default(false) @map("isAdmin")
+  configuration      Json     @default("{}") @db.Json
+  shortcuts          Json     @default("{   \"newChat\": \"n\",   \"settings\": \"s\",   \"focusInput\": \" \" }") @db.Json
+  branchedFromChatId String?  @map("branched_from_chat_id") @db.Uuid
+  chats              Chat[]
 
   @@map("users")
 }
 
 model Chat {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId              String    @map("user_id") @db.Uuid
-  name                String?
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  branchedFromChatId  String?   @map("branched_from_chat_id") @db.Uuid
-  updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamp
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  messages            Message[]
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  name               String?
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  branchedFromChatId String?   @map("branched_from_chat_id") @db.Uuid
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamp
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  messages           Message[]
 
   @@map("chats")
 }
 
 model Message {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  chatId      String      @map("chat_id") @db.Uuid
-  type        MessageType
-  text        String?
-  finished    Boolean     @default(false)
-  hasAudio    Boolean     @default(false) @map("hasAudio")
-  provider    String?
-  model       String?
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  references  Json        @default("[]") @map("references") @db.Json
-  files       Json        @default("[]") @db.Json
-  chat        Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chatId     String      @map("chat_id") @db.Uuid
+  type       MessageType
+  text       String?
+  finished   Boolean     @default(false)
+  hasAudio   Boolean     @default(false) @map("hasAudio")
+  provider   String?
+  model      String?
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  references Json        @default("[]") @map("references") @db.Json
+  files      Json        @default("[]") @db.Json
+  chat       Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("messages")
 }

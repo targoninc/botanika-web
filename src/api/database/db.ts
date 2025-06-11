@@ -1,4 +1,24 @@
 // Re-export the Prisma client as db for backward compatibility
-import { prisma } from './prisma';
+import {prisma, getPrismaClient} from './prisma';
+import {User} from "@prisma/client";
 
+// Export the Prisma client directly for backward compatibility
 export const db = prisma;
+
+// Initialize the database when this module is imported
+(async () => {
+    try {
+        // This ensures the database is initialized before any queries are executed
+        await getPrismaClient();
+        console.log('Database client ready');
+    } catch (error) {
+        console.error('Failed to initialize database client:', error);
+    }
+})();
+
+export async function updateUser(id: string, update: Partial<User>) {
+    await db.user.update({
+        data: update,
+        where: { id }
+    });
+}
