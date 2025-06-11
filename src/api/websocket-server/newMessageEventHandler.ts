@@ -137,7 +137,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
         throw new Error("Invalid request");
     }
 
-    const availableModels = await getAvailableModels(request.provider);
+    const availableModels = getAvailableModels(request.provider);
     const modelDefinition = availableModels.find(m => m.id === request.model);
     if (!modelDefinition) {
         throw new Error(`Model ${request.model} not found in provider ${request.provider}`);

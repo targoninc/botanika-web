@@ -59,7 +59,7 @@ export function getModel(providerName: LlmProvider, model: string, config: Confi
     return provider(model, config);
 }
 
-export async function getAvailableModels(provider: string): Promise<ModelDefinition[]> {
+export function getAvailableModels(provider: string): ModelDefinition[] {
     switch (provider) {
         case LlmProvider.groq:
             return getGroqModels();

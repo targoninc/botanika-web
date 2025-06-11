@@ -15,8 +15,10 @@ import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {toast} from "./ui";
 import {ToastType} from "../enums/ToastType";
 import {setRootCssVar} from "./setRootCssVar";
-import {signal} from "@targoninc/jess";
+import {Signal, signal} from "@targoninc/jess";
 import {Tables} from "../../models/supabaseDefinitions.ts";
+import {ApiResponse} from "./api.base.ts";
+import {response} from "express";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -42,50 +44,99 @@ export function initializeStore() {
         await Api.setShortcutConfig(sc);
     });
 
-    Api.getConfig().then(conf => {
-        if (conf.data) {
-            configuration.value = conf.data as Configuration;
+    tryLoadFromCache<Configuration>("config", configuration, Api.getConfig());
+    tryLoadFromCache<ChatContext[]>("chats", chats, Api.getNewestChats().then(async result => {
+        if (result.success && result.data) {
+            return await loadAllChats(result.data as ChatContext[]);
         }
-    });
 
-    Api.getModels().then(m => {
-        if (m.data) {
-            availableModels.value = m.data as Record<string, ProviderDefinition>;
-        }
-    });
+        const response: ApiResponse<ChatContext[] | string> = {
+            success: false,
+            data: "Failed to load chats",
+            status: 500
+        };
 
-    Api.getShortcutConfig().then(sc => {
-        if (sc.data) {
-            shortCutConfig.value = sc.data as ShortcutConfiguration;
-        }
+        return response;
+    }), data => {
+        // TODO: Once getNewestChats actually return only the newest chats we need to combine the old chats and the new ones.
+        return data;
     });
-
-    Api.getMcpConfig().then(mcpConf => {
-        if (mcpConf.success) {
-            mcpConfig.value = mcpConf.data as McpConfiguration;
-        }
-    });
-
-    Api.getUser().then(r => {
-        if (r.success) {
-            currentUser.value = r.data as Tables<"users">;
-        }
-    });
-
-    loadChats();
+    tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
+    tryLoadFromCache<McpConfiguration>("mcpConfig", mcpConfig, Api.getMcpConfig());
+    tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
+    tryLoadFromCache<Tables<"users">>("currentUser", currentUser, Api.getUser());
 }
 
-export function loadChats() {
-    chats.value = [];
-    Api.getChats().then(async newChats => {
-        if (!newChats.success) {
-            return;
-        }
+function tryLoadFromCache<T>(key: string, value: Signal<T>, apiRequest: Promise<ApiResponse<T | string>>, getUpdateData: (data: T) => T = null){
+    const storeCacheKey = "storeCache_" + key;
+    const cachedValue = localStorage.getItem(storeCacheKey);
 
-        const data = newChats.data as ChatContext[];
-        updateChats(data);
-        for (const chat of data) {
+    value.subscribe(newValue => {
+        localStorage.setItem(storeCacheKey, JSON.stringify(newValue));
+    })
+
+    if (cachedValue) {
+        try {
+            value.value = JSON.parse(cachedValue) as T;
+        } catch (e) {
+            console.error(`Error parsing cached value for ${storeCacheKey}:`, e);
+        }
+    }
+
+    if (!getUpdateData) {
+        getUpdateData = (data: T) => {
+            return data;
+        };
+    }
+
+    apiRequest.then(response => {
+        if (response.success && response.data) {
+            value.value = getUpdateData(response.data as T);
+        }
+    });
+}
+
+function asyncSemaphore(maxCount: number){
+    let currentCount = 0;
+    const releaseMethods: (() => void)[] = [];
+
+    const release = () => {
+        currentCount--;
+        if (releaseMethods.length > 0) {
+            const nextRelease = releaseMethods.shift();
+            if (nextRelease) {
+                nextRelease();
+            }
+        }
+    };
+
+    return {
+        async acquire(): Promise<() => void>  {
+            if (currentCount < maxCount) {
+                currentCount++;
+                return release;
+            }
+
+            return await new Promise<() => void>((resolve) => {
+                currentCount++;
+                releaseMethods.push(() => resolve(release));
+            });
+        },
+    };
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function loadAllChats(newChats: ChatContext[]) {
+    const loadChatsSemaphore = asyncSemaphore(5);
+
+    const chatUpdates = newChats.map(async chat => {
+        const releaseSemaphore = await loadChatsSemaphore.acquire();
+        try {
             const chatContext = await Api.getChat(chat.id);
+
             if (chatContext.success) {
                 updateChats([
                     ...chats.value.map(c => {
@@ -95,9 +146,28 @@ export function loadChats() {
                         return c;
                     }),
                 ]);
+
+                return chatContext.data as ChatContext;
             }
+
+            return null;
+        } finally{
+            releaseSemaphore();
         }
     });
+
+    return await Promise.allSettled(chatUpdates)
+        .then(results => {
+            const response: ApiResponse<ChatContext[] | string> = {
+                success: true,
+                status: 200,
+                data: results
+                    .filter(result => result.status === "fulfilled" && result.value !== null)
+                    .map(result => (result as PromiseFulfilledResult<ChatContext>).value)
+            };
+
+            return response;
+        })
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -169,8 +239,8 @@ export function activateChat(chat: ChatContext) {
 }
 
 export function deleteChat(chatId: string) {
+    chats.value = chats.value.filter(c => c.id !== chatId);
     Api.deleteChat(chatId).then(() => {
-        loadChats();
         if (chatContext.value.id === chatId || !chatContext.value.id) {
             chatContext.value = INITIAL_CONTEXT;
         }

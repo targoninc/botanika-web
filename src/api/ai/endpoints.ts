@@ -39,7 +39,9 @@ export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, 
 }
 
 export async function getChatIdsEndpoint(req: Request, res: Response) {
-    const chats = await ChatStorage.getUserChats(req.user.id);
+    const from = req.query.from ? new Date(req.query.from as string) : null;
+
+    const chats = await ChatStorage.getUserChats(req.user.id, from);
     res.send(chats);
 }
 

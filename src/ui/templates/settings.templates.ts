@@ -442,6 +442,12 @@ export class SettingsTemplates {
             ).build();
     }
 
+    private static plus(){
+        return create("span")
+            .text("+")
+            .build()
+    }
+
     private static shortcutsInternal(sc: ShortcutConfiguration) {
         return create("div")
             .classes("flex-v")
@@ -456,10 +462,13 @@ export class SettingsTemplates {
                             create("b")
                                 .text(shortcutNames[action])
                                 .build(),
-                            GenericTemplates.hotkey("SHIFT", true),
-                            create("span")
-                                .text("+")
-                                .build(),
+                            GenericTemplates.pill("CTRL"),
+                            SettingsTemplates.plus(),
+                            // TODO: Make pills toggleable. Use sensible defaults
+                            GenericTemplates.pill("SHIFT <Ignored>"),
+                            SettingsTemplates.plus(),
+                            GenericTemplates.pill("ALT <Ignored>"),
+                            SettingsTemplates.plus(),
                             input({
                                 type: InputType.text,
                                 value: key,
