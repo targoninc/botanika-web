@@ -17,6 +17,7 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -523,7 +524,10 @@ export class GenericTemplates {
 
         return create("div")
             .classes("clickable")
-            .onclick(() => userPopupVisible.value = !userPopupVisible.value)
+            .onclick(() => {
+                userPopupVisible.value = !userPopupVisible.value;
+                closeOnClickIfOutsideOfParent("flyout", userPopupVisible);
+            })
             .children(
                 GenericTemplates.icon(image, ["user-image"])
             ).build();

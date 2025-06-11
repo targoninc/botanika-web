@@ -9,7 +9,8 @@ import {
     currentText,
     deleteChat,
     shortCutConfig,
-    target, updateChats,
+    target,
+    updateChats,
 } from "../classes/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models/chat/ChatContext";
@@ -38,6 +39,7 @@ import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {attachFiles} from "../classes/attachFiles.ts";
 import {pasteFile} from "../classes/pasteFile.ts";
 import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
+import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -358,7 +360,10 @@ export class ChatTemplates {
                                 create("div")
                                     .classes("relative")
                                     .children(
-                                        GenericTemplates.buttonWithIcon("settings", model, () => flyoutVisible.value = !flyoutVisible.value),
+                                        GenericTemplates.buttonWithIcon("settings", model, () => {
+                                            flyoutVisible.value = !flyoutVisible.value;
+                                            closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
+                                        }),
                                         when(flyoutVisible, ChatTemplates.settingsFlyout()),
                                     ).build(),
                                 GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
