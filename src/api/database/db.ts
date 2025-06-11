@@ -17,6 +17,11 @@ export const db = prisma;
 })();
 
 export async function updateUser(id: string, update: Partial<User>) {
+    const user = await db.user.findOne({ where: { id: id } });
+    if (!user) {
+        return;
+    }
+
     await db.user.update({
         data: update,
         where: { id }
