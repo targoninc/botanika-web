@@ -61,11 +61,6 @@ The application is configured to automatically initialize the database if it's f
 The application uses the following environment variables for database connection:
 
 - `DATABASE_URL`: The PostgreSQL connection string (used by Prisma)
-- `DB_HOST`: The database host
-- `DB_PORT`: The database port
-- `DB_USER`: The database user
-- `DB_PASSWORD`: The database password
-- `DB_NAME`: The database name
 
 ### Native integrations
 

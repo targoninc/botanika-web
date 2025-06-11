@@ -489,7 +489,7 @@ export class GenericTemplates {
         const image = compute(u => u?.picture ?? ".", currentUser);
 
         return create("div")
-            .classes("flex", "align-children")
+            .classes("flex-v", "align-children")
             .children(
                 GenericTemplates.icon(image, ["user-image"]),
                 create("span")
@@ -497,7 +497,7 @@ export class GenericTemplates {
                     .build(),
                 create("span")
                     .classes("monospace")
-                    .text(compute(u => u?.externalId, currentUser))
+                    .text(compute(u => u?.externalId.split("|")[0], currentUser))
                     .build(),
             ).build();
     }

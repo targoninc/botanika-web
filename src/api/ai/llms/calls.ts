@@ -62,6 +62,11 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         frequencyPenalty: 0.6,
         maxSteps,
         maxRetries: 0,
+        providerOptions: {
+            openai: {
+                store: true
+            }
+        },
         onError: event => sendError(ws, event.error.toString()),
     });
 
