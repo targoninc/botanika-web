@@ -14,23 +14,50 @@ A chat app. Bring your own API keys.
 
 # Run
 
-This app uses [Supabase](https://supabase.com/) as a database. It is stronlgy recommended to self-host - the free tier should suffice if you use it alone.
+This app uses [Prisma](https://www.prisma.io/) with PostgreSQL as a database. You can run it locally or use Docker Compose for a complete setup.
 
 **You can set your environment variables in the `.env` file or through the "Settings" page.**
 
+### Local Development
+
 ```bash
+# Install dependencies
 bun install
-```
 
-Continuous build
-```bash
+# Generate Prisma client
+bunx prisma generate
+
+# Continuous build
 bun build-ui-dev
-```
 
-Start
-```bash
+# Start the app
 bun start-ui-dev
 ```
+
+### Docker Compose
+
+The easiest way to run the application is using Docker Compose, which will set up both the application and the PostgreSQL database:
+
+```bash
+# Start the application and database
+docker-compose up -d
+
+# Stop the application and database
+docker-compose down
+```
+
+The PostgreSQL database will be initialized with the schema defined in `src/api/database/db_setup.sql`. The database data will be persisted in a Docker volume.
+
+### Database Configuration
+
+The application uses the following environment variables for database connection:
+
+- `DATABASE_URL`: The PostgreSQL connection string (used by Prisma)
+- `DB_HOST`: The database host
+- `DB_PORT`: The database port
+- `DB_USER`: The database user
+- `DB_PASSWORD`: The database password
+- `DB_NAME`: The database name
 
 ### Native integrations
 

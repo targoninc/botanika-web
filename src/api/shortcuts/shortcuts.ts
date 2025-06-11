@@ -6,7 +6,7 @@ import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguratio
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import fs from "fs";
 import {mkdir} from "fs/promises";
-import {db} from "../database/supabase.ts";
+import {db} from "../database/db.ts";
 
 let config: ShortcutConfiguration;
 let configPath: string;
@@ -25,10 +25,12 @@ async function initializeConfig() {
 }
 
 export async function getConfig(userId: string) {
-    const shortCutConfig = (await db.from("users")
-        .select("shortcuts")
-        .eq("id", userId))
-        .data[0].shortcuts;
+    const user = await db.user.findUnique({
+        where: { id: userId },
+        select: { shortcuts: true }
+    });
+
+    const shortCutConfig = user.shortcuts as any;
     let out = {};
     for (const key of Object.keys(defaultShortcuts)) {
         out[key] = shortCutConfig[key] ?? defaultShortcuts[key];
@@ -37,11 +39,10 @@ export async function getConfig(userId: string) {
 }
 
 export async function setConfig(userId: string, sc: ShortcutConfiguration) {
-    await db.from("users")
-        .update({
-            id: userId,
-            shortcuts: sc
-        }).eq("id", userId);
+    await db.user.update({
+        where: { id: userId },
+        data: { shortcuts: sc as any }
+    });
 }
 
 export function addShortcutEndpoints(app: Application) {
