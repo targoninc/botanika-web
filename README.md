@@ -27,9 +27,6 @@ bun install
 # Generate Prisma client
 bunx prisma generate
 
-# Initialize the database (if needed)
-bun run init-db
-
 # Continuous build
 bun build-ui-dev
 
