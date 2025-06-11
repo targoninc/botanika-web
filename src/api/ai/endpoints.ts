@@ -91,7 +91,7 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
         const message = c.history.find(m => m.id === messageId);
-        c.history = c.history.filter(m => m.time < message.time);
+        c.history = c.history.filter(m => m.time <= message.time);
         await ChatStorage.writeChatContext(req.user.id, c);
         res.status(200).send();
     });
@@ -109,7 +109,7 @@ function branchChatEndpoint(req: Request, res: Response) {
         c.branched_from_chat_id = c.id;
         c.id = v4();
         c.createdAt = Date.now();
-        c.history = c.history.filter(m => m.time < message.time);
+        c.history = c.history.filter(m => m.time <= message.time);
         c.history = c.history.map(msg => {
             msg.id = v4();
             return msg;

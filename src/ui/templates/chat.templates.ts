@@ -18,7 +18,6 @@ import {ChatMessage} from "../../models/chat/ChatMessage";
 import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
 import {ResourceReference} from "../../models/chat/ResourceReference";
 import {INITIAL_CONTEXT} from "../../models/chat/initialContext";
 import {ModelDefinition} from "../../models/llms/ModelDefinition";
@@ -40,6 +39,7 @@ import {pasteFile} from "../classes/pasteFile.ts";
 import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
+import hljs from "highlight.js";
 
 export class ChatTemplates {
     static chat() {
@@ -52,13 +52,11 @@ export class ChatTemplates {
     }
 
     static chatBox() {
-        const scrollPosition = signal(0);
-
         return create("div")
             .classes("flex-v", "flex-grow", "bordered-panel", "relative", "chat-box", "no-gap")
             .children(
                 ChatTemplates.botName(),
-                compute(c => ChatTemplates.chatHistory(c, scrollPosition), chatContext),
+                ChatTemplates.chatHistory(),
                 ChatTemplates.chatInput(),
             ).build();
     }
@@ -74,49 +72,34 @@ export class ChatTemplates {
             ).build();
     }
 
-    static chatHistory(context: ChatContext, scrollPosition: Signal<number>) {
-        if (!context || !context.history) {
-            return create("div")
-                .classes("flex-v", "flex-grow")
-                .styles("overflow-y", "auto")
-                .text("No messages yet")
-                .build();
-        }
-
-        context.history = context.history.sort((a, b) => a.time - b.time);
-        const dedupHistory = context.history.reduce((prev, cur) => {
-            if (!prev.some(h => h.id === cur.id)) {
-                prev.push(cur);
-            }
-            return prev;
-        }, []);
-        const lastMessageIsUser = dedupHistory.at(-1)?.type === "user";
-
-        const hist = create("div")
-            .classes("flex-v", "flex-grow", "chat-history")
-            .styles("overflow-y", "auto")
-            .onwheel(() => {
-                if (hist.scrollHeight > 0) {
-                    scrollPosition.value = hist.scrollTop;
+    static chatHistory() {
+        const history = compute(c => c?.history ?? [], chatContext);
+        const hasNoMessages = compute(h => h.length === 0, history);
+        const dedupHistory = compute(h => {
+            h = h.sort((a, b) => a.time - b.time);
+            return h.reduce((prev, cur) => {
+                if (!prev.some(h => h.id === cur.id)) {
+                    prev.push(cur);
                 }
-            })
-            .children(
-                create("div")
-                    .classes("restrict-width-small", "flex-v")
-                    .children(
-                        ...dedupHistory
-                            .map(message => ChatTemplates.chatMessage(message)),
-                        when(lastMessageIsUser, GenericTemplates.spinner()),
-                        GenericTemplates.spacer()
-                    ).build()
-            ).build();
-
-        setTimeout(() => {
-            hljs.highlightAll();
-            attachCodeCopyButtons();
+                return prev;
+            }, []);
+        }, history);
+        dedupHistory.subscribe((h) => {
+            setTimeout(() => {
+                hljs.highlightAll();
+                attachCodeCopyButtons();
+            });
         });
 
-        return hist;
+        return create("div")
+            .classes("flex-v", "flex-grow", "chat-history")
+            .styles("overflow-y", "auto")
+            .children(
+                when(hasNoMessages, create("span")
+                    .text("No messages yet")
+                    .build()),
+                signalMap(dedupHistory, create("div").classes("restrict-width-small", "message-history", "flex-v"), ChatTemplates.chatMessage),
+            ).build();
     }
 
     private static chatMessage(message: ChatMessage) {
@@ -140,7 +123,6 @@ export class ChatTemplates {
                         .children(
                             ...(message.references ?? []).map(r => ChatTemplates.reference(r)),
                         ).build() : null,
-                    !message.finished ? GenericTemplates.spinner() : null,
                 ).build();
         }
 
@@ -167,7 +149,6 @@ export class ChatTemplates {
                         create("div")
                             .html(sanitized)
                             .build(),
-                        !message.finished ? GenericTemplates.spinner() : null,
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
                 ChatTemplates.messageActions(message),
@@ -206,10 +187,9 @@ export class ChatTemplates {
 
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
-        const branchableTypes = ["user", "assistant"];
 
         return create("div")
-            .classes("flex", "align-center")
+            .classes("flex", "align-center", "message-actions")
             .children(
                 message.hasAudio ? button({
                     disabled: audioDisabled,
@@ -228,19 +208,18 @@ export class ChatTemplates {
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
-                when(message.type === "user", ChatTemplates.messageAction("delete", "Delete history after this message", async (e) => {
+                when(message.type === "assistant", ChatTemplates.messageAction("delete", "Delete history after this message", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Delete history after message", `Are you sure you want to delete all messages after this?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
                         if (r.success) {
                             const c = structuredClone(chatContext.value);
-                            const messageIndex = c.history.map(m => m.id).indexOf(message.id);
-                            c.history.splice(messageIndex);
+                            c.history = c.history.filter(m => m.time <= message.time);
                             chatContext.value = c;
                         }
                     }));
                 })),
-                when(branchableTypes.includes(message.type), ChatTemplates.messageAction("graph_1", "Branch from here", async (e) => {
+                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch from here", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {

@@ -472,7 +472,7 @@ kbd {
     border-radius: var(--input-border-radius);
     padding: var(--gap-v);
     background: var(--gradient-1);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color var(--animation-duration) ease, box-shadow var(--animation-duration) ease;
 }
 
 .chat-input.drag-over {
@@ -562,6 +562,15 @@ kbd {
     width: max-content;
     max-width: 90%;
     overflow-x: auto;
+}
+
+.message-actions {
+    opacity: 0;
+    transition: opacity var(--animation-duration) ease;
+}
+
+.chat-message:hover .message-actions {
+    opacity: 1;
 }
 
 .message-content > div {
@@ -781,6 +790,10 @@ pre {
 
 .spacer {
     min-height: 50dvh;
+}
+
+.message-history {
+    padding-bottom: 50dvh;
 }
 
 .monospace {
