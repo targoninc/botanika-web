@@ -83,6 +83,7 @@ export class ChatTemplates {
                 .build();
         }
 
+        context.history = context.history.sort((a, b) => a.time - b.time);
         const dedupHistory = context.history.reduce((prev, cur) => {
             if (!prev.some(h => h.id === cur.id)) {
                 prev.push(cur);
@@ -104,7 +105,6 @@ export class ChatTemplates {
                     .classes("restrict-width-small", "flex-v")
                     .children(
                         ...dedupHistory
-                            .sort((a, b) => a.time - b.time)
                             .map(message => ChatTemplates.chatMessage(message)),
                         when(lastMessageIsUser, GenericTemplates.spinner()),
                         GenericTemplates.spacer()
