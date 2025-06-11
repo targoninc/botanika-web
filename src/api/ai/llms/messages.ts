@@ -2,8 +2,7 @@ import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
 import {
     CoreMessage,
-    LanguageModelV1,
-    UIMessage,
+    LanguageModelV1, UIMessage,
 } from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
@@ -45,7 +44,6 @@ export function newAssistantMessage(responseText: string, provider: string, mode
 }
 
 export async function createChat(userId: string, newMessage: ChatMessage, chatId: string): Promise<ChatContext> {
-    // create chat
     const chatContext = <ChatContext>{
         id: chatId,
         createdAt: Date.now(),
@@ -66,13 +64,15 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
         },
         {
             role: "system",
-            content: `Here is some general current info: ${JSON.stringify(worldContext)}`
+            content: `Here is some general current info:
+            ${Object.entries(worldContext).map(([k, v]) => `${k}=${v}`).join("\n")}`
         },
         {
             role: "system",
-            content: `The user wants to be called ${configuration.displayname}, their birthdate is ${configuration.birthdate}.
+            content: `${configuration.displayname ? `The user wants to be called ${configuration.displayname}.` : ""}
+            ${configuration.birthdate ? `Their birthdate is ${configuration.displayname}.` : ""}
             Don't refer to info about the user explicitly, only if it is necessary or requested by the user.
-            Here is a self-written description about them: ${configuration.userDescription}`
+            ${configuration.userDescription ? `Here is a self-written description about them: ${configuration.userDescription}` : ""}`
         },
         ...messages.map(m => {
             if (m.type === "tool") {

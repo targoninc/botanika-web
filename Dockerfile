@@ -1,5 +1,7 @@
 FROM oven/bun:debian AS base
 
+RUN apt-get update -y && apt-get install -y openssl
+
 # Set the working directory
 WORKDIR /usr/src/app
 
