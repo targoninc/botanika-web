@@ -35,7 +35,6 @@ export class Api extends ApiBase {
     }
 
     static getNewestChats(from?: Date) {
-        // TODO: Implement from handling
         return this.get<ChatContext[]>(`${ApiEndpoint.CHATS}?from=${from?.toISOString() ?? ""}`);
     }
 
