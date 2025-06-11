@@ -1,5 +1,4 @@
 import {ChatContext} from "../../models/chat/ChatContext";
-import {CLI} from "../CLI";
 import {db} from "../database/supabase.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {ResourceReference} from "../../models/chat/ResourceReference.ts";
@@ -12,6 +11,7 @@ export class ChatStorage {
             id: chat.id,
             name: chat.name,
             created_at: (new Date(chat.createdAt)).toISOString(),
+            updated_at: (new Date()).toISOString()
         });
 
         const existingMsgs = (await db.from("messages")
@@ -64,7 +64,7 @@ export class ChatStorage {
             id: chat.id,
             name: chat.name,
             createdAt: new Date(chat.created_at).getTime(),
-            updatedAt: new Date(chat.created_at).getTime(),
+            updatedAt: new Date(chat.updated_at).getTime(),
             history: messages.map(m => {
                 return <ChatMessage>{
                     id: m.id,
@@ -90,8 +90,7 @@ export class ChatStorage {
         let query = db.from("chats").select("*").eq("user_id", userId);
 
         if (from) {
-            // TODO: Implement new column and update it once a chat is updated!
-            // query = query.gt("updated_at", from.toISOString());
+            query = query.gt("updated_at", from.toISOString());
         }
 
         const chats = (await query).data;
@@ -100,7 +99,7 @@ export class ChatStorage {
                 id: c.id,
                 name: c.name,
                 createdAt: new Date(c.created_at).getTime(),
-                updatedAt: new Date(c.created_at).getTime(),
+                updatedAt: new Date(c.updated_at).getTime(),
             }
         }).sort((a, b) => b.createdAt - a.createdAt);
     }
