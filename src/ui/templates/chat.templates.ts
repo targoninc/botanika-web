@@ -287,7 +287,8 @@ export class ChatTemplates {
         const input = currentText;
         const chatId = compute(c => c?.id, chatContext);
         const provider = compute(c => c.provider, configuration);
-        const model = compute(c => c.model, configuration);
+        const modelConfigured = compute(c => !!c.model, configuration);
+        const model = compute((c, conf) => conf ? c.model : "No model selected", configuration, modelConfigured);
         const files = signal<MessageFile[]>([]);
         const send = () => {
             try {
@@ -348,7 +349,7 @@ export class ChatTemplates {
                             .classes("flex-v", "flex-grow")
                             .children(
                                 when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
-                                ChatTemplates.actualChatInput(input, send, files),
+                                ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                             ).build(),
                     ).build(),
                 create("div")
@@ -364,7 +365,7 @@ export class ChatTemplates {
                                             flyoutVisible.value = !flyoutVisible.value;
                                             closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
                                         }),
-                                        when(flyoutVisible, ChatTemplates.settingsFlyout()),
+                                        when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
                                     ).build(),
                                 GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                             ).build(),
@@ -378,21 +379,23 @@ export class ChatTemplates {
             ).build();
     }
 
-    static settingsFlyout() {
+    static settingsFlyout(configured: Signal<boolean>) {
         return create("div")
             .classes("flex-v", "flyout", "above", "right")
             .children(
-                ChatTemplates.llmSelector(),
+                ChatTemplates.llmSelector(configured),
             ).build();
     }
 
-    private static actualChatInput(input: Signal<string>, send: () => void, files: Signal<MessageFile[]>) {
+    private static actualChatInput(input: Signal<string>, configured: Signal<boolean>, send: () => void, files: Signal<MessageFile[]>) {
+        const disabledClass = compute((c): string => c ? "_" : "disabled", configured);
+
         return create("textarea")
             .attributes("rows", "3")
             .id("chat-input-field")
-            .classes("flex-grow", "chat-input-field", "full-width")
+            .classes("flex-grow", "chat-input-field", "full-width", disabledClass)
             .styles("resize", "none")
-            .placeholder(compute(c => `[Shift] + [${c.focusInput}] to focus`, shortCutConfig))
+            .placeholder(compute((c, conf) => conf ? `[Shift] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
             .value(input)
             .oninput((e: any) => {
                 input.value = target(e).value;
@@ -407,7 +410,7 @@ export class ChatTemplates {
             .build();
     }
 
-    static llmSelector() {
+    static llmSelector(configured: Signal<boolean>) {
         const providerFeatureMap: Record<LlmProvider, BotanikaFeature> = {
             [LlmProvider.openai]: BotanikaFeature.OpenAI,
             [LlmProvider.ollama]: BotanikaFeature.Ollama,
@@ -450,6 +453,8 @@ export class ChatTemplates {
             return toUse;
         }, configuration, availableProviders);
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
+        anyProvider.subscribe((a) => configured.value = a);
+        configured.value = anyProvider.value;
 
         return create("div")
             .classes("flex-v", "select-container")
