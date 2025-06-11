@@ -1,7 +1,7 @@
 import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
-import {chatContext} from "./store.ts";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
 import {Signal} from "@targoninc/jess";
+import {chatContext} from "./state/store.ts";
 
 export function updateContext(c: ChatContext, update: ChatUpdate, signal?: Signal<ChatContext>) {
     if (c.id && c.id !== update.chatId) {

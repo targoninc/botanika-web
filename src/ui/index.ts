@@ -1,7 +1,7 @@
 import {LayoutTemplates} from "./templates/layout.templates";
-import {activePage, initializeStore} from "./classes/store";
 import {addShortCutListener} from "./classes/shortcuts/shortcuts";
 import {Realtime} from "./classes/realtime/realtime.ts";
+import {activePage, initializeStore} from "./classes/state/store.ts";
 
 initializeStore();
 

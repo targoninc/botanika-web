@@ -1,11 +1,11 @@
-import {Api} from "../api";
 import {terminator} from "../../../models/chat/terminator";
 import {toast} from "../ui";
-import {chatContext, configuration, currentText, updateContextFromStream} from "../store";
+import {chatContext, configuration, currentText} from "../state/store.ts";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
 import {BotanikaClientEventType} from "../../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
+import {Api} from "../state/api.ts";
 
 export class VoiceRecorder {
     private readonly threshold = 0.015;

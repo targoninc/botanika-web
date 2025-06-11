@@ -38,7 +38,7 @@ export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, 
     }
 }
 
-export async function getChatIdsEndpoint(req: Request, res: Response) {
+export async function getChatsEndpoint(req: Request, res: Response) {
     const from = req.query.from ? new Date(req.query.from as string) : null;
 
     const chats = await ChatStorage.getUserChats(req.user.id, from);
@@ -121,7 +121,7 @@ function branchChatEndpoint(req: Request, res: Response) {
 
 export function addChatEndpoints(app: Application) {
     app.get(`${ApiEndpoint.CHAT_BY_ID}:chatId`, getChatEndpoint);
-    app.get(ApiEndpoint.CHATS, getChatIdsEndpoint);
+    app.get(ApiEndpoint.CHATS, getChatsEndpoint);
     app.delete(`${ApiEndpoint.CHAT_BY_ID}:chatId`, deleteChatEndpoint);
     app.post(ApiEndpoint.DELETE_AFTER_MESSAGE, deleteAfterMessageEndpoint);
     app.get(ApiEndpoint.MODELS, getModelsEndpoint);

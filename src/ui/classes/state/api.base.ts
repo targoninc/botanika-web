@@ -1,5 +1,5 @@
-import {toast} from "./ui";
-import {ToastType} from "../enums/ToastType";
+import {ToastType} from "../../enums/ToastType.ts";
+import {toast} from "../ui.ts";
 
 export class ApiBase {
     static baseUrl = window.location.origin;
@@ -85,7 +85,7 @@ export class ApiBase {
                 success: res.ok,
                 data: JSON.parse(text) as T
             };
-        } catch (e) {
+        } catch {
             if (!res.ok && text !== "Not authorized") {
                 toast(text, null, ToastType.negative);
             }
