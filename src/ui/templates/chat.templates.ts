@@ -95,14 +95,11 @@ export class ChatTemplates {
             .classes("flex-v", "flex-grow", "chat-history")
             .styles("overflow-y", "auto")
             .children(
-                when(hasNoMessages, create("span")
-                    .text("No messages yet")
-                    .build()),
-                signalMap(dedupHistory, create("div").classes("restrict-width-small", "message-history", "flex-v"), ChatTemplates.chatMessage),
+                signalMap(dedupHistory, create("div").classes("restrict-width-small", "message-history", "flex-v"), (m, i) => ChatTemplates.chatMessage(m, i === dedupHistory.value.length - 1)),
             ).build();
     }
 
-    private static chatMessage(message: ChatMessage) {
+    private static chatMessage(message: ChatMessage, isLast: boolean) {
         if (message.type === "tool") {
             const textIsJson = typeof message.text.constructor === "object";
 
@@ -152,6 +149,7 @@ export class ChatTemplates {
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
                 ChatTemplates.messageActions(message),
+                when(isLast, GenericTemplates.spacer()),
             ).build();
     }
 

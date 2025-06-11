@@ -555,7 +555,7 @@ kbd {
 }
 
 .chat-message:last-child:not(.chat-message.tool) {
-    margin-bottom: 30%;
+    margin-bottom: 30dvh;
 }
 
 .message-content {
@@ -790,10 +790,6 @@ pre {
 
 .spacer {
     min-height: 50dvh;
-}
-
-.message-history {
-    padding-bottom: 50dvh;
 }
 
 .monospace {
