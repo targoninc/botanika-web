@@ -78,7 +78,7 @@ export class ChatStorage {
                     references: m.references as ResourceReference[],
                     files: m.files as MessageFile[],
                 };
-            })
+            }).sort((a, b) => b.time - a.time)
         }
     }
 

@@ -105,11 +105,11 @@ function branchChatEndpoint(req: Request, res: Response) {
     }
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
-        const messageIndex = c.history.map(m => m.id).indexOf(messageId);
-        c.history.splice(messageIndex);
+        const message = c.history.find(m => m.id === messageId);
         c.branched_from_chat_id = c.id;
         c.id = v4();
         c.createdAt = Date.now();
+        c.history = c.history.filter(m => m.time < message.time);
         c.history = c.history.map(msg => {
             msg.id = v4();
             return msg;
