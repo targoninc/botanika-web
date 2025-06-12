@@ -78,7 +78,7 @@ export async function createClient(userConfig: Configuration) {
         api = new SpotifyWebApi({
             clientId: userConfig.featureOptions.Spotify.clientId,
             clientSecret: userConfig.featureOptions.Spotify.clientSecret,
-            redirectUri: `${process.env.OIDC_BASE_URL}/mcp/spotify/callback`,
+            redirectUri: `${process.env.BASE_URL}/mcp/spotify/callback`,
         });
     }
 
