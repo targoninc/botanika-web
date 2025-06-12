@@ -1,5 +1,6 @@
-import {Signal} from "@targoninc/jess";
+import {create, Signal} from "@targoninc/jess";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {getExtension, getMimeType} from "./FileMimeType.ts";
 
 export function attachFiles(files: Signal<MessageFile[]>) {
     const fileInput = document.createElement('input');
@@ -29,11 +30,16 @@ export function addFileToArray(file: File, added: boolean, files: Signal<Message
         const base64String = reader.result as string;
         const base64 = base64String.split(',')[1];
 
+        let type = file.type;
+        if (type === "") {
+            type = getMimeType(file.name);
+        }
+
         const messageFile = {
             id: crypto.randomUUID(),
             name: file.name,
             base64,
-            mimeType: file.type
+            mimeType: type
         };
 
         added = true;
@@ -74,4 +80,12 @@ export function pasteFile(e: ClipboardEvent, files: Signal<MessageFile[]>) {
     if (added) {
         e.preventDefault();
     }
+}
+
+export function downloadFile(f: MessageFile) {
+    const a = document.createElement("a");
+    a.href = f.base64;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
 }
