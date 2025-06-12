@@ -23,5 +23,8 @@ export async function handleMessage(event: BotanikaServerEvent<any>) {
         case BotanikaServerEventType.log:
             console.log(`Log from server`, event.data);
             break;
+        default:
+            console.warn(`Don't know what to do with websocket message`, event);
+            break;
     }
 }
