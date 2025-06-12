@@ -21,7 +21,13 @@ import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
-export const currentChatId = signal<string | null>(null);
+
+function getUrlParameter(param: string, fallback: any) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(param) ?? fallback;
+}
+
+export const currentChatId = signal<string | null>(getUrlParameter("chatId", null));
 export const chats = signal<ChatContext[]>([]);
 export const chatContext = compute((id, chatsList) => {
     if (!id) return INITIAL_CONTEXT;
@@ -39,6 +45,12 @@ export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
         setRootCssVar("--tint", c.tintColor ?? "#00ff00");
+    });
+
+    currentChatId.subscribe(c => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("chatId", c);
+        history.pushState({}, "", url);
     });
 
     shortCutConfig.subscribe(async (sc, changed) => {
