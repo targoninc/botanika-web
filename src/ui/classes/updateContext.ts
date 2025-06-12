@@ -1,11 +1,9 @@
 import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
-import {Signal} from "@targoninc/jess";
-import {chatContext} from "./state/store.ts";
 
-export function updateContext(c: ChatContext, update: ChatUpdate, signal?: Signal<ChatContext>) {
+export function updateContext(c: ChatContext, update: ChatUpdate) {
     if (c.id && c.id !== update.chatId) {
-        return;
+        return c;
     }
 
     c = structuredClone(c);
@@ -37,8 +35,5 @@ export function updateContext(c: ChatContext, update: ChatUpdate, signal?: Signa
         }
     }
     c.history = c.history.sort((a, b) => a.time - b.time);
-    if (signal) {
-        chatContext.value = c;
-    }
     return c;
 }

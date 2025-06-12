@@ -1,10 +1,9 @@
 import {Shortcut} from "../../../models/shortcuts/Shortcut";
-import {INITIAL_CONTEXT} from "../../../models/chat/initialContext";
-import {activePage, chatContext} from "../state/store.ts";
+import {activePage, currentChatId} from "../state/store.ts";
 
 export const shortCutActions: Record<Shortcut, () => void> = {
     [Shortcut.newChat]: () => {
-        chatContext.value = INITIAL_CONTEXT;
+        currentChatId.value = null;
     },
     [Shortcut.settings]: () => {
         activePage.value = "settings";

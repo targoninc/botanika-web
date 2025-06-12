@@ -5,6 +5,7 @@ import {
     chatContext,
     chats,
     configuration,
+    currentChatId,
     currentlyPlayingAudio,
     currentText,
     deleteChat,
@@ -211,9 +212,14 @@ export class ChatTemplates {
                     createModal(GenericTemplates.confirmModal("Delete history after message", `Are you sure you want to delete all messages after this?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
                         if (r.success) {
-                            const c = structuredClone(chatContext.value);
-                            c.history = c.history.filter(m => m.time <= message.time);
-                            chatContext.value = c;
+                            updateChats(chats.value.map(c => {
+                                if (c.id === chatContext.value.id) {
+                                    const updatedChat = structuredClone(c);
+                                    updatedChat.history = updatedChat.history.filter(m => m.time <= message.time);
+                                    return updatedChat;
+                                }
+                                return c;
+                            }));
                         }
                     }));
                 })),
@@ -226,7 +232,7 @@ export class ChatTemplates {
                             ...chats.value,
                             newContext
                         ]);
-                        chatContext.value = newContext;
+                        currentChatId.value = newContext.id;
                     }
                 })),
                 when(message.type === "assistant", create("span")
@@ -492,7 +498,7 @@ export class ChatTemplates {
                             text: "New chat",
                             classes: ["flex", "align-center", "positive"],
                             onclick: () => {
-                                chatContext.value = INITIAL_CONTEXT;
+                                currentChatId.value = null;
                             }
                         }),
                         create("div")
