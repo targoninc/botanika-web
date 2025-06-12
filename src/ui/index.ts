@@ -16,6 +16,8 @@ window.addEventListener('beforeunload', () => {
     realtime.close();
 });
 
-setTimeout(() => {
-    (document.querySelector(".chat-input-field") as HTMLInputElement)?.focus();
-});
+export function focusChatInput() {
+    (document.querySelector(".chat-input-field") as HTMLInputElement)?.focus()
+}
+
+setTimeout(focusChatInput);
