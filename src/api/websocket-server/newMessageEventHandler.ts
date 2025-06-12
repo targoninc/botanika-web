@@ -88,7 +88,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
 }
 
 async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
-    const mcpInfo = await getMcpTools();
+    const mcpInfo = await getMcpTools(ws.userId);
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }

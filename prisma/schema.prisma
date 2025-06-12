@@ -28,6 +28,7 @@ model User {
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
   isAdmin            Boolean  @default(false) @map("isAdmin")
   configuration      Json     @default("{}") @db.Json
+  mcpConfiguration   Json     @default("[]") @db.Json
   shortcuts          Json     @default("{   \"newChat\": \"n\",   \"settings\": \"s\",   \"focusInput\": \" \" }") @db.Json
   branchedFromChatId String?  @map("branched_from_chat_id") @db.Uuid
   chats              Chat[]

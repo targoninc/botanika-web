@@ -15,6 +15,7 @@ create table if not exists public.users
     created_at            timestamp with time zone default now()                                                                not null,
     "isAdmin"             boolean                  default false                                                                not null,
     configuration         json                     default '{}'::json                                                           not null,
+    "mcpConfiguration"    json                     default '[]'::json                                                           not null,
     shortcuts             json                     default '{   "newChat": "n",   "settings": "s",   "focusInput": " " }'::json not null,
     branched_from_chat_id uuid
     );
