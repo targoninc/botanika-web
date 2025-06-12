@@ -373,7 +373,7 @@ export class ChatTemplates {
         const disabledClass = compute((c): string => c ? "_" : "disabled", configured);
 
         return create("textarea")
-            .attributes("rows", "3")
+            .attributes("rows", "1")
             .id("chat-input-field")
             .classes("flex-grow", "chat-input-field", "full-width", disabledClass)
             .styles("resize", "none")
