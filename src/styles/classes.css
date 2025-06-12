@@ -466,13 +466,18 @@ kbd {
 }
 
 .chat-input {
-    width: 100%;
+    width: max(30%, 500px);
+    margin: 0 auto;
     border: 1px solid var(--bg-4);
     border-top: 1px solid var(--bg-4);
     border-radius: var(--input-border-radius);
     padding: var(--gap-v);
     background: var(--gradient-1);
-    transition: border-color var(--animation-duration) ease, box-shadow var(--animation-duration) ease;
+    transition: border-color var(--animation-duration) ease, box-shadow var(--animation-duration) ease, width var(--animation-duration) ease;
+}
+
+.chat-input:hover {
+    width: min(100%, 800px);
 }
 
 .chat-input.drag-over {
@@ -614,6 +619,7 @@ kbd {
     width: max(30%, 200px);
     max-width: min(30%, 800px);
     overflow-y: auto;
+    min-width: 200px;
 }
 
 .chat-list-item {
