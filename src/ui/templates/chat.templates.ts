@@ -153,7 +153,7 @@ export class ChatTemplates {
 
     private static messageFiles(message: ChatMessage) {
         return create("div")
-            .classes("flex", "align-center", "message-content")
+            .classes("flex", "align-center", "message-content", "no-wrap")
             .children(
                 ...message.files.map(f => FileTemplates.fileDisplayContent(f).content),
             ).build();

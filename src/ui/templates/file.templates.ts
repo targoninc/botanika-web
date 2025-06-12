@@ -1,7 +1,7 @@
 import {AnyNode, create, Signal, signalMap} from "@targoninc/jess";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {GenericTemplates} from "./generic.templates.ts";
-import {icon} from "@targoninc/jess-components";
+import {button, icon} from "@targoninc/jess-components";
 import {downloadFile} from "../classes/attachFiles.ts";
 
 export class FileTemplates {
@@ -33,7 +33,7 @@ export class FileTemplates {
         let width = "10em";
         if (file.mimeType.startsWith("image/")) {
             width = "5em";
-            content = FileTemplates.imageDisplay(file);
+            content = GenericTemplates.messageImage(file);
         } else if (file.mimeType.startsWith("audio/")) {
             content = FileTemplates.audioDisplay(file);
         } else if (file.mimeType === "application/pdf") {
@@ -46,13 +46,6 @@ export class FileTemplates {
         return {content, width};
     }
 
-    private static genericDisplay(file: MessageFile) {
-        return create("span")
-            .classes("full-width", "full-height", "flex", "card", "align-children", "center-content", "text-small")
-            .text(file.name ?? file.mimeType)
-            .build();
-    }
-
     private static imageDisplay(file: MessageFile) {
         return create("img")
             .classes("file-display-image")
@@ -63,14 +56,14 @@ export class FileTemplates {
     private static audioDisplay(file: MessageFile) {
         return create("audio")
             .attributes("controls", "")
-            .classes("file-display-image")
+            .classes("file-display-audio")
             .src(`data:${file.mimeType};base64,` + file.base64)
             .build();
     }
 
     static fillButton(iconStr: string, text: string, onclick: () => void) {
-        return create("div")
-            .classes("full-width", "full-height", "flex", "card", "clickable", "align-children", "center-content")
+        return create("button")
+            .classes("full-width", "full-height", "flex", "clickable", "align-children", "center-content", "padded-big", "attachment")
             .onclick(onclick)
             .children(
                 create("div")
