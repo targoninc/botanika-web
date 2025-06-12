@@ -14,6 +14,7 @@ import {signingKey} from "../../index.ts";
 
 // Map to store active connections for each user
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
+export const UPDATE_LIMIT = 100;
 
 // Map to store ongoing conversations for each chat
 // Key: chatId, Value: { userId: string, updates: ChatUpdate[], lastUpdated: number, isGenerating: boolean }
@@ -41,7 +42,6 @@ function cleanupOldConversations() {
     }
 }
 
-// Clean up old conversations every hour
 setInterval(cleanupOldConversations, 60 * 60 * 1000);
 
 export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
@@ -121,7 +121,6 @@ export function sendError(ws: WebsocketConnection, message: string) {
         }
     };
     send(ws, errorEvent);
-    // Also broadcast to all other connections for this user
     broadcastToUser(ws.userId, errorEvent);
 }
 
@@ -134,7 +133,6 @@ export function sendWarning(ws: WebsocketConnection, message: string) {
         }
     };
     send(ws, warningEvent);
-    // Also broadcast to all other connections for this user
     broadcastToUser(ws.userId, warningEvent);
 }
 
@@ -144,7 +142,6 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
         data: update
     };
 
-    // Store the update in the ongoing conversations map
     if (update.chatId) {
         if (!ongoingConversations.has(update.chatId)) {
             ongoingConversations.set(update.chatId, {
@@ -157,13 +154,10 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
 
         const conversation = ongoingConversations.get(update.chatId);
 
-        // Only store updates for the correct user
         if (conversation.userId === ws.userId) {
-            // If this is a new message, add it to the updates
             if (update.messages) {
                 conversation.updates.push(update);
 
-                // Check if any message is still generating
                 if (update.messages.some(m => !m.finished)) {
                     conversation.isGenerating = true;
                     CLI.debug(`Chat ${update.chatId} is now generating`);
@@ -171,9 +165,7 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
                     conversation.isGenerating = false;
                     CLI.debug(`Chat ${update.chatId} is no longer generating`);
                 }
-            } 
-            // If this is a name update, update the name in all previous updates
-            else if (update.name) {
+            } else if (update.name) {
                 for (const prevUpdate of conversation.updates) {
                     if (!prevUpdate.name) {
                         prevUpdate.name = update.name;
@@ -182,17 +174,14 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
                 conversation.updates.push(update);
             }
 
-            // Update the lastUpdated timestamp
             conversation.lastUpdated = Date.now();
 
-            // Limit the number of stored updates to prevent memory issues
-            if (conversation.updates.length > 100) {
-                conversation.updates = conversation.updates.slice(-100);
+            if (conversation.updates.length > UPDATE_LIMIT) {
+                conversation.updates = conversation.updates.slice(-UPDATE_LIMIT);
             }
         }
     }
 
-    // Send to the requesting connection and broadcast to all other connections for this user
     broadcastToUser(ws.userId, chatUpdateEvent);
 }
 
@@ -241,14 +230,12 @@ export function addWebsocketServer(server: Server) {
         CLI.log(`Client connected to WebSocket with userId: ${userId}`);
         ws.userId = userId;
 
-        // Add the connection to the user's connections
         if (!userConnections.has(userId)) {
             userConnections.set(userId, new Set());
         }
         userConnections.get(userId).add(ws);
         CLI.debug(`User ${userId} now has ${userConnections.get(userId).size} active connections`);
 
-        // Send all ongoing conversations to the new connection
         sendAllOngoingConversations(ws);
 
         ws.on("message", async (msg: string) => {
@@ -265,13 +252,11 @@ export function addWebsocketServer(server: Server) {
         ws.on("close", () => {
             CLI.log(`Client disconnected from WebSocket: ${ws.userId}`);
 
-            // Remove the connection from the user's connections
             const userConnectionSet = userConnections.get(userId);
             if (userConnectionSet) {
                 userConnectionSet.delete(ws);
                 CLI.debug(`User ${userId} now has ${userConnectionSet.size} active connections`);
 
-                // If there are no more connections for this user, remove the user from the map
                 if (userConnectionSet.size === 0) {
                     userConnections.delete(userId);
                     CLI.debug(`Removed user ${userId} from connections map`);
