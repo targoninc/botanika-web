@@ -150,10 +150,6 @@ export async function processUpdate(update: ChatUpdate) {
     }
 }
 
-export function activateChat(chat: ChatContext) {
-    currentChatId.value = chat.id;
-}
-
 export function deleteChat(chatId: string) {
     chats.value = chats.value.filter(c => c.id !== chatId);
     Api.deleteChat(chatId).then(() => {
