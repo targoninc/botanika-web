@@ -1,5 +1,5 @@
 import {Api} from "./api";
-import {signal} from "@targoninc/jess";
+import {compute, signal} from "@targoninc/jess";
 import {ApiResponse} from "./api.base.ts";
 import {tryLoadFromCache} from "./tryLoadFromCache.ts";
 import { Configuration } from "../../../models/Configuration";
@@ -21,8 +21,13 @@ import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
-export const chatContext = signal<ChatContext>(INITIAL_CONTEXT);
+export const currentChatId = signal<string | null>(null);
 export const chats = signal<ChatContext[]>([]);
+export const chatContext = compute((id, chatsList) => {
+    if (!id) return INITIAL_CONTEXT;
+    const chat = chatsList.find(c => c.id === id);
+    return chat || INITIAL_CONTEXT;
+}, currentChatId, chats);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
 export const mcpConfig = signal<McpServerConfig[]|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
@@ -118,13 +123,17 @@ export function updateChats(newChats: ChatContext[]) {
 }
 
 export async function processUpdate(update: ChatUpdate) {
-    const newChat = updateContext(chatContext.value, update, chatContext);
     const cs = chats.value;
     if (!cs.find(c => c.id === update.chatId)) {
+        const newChat = updateContext(INITIAL_CONTEXT, update);
         updateChats([
             ...chats.value,
             newChat
         ]);
+
+        if (update.messages && update.messages.length === 1 && update.messages[0].type === "user") {
+            currentChatId.value = update.chatId;
+        }
     } else {
         updateChats(chats.value.map(c => {
             if (c.id === update.chatId) {
@@ -135,21 +144,21 @@ export async function processUpdate(update: ChatUpdate) {
     }
 
     const playableMessage = update.messages?.find(m => m.hasAudio);
-    const isLast = playableMessage && update.messages.pop().id === playableMessage.id;
+    const isLast = playableMessage && update.messages.length > 0 && update.messages[update.messages.length - 1].id === playableMessage.id;
     if (playableMessage && isLast) {
         playAudio(playableMessage.id).then();
     }
 }
 
 export function activateChat(chat: ChatContext) {
-    chatContext.value = chat;
+    currentChatId.value = chat.id;
 }
 
 export function deleteChat(chatId: string) {
     chats.value = chats.value.filter(c => c.id !== chatId);
     Api.deleteChat(chatId).then(() => {
-        if (chatContext.value.id === chatId || !chatContext.value.id) {
-            chatContext.value = INITIAL_CONTEXT;
+        if (currentChatId.value === chatId) {
+            currentChatId.value = null;
         }
     });
 }
