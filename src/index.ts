@@ -51,16 +51,17 @@ app.use(cors({
 const baseUrl = process.env.BASE_URL || `http://localhost:${APP_PORT}`;
 const isPublicUrl = !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
 if (isPublicUrl) {
+    const limit = parseInt(process.env.RATE_LIMIT || '500');
     const rateLimit1000PerMinute = rateLimit({
         windowMs: 60 * 1000,
-        limit: 50,
+        limit,
         standardHeaders: true,
         legacyHeaders: false,
         message: 'Too many requests, please try again later.',
     });
 
     app.use(rateLimit1000PerMinute);
-    CLI.debug(`Rate limiting enabled: ${process.env.RATE_LIMIT || '1000'} requests per minute per client`);
+    CLI.debug(`Rate limiting enabled: ${limit} requests per minute per client`);
 } else {
     CLI.debug('Rate limiting disabled (running on localhost)');
 }
