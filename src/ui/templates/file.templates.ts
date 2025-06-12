@@ -1,7 +1,7 @@
 import {AnyNode, create, Signal, signalMap} from "@targoninc/jess";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {GenericTemplates} from "./generic.templates.ts";
-import {button, icon} from "@targoninc/jess-components";
+import {icon} from "@targoninc/jess-components";
 import {downloadFile} from "../classes/attachFiles.ts";
 
 export class FileTemplates {
@@ -44,13 +44,6 @@ export class FileTemplates {
             content = FileTemplates.fillButton("open_in_new", file.name, () => downloadFile(file));
         }
         return {content, width};
-    }
-
-    private static imageDisplay(file: MessageFile) {
-        return create("img")
-            .classes("file-display-image")
-            .src(`data:${file.mimeType};base64,` + file.base64)
-            .build();
     }
 
     private static audioDisplay(file: MessageFile) {
