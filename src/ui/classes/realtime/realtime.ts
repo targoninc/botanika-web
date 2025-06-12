@@ -13,6 +13,7 @@ export class Realtime {
     private baseReconnectDelay = 1000; // 1 second
     private reconnectTimer: number | null = null;
     private isConnecting = false;
+    private isClosing = false;
 
     private constructor() {
         this.connect();
@@ -100,7 +101,30 @@ export class Realtime {
         console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
         this.socket = null;
         this.isConnecting = false;
-        this.scheduleReconnect();
+
+        if (!this.isClosing) {
+            this.scheduleReconnect();
+        } else {
+            this.isClosing = false;
+        }
+    }
+
+    /**
+     * Close the WebSocket connection immediately
+     */
+    public close(): void {
+        if (this.socket) {
+            console.log('Closing WebSocket connection');
+            this.isClosing = true;
+
+            if (this.reconnectTimer !== null) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
+
+            this.socket.close(1000, 'Page unloaded');
+            this.socket = null;
+        }
     }
 
     /**
