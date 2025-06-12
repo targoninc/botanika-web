@@ -1,41 +1,28 @@
-import {addMcpServer, deleteMcpServer, getMcpConfig, updateMcpServer} from "./clientConfig";
 import {Application, Request, Response} from "express";
-import { McpServerConfig } from "../../../models/mcp/McpServerConfig";
 import { ApiEndpoint } from "../../../models/ApiEndpoints";
-import {isAdmin} from "../../authentication/middleware.ts";
+import {db, updateUser} from "../../database/db.ts";
+import { JsonArray } from "@prisma/client/runtime/library";
+import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
-export function getMcpConfigEndpoint(req: Request, res: Response) {
-    res.json(getMcpConfig());
+export async function getMcpConfig(id: string) {
+    const config = await db.user.findUnique({
+        select: { mcpConfiguration: true },
+        where: { id }
+    });
+
+    return config.mcpConfiguration as unknown as McpServerConfig[];
 }
 
-export async function addMcpServerEndpoint(req: Request, res: Response) {
-    const server = req.body as McpServerConfig;
-
-    if (!server.url) {
-        res.status(400).send('Missing server url');
-        return;
-    }
-
-    addMcpServer(server);
-    res.json({});
-}
-
-export async function deleteMcpServerEndpoint(req: Request, res: Response) {
-    const url = req.query.url as string;
-    deleteMcpServer(url);
-    res.json({});
-}
-
-export async function updateMcpServerEndpoint(req: Request, res: Response) {
-    const url = req.query.url as string;
-    const mcpServerConfig = req.body as McpServerConfig;
-    updateMcpServer(url, mcpServerConfig);
-    res.json({});
+export async function setMcpConfigEndpoint(req: Request) {
+    const config = req.body as JsonArray;
+    await updateUser(req.user.id, {
+        mcpConfiguration: config
+    });
 }
 
 export function addMcpEndpoints(app: Application) {
-    app.get(ApiEndpoint.MCP_CONFIG, isAdmin, getMcpConfigEndpoint);
-    app.post(ApiEndpoint.MCP_SERVER, isAdmin, addMcpServerEndpoint);
-    app.delete(ApiEndpoint.MCP_SERVER, isAdmin, deleteMcpServerEndpoint);
-    app.put(ApiEndpoint.MCP_SERVER, isAdmin, updateMcpServerEndpoint);
+    app.get(ApiEndpoint.MCP_CONFIG, async (req: Request, res: Response) => {
+        res.send(await getMcpConfig(req.user.id));
+    });
+    app.post(ApiEndpoint.MCP_CONFIG, setMcpConfigEndpoint);
 }
