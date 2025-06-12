@@ -79,7 +79,6 @@ export class Realtime {
     private async handleMessage(event: MessageEvent): Promise<void> {
         try {
             const data = JSON.parse(event.data) as BotanikaServerEvent<any>;
-            console.log('Received WebSocket message:', data);
             await handleMessage(data);
         } catch (error) {
             console.error('Error parsing WebSocket message:', error, event.data);

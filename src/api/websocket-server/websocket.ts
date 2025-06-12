@@ -72,16 +72,30 @@ export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>)
 export function broadcastToUser(userId: string, message: BotanikaServerEvent<any>) {
     const connections = userConnections.get(userId);
     if (connections) {
-        for (let i = 0; i < connections.size; i++) {
-            const connection = connections[i];
+        const connectionsArray = Array.from(connections);
+        let closedConnections = false;
+
+        for (let i = 0; i < connectionsArray.length; i++) {
+            const connection = connectionsArray[i];
             if (connection.readyState === 1) {
                 try {
                     CLI.debug(`Broadcasting to conn ${i + 1} for user ${connection.userId}`);
                     connection.send(JSON.stringify(message));
                 } catch (e) {
                     CLI.error(`Error sending message to connection: ${e}`);
+                    connections.delete(connection);
+                    closedConnections = true;
                 }
+            } else {
+                CLI.debug(`Removing closed connection for user ${connection.userId}`);
+                connections.delete(connection);
+                closedConnections = true;
             }
+        }
+
+        if (closedConnections && connections.size === 0) {
+            userConnections.delete(userId);
+            CLI.debug(`Removed user ${userId} from connections map due to all connections being closed`);
         }
     }
 }
