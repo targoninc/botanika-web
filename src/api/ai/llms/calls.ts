@@ -43,7 +43,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[]): Promise<{
+export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], chatId: string): Promise<{
     message: Signal<ChatMessage>;
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
@@ -83,7 +83,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         model: request.model
     });
 
-    updateMessageFromStream(message, textStream, text).then();
+    updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
 
     files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
