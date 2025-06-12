@@ -3,6 +3,7 @@ import cors from "cors";
 import {addAudioEndpoints, addTranscribeEndpoints} from "./api/ai/tts/endpoints.ts";
 import dotenv from "dotenv";
 import ui from "./ui-server/baseHtml.html" with {type: "text"};
+import rateLimit from "express-rate-limit";
 
 import {addUserEndpoints, addAuthenticationMiddleware} from "./api/authentication/middleware.ts";
 import {addShortcutEndpoints} from "./api/shortcuts/shortcuts.ts";
@@ -46,6 +47,23 @@ app.use(cors({
     preflightContinue: false,
     optionsSuccessStatus: 204,
 }));
+
+const baseUrl = process.env.BASE_URL || `http://localhost:${APP_PORT}`;
+const isPublicUrl = !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
+if (isPublicUrl) {
+    const rateLimit1000PerMinute = rateLimit({
+        windowMs: 60 * 1000,
+        limit: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: 'Too many requests, please try again later.',
+    });
+
+    app.use(rateLimit1000PerMinute);
+    CLI.debug(`Rate limiting enabled: ${process.env.RATE_LIMIT || '1000'} requests per minute per client`);
+} else {
+    CLI.debug('Rate limiting disabled (running on localhost)');
+}
 
 addAuthenticationMiddleware(app);
 

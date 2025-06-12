@@ -205,9 +205,9 @@ export class ChatTemplates {
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
-                when(message.type === "assistant", ChatTemplates.messageAction("delete", "Delete history after this message", async (e) => {
+                when(message.type === "assistant", ChatTemplates.messageAction("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
-                    createModal(GenericTemplates.confirmModal("Delete history after message", `Are you sure you want to delete all messages after this?`, "Yes", "No", async () => {
+                    createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
                         if (r.success) {
                             updateChats(chats.value.map(c => {
