@@ -99,20 +99,7 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
     };
 }
 
-async function finishMessage(m: ChatMessage, ws: WebsocketConnection, chat: ChatContext, userConfig: Configuration) {
-    if (m.finished) {
-        m.time = Date.now();
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [m]
-        });
-        chat.history.push(m);
-        if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStop(ws, chat.id, m);
-        }
-    }
-}
+// This function has been replaced by inline code in the newMessageEventHandler function
 
 /**
  * Requests another assistant message without tools just to have a summary or description of what happened
@@ -127,7 +114,25 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
     if (toolResults.length === maxSteps) {
         const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
         const m = newAssistantMessage(response.text, request.provider, request.model);
-        await finishMessage(m, ws, chat, userConfig);
+
+        // Set the message as finished
+        m.time = Date.now();
+        m.finished = true;
+
+        // Send the message to the client
+        sendChatUpdate(ws, {
+            chatId: chat.id,
+            timestamp: Date.now(),
+            messages: [m]
+        });
+
+        // Add the message to the chat history
+        chat.history.push(m);
+
+        // Send audio if enabled
+        if (userConfig.enableTts && m.text.length > 0) {
+            await sendAudioAndStop(ws, chat.id, m);
+        }
     }
 }
 
@@ -160,21 +165,32 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages);
+    const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages, chat.id);
 
-    const streamPromise = new Promise<void>((resolve) => {
-        streamResponse.message.subscribe(async (m: ChatMessage) => {
-            sendChatUpdate(ws, {
-                chatId: chat.id,
-                timestamp: Date.now(),
-                messages: [m]
-            });
-            await finishMessage(m, ws, chat, userConfig);
-            resolve();
-        });
+    // Wait for the steps to complete
+    const steps = await streamResponse.steps;
+
+    // Wait for the message to be finished
+    const waitForMessageFinished = new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+            if (streamResponse.message.value.finished) {
+                clearInterval(checkInterval);
+                // Add the finished message to the chat history
+                chat.history.push(streamResponse.message.value);
+                // Send audio if enabled
+                if (userConfig.enableTts && streamResponse.message.value.text.length > 0) {
+                    sendAudioAndStop(ws, chat.id, streamResponse.message.value).then(() => {
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            }
+        }, 100);
     });
+
     await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
-    await streamPromise;
+    await waitForMessageFinished;
     toolInfo.mcpInfo.onClose();
 
     await ChatStorage.writeChatContext(ws.userId, chat);

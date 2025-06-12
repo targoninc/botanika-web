@@ -16,13 +16,14 @@ import {signingKey} from "../../index.ts";
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
 
 // Map to store ongoing conversations for each chat
-// Key: chatId, Value: { userId: string, updates: ChatUpdate[], lastUpdated: number }
+// Key: chatId, Value: { userId: string, updates: ChatUpdate[], lastUpdated: number, isGenerating: boolean }
 interface OngoingConversation {
     userId: string;
     updates: ChatUpdate[];
     lastUpdated: number;
+    isGenerating: boolean;
 }
-const ongoingConversations: Map<string, OngoingConversation> = new Map();
+export const ongoingConversations: Map<string, OngoingConversation> = new Map();
 
 /**
  * Cleans up old conversations from the ongoingConversations map
@@ -94,6 +95,19 @@ export function sendAllOngoingConversations(ws: WebsocketConnection) {
     for (const [chatId, conversation] of ongoingConversations.entries()) {
         if (conversation.userId === ws.userId) {
             sendChatHistory(ws, chatId);
+
+            // If the conversation is still being generated, send a special message
+            if (conversation.isGenerating) {
+                CLI.debug(`Chat ${chatId} is still generating, sending status to client`);
+                send(ws, {
+                    type: BotanikaServerEventType.chatUpdate,
+                    data: {
+                        chatId,
+                        timestamp: Date.now(),
+                        messages: conversation.updates[conversation.updates.length - 1]?.messages || []
+                    }
+                });
+            }
         }
     }
 }
@@ -136,7 +150,8 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
             ongoingConversations.set(update.chatId, {
                 userId: ws.userId,
                 updates: [],
-                lastUpdated: Date.now()
+                lastUpdated: Date.now(),
+                isGenerating: false
             });
         }
 
@@ -147,6 +162,15 @@ export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
             // If this is a new message, add it to the updates
             if (update.messages) {
                 conversation.updates.push(update);
+
+                // Check if any message is still generating
+                if (update.messages.some(m => !m.finished)) {
+                    conversation.isGenerating = true;
+                    CLI.debug(`Chat ${update.chatId} is now generating`);
+                } else {
+                    conversation.isGenerating = false;
+                    CLI.debug(`Chat ${update.chatId} is no longer generating`);
+                }
             } 
             // If this is a name update, update the name in all previous updates
             else if (update.name) {
