@@ -99,7 +99,7 @@ export class SettingsTemplates {
                     .children(
                         GenericTemplates.buttonWithIcon("chevron_left", "Back to chat", async () => {
                             activePage.value = "chat";
-                        }, ["fixed"]),
+                        }, ["fixed", "layer-shadow"]),
                         create("h1")
                             .classes("flex")
                             .styles("margin-top", "1.5em")

@@ -294,12 +294,12 @@ export class ChatTemplates {
             document.getElementById("chat-input-field")?.focus();
         }
         const updateInputHeight = () => {
-            const input = document.getElementById("chat-input-field");
-            if (!input) {
+            const field = document.getElementById("chat-input-field");
+            if (!field) {
                 return;
             }
-            input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, 300) + "px";
+            field.style.height = "auto";
+            field.style.height = Math.min(field.scrollHeight, 300) + "px";
         }
         input.subscribe(() => {
             updateInputHeight();
@@ -307,9 +307,14 @@ export class ChatTemplates {
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
         const flyoutVisible = signal(false);
         const isDraggingOver = signal(false);
+        const hasText = compute(i => i.length > 0, input);
+        const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
+        const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
+        const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
+        const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
 
         return create("div")
-            .classes("chat-input", "relative", "flex-v", "small-gap")
+            .classes("chat-input", "relative", "flex-v", "small-gap", noHistoryClass)
             .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
             .ondragover((e: DragEvent) => {
                 e.preventDefault();
@@ -330,6 +335,10 @@ export class ChatTemplates {
                         create("div")
                             .classes("flex-v", "flex-grow")
                             .children(
+                                when(noHistory, create("span")
+                                    .classes("onboarding-text")
+                                    .text("What's on your mind?")
+                                    .build()),
                                 when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
                                 ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                             ).build(),
@@ -355,7 +364,7 @@ export class ChatTemplates {
                             .classes("flex", "align-center")
                             .children(
                                 when(voiceConfigured, AudioTemplates.voiceButton()),
-                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button"]),
+                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
                             ).build(),
                     ).build(),
             ).build();
@@ -377,7 +386,7 @@ export class ChatTemplates {
             .id("chat-input-field")
             .classes("flex-grow", "chat-input-field", "full-width", disabledClass)
             .styles("resize", "none")
-            .placeholder(compute((c, conf) => conf ? `[Shift] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
+            .placeholder(compute((c, conf) => conf ? `[Ctrl] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
             .value(input)
             .oninput((e: any) => {
                 input.value = target(e).value;

@@ -15,3 +15,7 @@ export const realtime = Realtime.getInstance();
 window.addEventListener('beforeunload', () => {
     realtime.close();
 });
+
+setTimeout(() => {
+    (document.querySelector(".chat-input-field") as HTMLInputElement)?.focus();
+});
