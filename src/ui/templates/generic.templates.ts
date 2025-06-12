@@ -533,7 +533,7 @@ export class GenericTemplates {
             .classes("relative")
             .children(
                 create("img")
-                    .classes("message-content-image")
+                    .classes("file-display-image")
                     .src(`data:${f.mimeType};base64,` + f.base64)
                     .build(),
                 create("div")
