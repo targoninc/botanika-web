@@ -25,8 +25,8 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {AnyNode, compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button, icon} from "@targoninc/jess-components";
+import {compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {button} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
@@ -34,10 +34,11 @@ import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
+import {attachFiles, downloadFile, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
+import {FileTemplates} from "./file.templates.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -152,31 +153,9 @@ export class ChatTemplates {
 
     private static messageFiles(message: ChatMessage) {
         return create("div")
-            .classes("flex", "align-center", "card", "message-content")
+            .classes("flex", "align-center", "message-content")
             .children(
-                ...message.files.map(f => {
-                    if (f.mimeType.startsWith("image/")) {
-                        return GenericTemplates.messageImage(f);
-                    }
-
-                    if (f.mimeType === "application/pdf") {
-                        return ChatTemplates.fillButton("open_in_new", f.name, () => {
-                            window.open(`data:${f.mimeType};base64,` + f.base64, "_blank");
-                        });
-                    }
-
-                    return button({
-                        icon: {icon: "download"},
-                        text: "File",
-                        onclick: () => {
-                            const a = document.createElement("a");
-                            a.href = f.base64;
-                            a.download = `file.${f.mimeType.split("/")[1]}`;
-                            document.body.appendChild(a);
-                            a.click();
-                        }
-                    })
-                }),
+                ...message.files.map(f => FileTemplates.fileDisplayContent(f).content),
             ).build();
     }
 
@@ -342,7 +321,7 @@ export class ChatTemplates {
                                     .classes("onboarding-text")
                                     .text("What's on your mind?")
                                     .build()),
-                                when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
+                                when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
                                 ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                             ).build(),
                     ).build(),
@@ -619,71 +598,6 @@ export class ChatTemplates {
                                 .build(),
                         ).build()
                     : null,
-            ).build();
-    }
-
-    private static filesDisplay(files: Signal<MessageFile[]>) {
-        return create("div")
-            .children(
-                signalMap(files, create("div").classes("flex"), f => ChatTemplates.fileDisplay(files, f))
-            ).build();
-    }
-
-    private static fileDisplay(files: Signal<MessageFile[]>, file: MessageFile) {
-        let content: AnyNode;
-        let width = "5em";
-        if (file.mimeType.startsWith("image/")) {
-            content = create("img")
-                .classes("file-display-image")
-                .src(`data:${file.mimeType};base64,` + file.base64)
-                .build();
-        } else if (file.mimeType.startsWith("audio/")) {
-            width = "10em";
-            content = create("audio")
-                .attributes("controls", "")
-                .classes("file-display-image")
-                .src(`data:${file.mimeType};base64,` + file.base64)
-                .build();
-        } else if (file.mimeType === "application/pdf") {
-            width = "10em";
-            content = ChatTemplates.fillButton("open_in_new", file.name, () => {
-                window.open(`data:${file.mimeType};base64,` + file.base64, "_blank");
-            });
-        } else {
-            content = create("span")
-                .text(file.name ?? file.mimeType)
-                .build();
-        }
-
-        return create("div")
-            .classes("file-display", "relative")
-            .styles("min-width", width, "max-width", width)
-            .children(
-                content,
-                create("div")
-                    .classes("file-actions")
-                    .children(
-                        GenericTemplates.buttonWithIcon("close", "", () => files.value = files.value.filter(f => f.id !== file.id)),
-                    ).build()
-            ).build();
-    }
-
-    private static fillButton(iconStr: string, text: string, onclick: () => void) {
-        return create("div")
-            .classes("full-width", "full-height", "flex", "card", "clickable", "align-children", "center-content")
-            .onclick(onclick)
-            .children(
-                create("div")
-                    .classes("flex-v", "small-gap")
-                    .children(
-                        icon({
-                            icon: iconStr,
-                        }),
-                        create("span")
-                            .classes("text-small")
-                            .text(text)
-                            .build()
-                    ).build()
             ).build();
     }
 }
