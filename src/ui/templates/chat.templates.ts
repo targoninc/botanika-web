@@ -30,13 +30,11 @@ import {button, icon} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
-import {realtime} from "../index.ts";
+import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {attachFiles} from "../classes/attachFiles.ts";
-import {pasteFile} from "../classes/pasteFile.ts";
-import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
+import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
@@ -326,6 +324,11 @@ export class ChatTemplates {
             .ondrop((e: DragEvent) => {
                 isDraggingOver.value = false;
                 handleDroppedFiles(e, files);
+            })
+            .onclick((e) => {
+                if (target(e).tagName !== "BUTTON" && !target(e).classList.contains("clickable")) {
+                    focusChatInput();
+                }
             })
             .children(
                 create("div")
