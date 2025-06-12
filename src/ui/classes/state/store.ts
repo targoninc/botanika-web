@@ -130,10 +130,6 @@ export async function processUpdate(update: ChatUpdate) {
             ...chats.value,
             newChat
         ]);
-
-        if (update.messages && update.messages.length === 1 && update.messages[0].type === "user") {
-            currentChatId.value = update.chatId;
-        }
     } else {
         updateChats(chats.value.map(c => {
             if (c.id === update.chatId) {
