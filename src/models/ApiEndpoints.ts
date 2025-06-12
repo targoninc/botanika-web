@@ -23,7 +23,6 @@ export enum ApiEndpoint {
 
     // MCP endpoints
     MCP_CONFIG = "/mcpConfig",
-    MCP_SERVER = "/mcpServer",
 
     // Shortcut configuration endpoints
     SHORTCUT_CONFIG = "/shortCutConfig",

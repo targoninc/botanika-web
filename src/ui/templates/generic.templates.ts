@@ -387,68 +387,62 @@ export class GenericTemplates {
         });
     }
 
-    static keyValueInput(initialValue: Record<string, string> = {}, onChange: (value: Record<string, string>) => void) {
-        const value = signal(initialValue);
-
+    static keyValueInput(headers: Record<string, string> = {}, onChange: (value: Record<string, string>) => void) {
         return create("div")
             .classes("flex-v")
             .children(
-                compute(v => {
-                    return create("div")
-                        .classes("flex-v")
-                        .children(
-                            ...Object.keys(v).map(key => {
-                                const key$ = signal(key);
-                                const val$ = signal(v[key]);
+                create("div")
+                    .classes("flex-v")
+                    .children(
+                        ...Object.keys(headers).map(key => {
+                            const key$ = signal(key);
+                            const val$ = signal(headers[key]);
 
-                                return create("div")
-                                    .classes("flex", "align-center")
-                                    .children(
-                                        input({
-                                            type: InputType.text,
-                                            value: key,
-                                            name: "key",
-                                            placeholder: "Key",
-                                            onchange: (newVal) => {
-                                                key$.value = newVal;
-                                            }
-                                        }),
-                                        input({
-                                            type: InputType.text,
-                                            value: val$,
-                                            name: key,
-                                            placeholder: key,
-                                            onchange: (newVal) => {
-                                                val$.value = newVal;
-                                            }
-                                        }),
-                                        button({
-                                            icon: {icon: "save"},
-                                            text: "Set",
-                                            disabled: compute(nv => !nv || nv.length === 0 || nv === v[key], val$),
-                                            classes: ["flex", "align-center"],
-                                            onclick: () => {
-                                                const old = value.value;
-                                                delete old[key];
-                                                const newVal = {
-                                                    ...old,
-                                                    [key$.value]: val$.value
-                                                };
-                                                onChange(newVal);
-                                            }
-                                        }),
-                                        GenericTemplates.buttonWithIcon("delete", "Delete", () => {
-                                            createModal(GenericTemplates.confirmModal("Delete header", `Are you sure you want to delete ${key}?`, "Yes", "No", () => {
-                                                const old = value.value;
-                                                delete old[key];
-                                                onChange(old);
-                                                toast("Header deleted");
-                                            }));
-                                        }, ["negative"])
-                                    ).build();
-                            })
-                        ).build();
-                }, value),
+                            return create("div")
+                                .classes("flex", "align-center")
+                                .children(
+                                    input({
+                                        type: InputType.text,
+                                        value: key,
+                                        name: "key",
+                                        placeholder: "Key",
+                                        onchange: (newVal) => {
+                                            key$.value = newVal;
+                                        }
+                                    }),
+                                    input({
+                                        type: InputType.text,
+                                        value: val$,
+                                        name: key,
+                                        placeholder: key,
+                                        onchange: (newVal) => {
+                                            val$.value = newVal;
+                                        }
+                                    }),
+                                    button({
+                                        icon: {icon: "save"},
+                                        text: "Update",
+                                        disabled: compute((nk, nv) => !nk || !nv || nk.length === 0 || nv.length === 0 || (nv === headers[key] && nk === key), key$, val$),
+                                        classes: ["flex", "align-center", "positive"],
+                                        onclick: () => {
+                                            delete headers[key];
+                                            headers = {
+                                                ...headers,
+                                                [key$.value]: val$.value
+                                            };
+                                            onChange(headers);
+                                        }
+                                    }),
+                                    GenericTemplates.buttonWithIcon("delete", "Delete", () => {
+                                        createModal(GenericTemplates.confirmModal("Delete header", `Are you sure you want to delete header ${key}?`, "Yes", "No", () => {
+                                            delete headers[key];
+                                            onChange(headers);
+                                            toast("Header deleted", null, ToastType.positive);
+                                        }));
+                                    }, ["negative"])
+                                ).build();
+                        })
+                    ).build(),
                 button({
                     text: "Add header",
                     icon: {
@@ -456,10 +450,11 @@ export class GenericTemplates {
                     },
                     classes: ["flex", "align-center", "positive"],
                     onclick: () => {
-                        value.value = {
-                            ...value.value,
+                        headers = {
+                            ...headers,
                             ["New"]: ""
                         };
+                        onChange(headers);
                     }
                 })
             ).build();

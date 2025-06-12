@@ -13,11 +13,12 @@ export async function getMcpConfig(id: string) {
     return config.mcpConfiguration as unknown as McpServerConfig[];
 }
 
-export async function setMcpConfigEndpoint(req: Request) {
-    const config = req.body as JsonArray;
+export async function setMcpConfigEndpoint(req: Request, res: Response) {
+    const config = req.body.config as JsonArray;
     await updateUser(req.user.id, {
         mcpConfiguration: config
     });
+    res.send();
 }
 
 export function addMcpEndpoints(app: Application) {

@@ -3,7 +3,6 @@ import {Configuration} from "../../../models/Configuration.ts";
 import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
-import {McpConfiguration} from "../../../models/mcp/McpConfiguration.ts";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
 import {Tables} from "../../../models/supabaseDefinitions.ts";
@@ -52,22 +51,11 @@ export class Api extends ApiBase {
     }
 
     static getMcpConfig() {
-        return this.get<McpConfiguration>(ApiEndpoint.MCP_CONFIG);
+        return this.get<McpServerConfig[]>(ApiEndpoint.MCP_CONFIG);
     }
 
-    static addMcpServer(url: string, name: string) {
-        return this.post(ApiEndpoint.MCP_SERVER, {
-            url,
-            name
-        });
-    }
-
-    static deleteMcpServer(url: string) {
-        return this.delete(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(url)}`);
-    }
-
-    static updateMcpServer(oldUrl: string, mcpServerConfig: McpServerConfig) {
-        return this.put(`${ApiEndpoint.MCP_SERVER}?url=${encodeURIComponent(oldUrl)}`, mcpServerConfig);
+    static setMcpConfig(config: McpServerConfig[]) {
+        return this.post(ApiEndpoint.MCP_CONFIG, { config });
     }
 
     static getShortcutConfig() {
