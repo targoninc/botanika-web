@@ -72,10 +72,11 @@ export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>)
 export function broadcastToUser(userId: string, message: BotanikaServerEvent<any>) {
     const connections = userConnections.get(userId);
     if (connections) {
-        CLI.debug(`Broadcasting to ${connections.size} connections for user ${userId}`);
-        for (const connection of connections) {
+        for (let i = 0; i < connections.size; i++) {
+            const connection = connections[i];
             if (connection.readyState === 1) {
                 try {
+                    CLI.debug(`Broadcasting to conn ${i + 1} for user ${connection.userId}`);
                     connection.send(JSON.stringify(message));
                 } catch (e) {
                     CLI.error(`Error sending message to connection: ${e}`);
@@ -137,7 +138,6 @@ export function sendError(ws: WebsocketConnection, message: string) {
             error: message
         }
     };
-    send(ws, errorEvent);
     broadcastToUser(ws.userId, errorEvent);
 }
 
@@ -149,7 +149,6 @@ export function sendWarning(ws: WebsocketConnection, message: string) {
             warning: message
         }
     };
-    send(ws, warningEvent);
     broadcastToUser(ws.userId, warningEvent);
 }
 
