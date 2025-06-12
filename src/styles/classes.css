@@ -452,9 +452,8 @@ kbd {
     background-color: var(--grey-light);
     border-radius: var(--input-border-radius);
     border: 1px solid var(--grey-dark);
-    box-shadow:
-            0 1px 1px rgba(0, 0, 0, 0.2),
-            0 2px 0 0 var(--grey-light) inset;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 0 0 var(--grey-light) inset;
     color: var(--bg);
     display: inline-block;
     font-size: 0.8em;
@@ -468,30 +467,43 @@ kbd {
 .chat-input {
     width: max(30%, 500px);
     margin: 0 auto;
-    border: 1px solid var(--bg-4);
-    border-top: 1px solid var(--bg-4);
+    outline: 1px solid var(--bg-4);
     border-radius: var(--input-border-radius);
     padding: var(--gap-v);
     background: var(--gradient-1);
-    transition: border-color var(--animation-duration) ease, box-shadow var(--animation-duration) ease, width var(--animation-duration) ease;
+    transition: outline-color var(--animation-duration) ease,
+    box-shadow var(--animation-duration) ease,
+    width var(--animation-duration) ease,
+    outline-width var(--animation-duration) ease,
+    transform var(--animation-duration) ease;
 }
 
-.chat-input:hover {
+.chat-input:focus-within {
+    outline-color: var(--tint-present);
+    outline-width: 2px;
+}
+
+.chat-input:hover, .chat-input:focus-within, .chat-input.no-history {
     width: min(100%, 800px);
+}
+
+.chat-input.no-history {
+    transform: translateY(-50dvh);
 }
 
 .chat-input.drag-over {
     border-color: var(--tint-present);
-    box-shadow: 0 0 10px var(--tint-transpresent);
+    box-shadow: var(--tint-shadow);
 }
 
-.chat-input.drag-over:before {
+.chat-input.drag-over:after {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    pointer-events: none;
     border-radius: var(--input-border-radius);
     background: var(--tint-transpresent);
 }
@@ -502,8 +514,15 @@ kbd {
     font-family: var(--default-font-family);
     font-size: var(--font-size-base);
     padding: 0;
+    margin: var(--gap-h);
     background: transparent;
     border-radius: 0;
+}
+
+.onboarding-text {
+    font-size: 1.5em;
+    padding: var(--gap-h);
+    padding-bottom: 0;
 }
 
 .time {
@@ -547,15 +566,21 @@ kbd {
     flex-direction: column;
     justify-content: center;
     font-size: 1.5em;
-    transition: background var(--animation-duration) ease;
+    transition: background var(--animation-duration) ease, transform var(--animation-duration) ease;
 }
 
 .voice-button {
     font-size: 1.2em;
 }
 
+.send-button.has-text {
+    background: var(--tint-main);
+    color: var(--black-trans);
+    border-color: var(--tint-main);
+}
+
 .send-button:hover, .voice-button:hover {
-    background: var(--gradient-2);
+    transform: scale(1.05);
     box-shadow: 0 0 20px -5px color-mix(in oklab, var(--tint-present) 50%, transparent 50%);
 }
 

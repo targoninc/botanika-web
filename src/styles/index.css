@@ -61,6 +61,7 @@
     --text-4: var(--white-4);
     --neutral-light: var(--grey-light);
     --neutral-dark: var(--grey-dark);
+    --tint-shadow: 0 0 10px var(--tint-transpresent);
 
     --animation-duration: 0.2s;
 }
@@ -529,4 +530,8 @@ label.required {
 
 .relative {
     position: relative;
+}
+
+.layer-shadow {
+    box-shadow: 0 0 15px 0px var(--bg);
 }
