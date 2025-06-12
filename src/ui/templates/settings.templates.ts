@@ -1,6 +1,5 @@
 import {GenericTemplates} from "./generic.templates";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
-import {McpConfiguration} from "../../models/mcp/McpConfiguration";
 import {createModal, toast} from "../classes/ui";
 import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
 import {shortcutNames} from "../../models/shortcuts/Shortcut";
@@ -13,6 +12,7 @@ import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
+import {v4} from "uuid";
 
 export class SettingsTemplates {
     static settings() {
@@ -116,7 +116,7 @@ export class SettingsTemplates {
                         }))),
                         SettingsTemplates.shortcuts(),
                         SettingsTemplates.configuredFeatures(),
-                        when(mcpConfig, SettingsTemplates.mcpConfig()),
+                        SettingsTemplates.mcpConfig(),
                         GenericTemplates.spacer()
                     ).build()
             ).build();
@@ -273,23 +273,16 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v", "allow-overflow")
             .children(
-                compute(c => SettingsTemplates.mcpConfigInternal(c ?? <McpConfiguration>{}), mcpConfig)
+                compute(c => SettingsTemplates.mcpConfigInternal(c ?? []), mcpConfig)
             ).build();
     }
 
-    static mcpConfigInternal(c: McpConfiguration) {
+    static mcpConfigInternal(servers: McpServerConfig[]) {
         return create("div")
             .classes("flex-v")
             .children(
                 GenericTemplates.heading(2, "Configured MCP servers"),
-                create("div")
-                    .classes("card")
-                    .children(
-                        GenericTemplates.warning("You might have to restart the application after changing MCP server configuration")
-                    ).build(),
-                ...Object.keys(c?.servers ?? {}).map(server => {
-                    return SettingsTemplates.existingMcpServer(c.servers[server]);
-                }),
+                ...(servers ?? []).map(SettingsTemplates.existingMcpServer),
                 SettingsTemplates.addMcpServer()
             ).build();
     }
@@ -329,12 +322,19 @@ export class SettingsTemplates {
                     icon: {
                         icon: "add",
                     },
-                    classes: ["flex", "align-center"],
+                    classes: ["flex", "align-center", "positive"],
                     onclick: () => {
-                        Api.addMcpServer(url.value, name.value).then(() => {
+                        const newServers = [...mcpConfig.value, <McpServerConfig>{
+                            url: url.value,
+                            name: name.value,
+                            id: v4(),
+                            headers: {}
+                        }];
+
+                        Api.setMcpConfig(newServers).then(() => {
                             Api.getMcpConfig().then(mcpConf => {
                                 if (mcpConf.data) {
-                                    mcpConfig.value = mcpConf.data as McpConfiguration;
+                                    mcpConfig.value = mcpConf.data as McpServerConfig[];
                                 }
                             });
                         });
@@ -346,68 +346,22 @@ export class SettingsTemplates {
     private static existingMcpServer(server: McpServerConfig) {
         const name = signal(server.name);
         const url = signal(server.url);
-        const oldUrl = server.url;
+        const headers = signal(server.headers);
 
         return create("div")
             .classes("flex-v", "bordered-panel")
             .children(
                 create("div")
-                    .classes("flex", "align-center", "space-between")
+                    .classes("flex")
                     .children(
-                        create("div")
-                            .classes("flex", "align-center")
-                            .children(
-                                input({
-                                    type: InputType.text,
-                                    value: name,
-                                    name: "name",
-                                    label: "Name",
-                                    placeholder: "Name",
-                                    onchange: (value) => {
-                                        name.value = value;
-                                    }
-                                }),
-                                input({
-                                    type: InputType.text,
-                                    value: server.url,
-                                    name: "url",
-                                    label: "URL",
-                                    placeholder: "URL",
-                                    onchange: (value) => {
-                                        url.value = value;
-                                    }
-                                }),
-                                button({
-                                    icon: {icon: "save"},
-                                    text: "Set",
-                                    disabled: compute((n, u) => !n || n.length === 0 || !u || u.length === 0, name, url),
-                                    classes: ["flex", "align-center"],
-                                    onclick: () => {
-                                        createModal(GenericTemplates.confirmModalWithContent("Change MCP server config", create("div")
-                                            .children(
-                                                create("p")
-                                                    .text(`Are you sure you want to change the config for MCP server ${server.name}?`),
-                                            ).build(), "Yes", "No", () => {
-                                            server.name = name.value;
-                                            server.url = url.value;
-                                            Api.updateMcpServer(oldUrl, server).then(() => {
-                                                Api.getMcpConfig().then(mcpConf => {
-                                                    if (mcpConf.data) {
-                                                        mcpConfig.value = mcpConf.data as McpConfiguration;
-                                                        toast("MCP config updated", null, ToastType.positive);
-                                                    }
-                                                });
-                                            });
-                                        }));
-                                    }
-                                })
-                            ).build(),
+                        SettingsTemplates.mcpServerSaveButton(name, url, server, headers),
                         GenericTemplates.buttonWithIcon("delete", "Delete", () => {
                             createModal(GenericTemplates.confirmModal("Delete MCP Server connection", `Are you sure you want to delete ${server.url}?`, "Yes", "No", () => {
-                                Api.deleteMcpServer(server.url).then(() => {
+                                const newServers = [...mcpConfig.value].filter(s => s.id !== server.id);
+                                Api.setMcpConfig(newServers).then(() => {
                                     Api.getMcpConfig().then(mcpConf => {
                                         if (mcpConf.data) {
-                                            mcpConfig.value = mcpConf.data as McpConfiguration;
+                                            mcpConfig.value = mcpConf.data as McpServerConfig[];
                                         }
                                     });
                                 });
@@ -415,22 +369,70 @@ export class SettingsTemplates {
                         }, ["negative"]),
                     ).build(),
                 create("div")
+                    .classes("flex", "align-center")
+                    .children(
+                        input({
+                            type: InputType.text,
+                            value: name,
+                            name: "name",
+                            label: "Name",
+                            placeholder: "Name",
+                            onchange: (value) => {
+                                name.value = value;
+                            }
+                        }),
+                        input({
+                            type: InputType.text,
+                            value: server.url,
+                            name: "url",
+                            label: "URL",
+                            placeholder: "URL",
+                            onchange: (value) => {
+                                url.value = value;
+                            }
+                        })
+                    ).build(),
+                create("div")
                     .classes("flex-v")
                     .children(
                         GenericTemplates.heading(3, "Headers"),
-                        GenericTemplates.keyValueInput(server.headers, headers => {
-                            server.headers = headers;
-                            Api.updateMcpServer(oldUrl, server).then(() => {
-                                toast("MCP server updated");
-                                Api.getMcpConfig().then(mcpConf => {
-                                    if (mcpConf.data) {
-                                        mcpConfig.value = mcpConf.data as McpConfiguration;
-                                    }
-                                });
-                            });
-                        })
+                        compute(h => GenericTemplates.keyValueInput(h, newHeaders => {
+                            headers.value = newHeaders;
+                            SettingsTemplates.saveMcpServer(server, name, url, headers);
+                        }), headers),
                     ).build(),
             ).build();
+    }
+
+    private static mcpServerSaveButton(name: Signal<string>, url: Signal<string>, server: McpServerConfig, headers: Signal<Record<string, string>>) {
+        return button({
+            icon: {icon: "save"},
+            text: "Update server",
+            disabled: compute((n, u, h) => (!n || n.length === 0 || !u || u.length === 0)
+                && (n === server.name) && (u === server.url)
+                && (JSON.stringify(h) === JSON.stringify(server.headers)), name, url, headers),
+            classes: ["flex", "align-center", "positive"],
+            onclick: () => SettingsTemplates.saveMcpServer(server, name, url, headers)
+        });
+    }
+
+    private static saveMcpServer(server: McpServerConfig, name: Signal<string>, url: Signal<string>, headers: Signal<Record<string, string>>) {
+        const newServers = mcpConfig.value.map(s => {
+            if (s.url === server.url) {
+                server.name = name.value;
+                server.url = url.value;
+                server.headers = headers.value ?? {};
+            }
+            return server;
+        });
+        Api.setMcpConfig(newServers).then(() => {
+            Api.getMcpConfig().then(mcpConf => {
+                if (mcpConf.data) {
+                    mcpConfig.value = mcpConf.data as McpServerConfig[];
+                    toast("MCP config updated", null, ToastType.positive);
+                }
+            });
+        });
     }
 
     static shortcuts() {

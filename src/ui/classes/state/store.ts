@@ -6,7 +6,6 @@ import { Configuration } from "../../../models/Configuration";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
-import {McpConfiguration} from "../../../models/mcp/McpConfiguration.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
 import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
 import {Tables} from "../../../models/supabaseDefinitions.ts";
@@ -18,13 +17,14 @@ import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
 import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
+import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
 export const activePage = signal<string>("chat");
 export const configuration = signal<Configuration>({} as Configuration);
 export const chatContext = signal<ChatContext>(INITIAL_CONTEXT);
 export const chats = signal<ChatContext[]>([]);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
-export const mcpConfig = signal<McpConfiguration|null>(null);
+export const mcpConfig = signal<McpServerConfig[]|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
@@ -61,7 +61,7 @@ export function initializeStore() {
         return data;
     });
     tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
-    tryLoadFromCache<McpConfiguration>("mcpConfig", mcpConfig, Api.getMcpConfig());
+    tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, Api.getMcpConfig());
     tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
     tryLoadFromCache<Tables<"users"> & UserinfoResponse>("currentUser", currentUser, Api.getUser());
 }
