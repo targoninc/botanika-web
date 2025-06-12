@@ -1,5 +1,4 @@
 import {
-    activateChat,
     activePage,
     availableModels,
     chatContext,
@@ -20,7 +19,6 @@ import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
 import {ResourceReference} from "../../models/chat/ResourceReference";
-import {INITIAL_CONTEXT} from "../../models/chat/initialContext";
 import {ModelDefinition} from "../../models/llms/ModelDefinition";
 import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
@@ -75,7 +73,6 @@ export class ChatTemplates {
 
     static chatHistory() {
         const history = compute(c => c?.history ?? [], chatContext);
-        const hasNoMessages = compute(h => h.length === 0, history);
         const dedupHistory = compute(h => {
             h = h.sort((a, b) => a.time - b.time);
             return h.reduce((prev, cur) => {
@@ -85,7 +82,7 @@ export class ChatTemplates {
                 return prev;
             }, []);
         }, history);
-        dedupHistory.subscribe((h) => {
+        dedupHistory.subscribe(() => {
             setTimeout(() => {
                 hljs.highlightAll();
                 attachCodeCopyButtons();
@@ -533,7 +530,7 @@ export class ChatTemplates {
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", activeClass)
-            .onclick(() => activateChat(chat))
+            .onclick(() => currentChatId.value = chat.id)
             .children(
                 create("div")
                     .classes("flex", "align-center", "no-wrap", "space-between")
