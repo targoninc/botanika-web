@@ -122,6 +122,8 @@ export function updateChats(newChats: ChatContext[]) {
     chats.value = newChats.sort((a, b) => b.createdAt - a.createdAt);
 }
 
+export const activateNextUpdate = signal(false);
+
 export async function processUpdate(update: ChatUpdate) {
     const cs = chats.value;
     if (!cs.find(c => c.id === update.chatId)) {
@@ -130,6 +132,10 @@ export async function processUpdate(update: ChatUpdate) {
             ...chats.value,
             newChat
         ]);
+
+        if (activateNextUpdate.value && update.messages && update.messages.length === 1 && update.messages[0].type === "user") {
+            currentChatId.value = update.chatId;
+        }
     } else {
         updateChats(chats.value.map(c => {
             if (c.id === update.chatId) {
