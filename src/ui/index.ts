@@ -11,3 +11,7 @@ content.appendChild(app);
 
 addShortCutListener();
 export const realtime = Realtime.getInstance();
+
+window.addEventListener('beforeunload', () => {
+    realtime.close();
+});
