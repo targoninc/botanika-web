@@ -12,35 +12,164 @@ import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 import {ServerWarningEvent} from "../../models/websocket/serverEvents/serverWarningEvent.ts";
 import {signingKey} from "../../index.ts";
 
+// Map to store active connections for each user
+const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
+
+// Map to store ongoing conversations for each chat
+// Key: chatId, Value: { userId: string, updates: ChatUpdate[], lastUpdated: number }
+interface OngoingConversation {
+    userId: string;
+    updates: ChatUpdate[];
+    lastUpdated: number;
+}
+const ongoingConversations: Map<string, OngoingConversation> = new Map();
+
+/**
+ * Cleans up old conversations from the ongoingConversations map
+ * Conversations older than 1 hour are removed
+ */
+function cleanupOldConversations() {
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+
+    for (const [chatId, conversation] of ongoingConversations.entries()) {
+        if (now - conversation.lastUpdated > oneHour) {
+            CLI.debug(`Removing old conversation ${chatId} for user ${conversation.userId}`);
+            ongoingConversations.delete(chatId);
+        }
+    }
+}
+
+// Clean up old conversations every hour
+setInterval(cleanupOldConversations, 60 * 60 * 1000);
+
 export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
     ws.send(JSON.stringify(message));
 }
 
+/**
+ * Broadcasts a message to all connections for a user
+ * @param userId The user ID to broadcast to
+ * @param message The message to broadcast
+ */
+export function broadcastToUser(userId: string, message: BotanikaServerEvent<any>) {
+    const connections = userConnections.get(userId);
+    if (connections) {
+        CLI.debug(`Broadcasting to ${connections.size} connections for user ${userId}`);
+        for (const connection of connections) {
+            try {
+                connection.send(JSON.stringify(message));
+            } catch (e) {
+                CLI.error(`Error sending message to connection: ${e}`);
+                // Don't remove the connection here, it will be removed when the connection is closed
+            }
+        }
+    }
+}
+
+/**
+ * Sends all updates for a specific chat to a connection
+ * @param ws The WebSocket connection to send updates to
+ * @param chatId The chat ID to get updates for
+ */
+export function sendChatHistory(ws: WebsocketConnection, chatId: string) {
+    const conversation = ongoingConversations.get(chatId);
+    if (conversation && conversation.userId === ws.userId) {
+        CLI.debug(`Sending ${conversation.updates.length} updates for chat ${chatId} to user ${ws.userId}`);
+        for (const update of conversation.updates) {
+            send(ws, {
+                type: BotanikaServerEventType.chatUpdate,
+                data: update
+            });
+        }
+    }
+}
+
+/**
+ * Sends all ongoing conversations for a user to a connection
+ * @param ws The WebSocket connection to send updates to
+ */
+export function sendAllOngoingConversations(ws: WebsocketConnection) {
+    CLI.debug(`Checking for ongoing conversations for user ${ws.userId}`);
+    for (const [chatId, conversation] of ongoingConversations.entries()) {
+        if (conversation.userId === ws.userId) {
+            sendChatHistory(ws, chatId);
+        }
+    }
+}
+
 export function sendError(ws: WebsocketConnection, message: string) {
     CLI.error(`Error in realtime: ${message}`);
-    send(ws, {
+    const errorEvent = {
         type: BotanikaServerEventType.error,
         data: <ServerErrorEvent>{
             error: message
         }
-    });
+    };
+    send(ws, errorEvent);
+    // Also broadcast to all other connections for this user
+    broadcastToUser(ws.userId, errorEvent);
 }
 
 export function sendWarning(ws: WebsocketConnection, message: string) {
     CLI.warning(`Warning in realtime: ${message}`);
-    send(ws, {
+    const warningEvent = {
         type: BotanikaServerEventType.warning,
         data: <ServerWarningEvent>{
             warning: message
         }
-    });
+    };
+    send(ws, warningEvent);
+    // Also broadcast to all other connections for this user
+    broadcastToUser(ws.userId, warningEvent);
 }
 
 export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
-    send(ws, {
+    const chatUpdateEvent = {
         type: BotanikaServerEventType.chatUpdate,
         data: update
-    });
+    };
+
+    // Store the update in the ongoing conversations map
+    if (update.chatId) {
+        if (!ongoingConversations.has(update.chatId)) {
+            ongoingConversations.set(update.chatId, {
+                userId: ws.userId,
+                updates: [],
+                lastUpdated: Date.now()
+            });
+        }
+
+        const conversation = ongoingConversations.get(update.chatId);
+
+        // Only store updates for the correct user
+        if (conversation.userId === ws.userId) {
+            // If this is a new message, add it to the updates
+            if (update.messages) {
+                conversation.updates.push(update);
+            } 
+            // If this is a name update, update the name in all previous updates
+            else if (update.name) {
+                for (const prevUpdate of conversation.updates) {
+                    if (!prevUpdate.name) {
+                        prevUpdate.name = update.name;
+                    }
+                }
+                conversation.updates.push(update);
+            }
+
+            // Update the lastUpdated timestamp
+            conversation.lastUpdated = Date.now();
+
+            // Limit the number of stored updates to prevent memory issues
+            if (conversation.updates.length > 100) {
+                conversation.updates = conversation.updates.slice(-100);
+            }
+        }
+    }
+
+    // Send to the requesting connection and broadcast to all other connections for this user
+    broadcastToUser(ws.userId, chatUpdateEvent);
 }
 
 async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
@@ -88,6 +217,16 @@ export function addWebsocketServer(server: Server) {
         CLI.log(`Client connected to WebSocket with userId: ${userId}`);
         ws.userId = userId;
 
+        // Add the connection to the user's connections
+        if (!userConnections.has(userId)) {
+            userConnections.set(userId, new Set());
+        }
+        userConnections.get(userId).add(ws);
+        CLI.debug(`User ${userId} now has ${userConnections.get(userId).size} active connections`);
+
+        // Send all ongoing conversations to the new connection
+        sendAllOngoingConversations(ws);
+
         ws.on("message", async (msg: string) => {
             const message = JSON.parse(msg);
             CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
@@ -101,6 +240,19 @@ export function addWebsocketServer(server: Server) {
 
         ws.on("close", () => {
             CLI.log(`Client disconnected from WebSocket: ${ws.userId}`);
+
+            // Remove the connection from the user's connections
+            const userConnectionSet = userConnections.get(userId);
+            if (userConnectionSet) {
+                userConnectionSet.delete(ws);
+                CLI.debug(`User ${userId} now has ${userConnectionSet.size} active connections`);
+
+                // If there are no more connections for this user, remove the user from the map
+                if (userConnectionSet.size === 0) {
+                    userConnections.delete(userId);
+                    CLI.debug(`Removed user ${userId} from connections map`);
+                }
+            }
         });
 
         ws.on("error", (err: Error) => {
