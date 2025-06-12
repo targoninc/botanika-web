@@ -161,7 +161,7 @@ export class SettingsTemplates {
                 }, 200);
             });
         }
-        const changed = compute((v, c) => v !== (getter(c) ?? null), value, configuration);
+        const changed = compute((v, c) => v !== (getter(c) ?? null) && sc.type !== "boolean", value, configuration);
 
         return create("div")
             .classes("flex-v", "card", "small-gap")
@@ -173,7 +173,12 @@ export class SettingsTemplates {
                             .children(
                                 GenericTemplates.icon(sc.icon),
                             ).build() : null,
-                        SettingsTemplates.settingImplementation(sc, value, (_, val) => value.value = val),
+                        SettingsTemplates.settingImplementation(sc, value, async (_, val) => {
+                            value.value = val;
+                            if (sc.type === "boolean") {
+                                await updateKey(sc.key, value.value);
+                            }
+                        }),
                         when(changed, button({
                             icon: {icon: "save"},
                             text: "Set",
