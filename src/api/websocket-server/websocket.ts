@@ -27,6 +27,22 @@ interface OngoingConversation {
 export const ongoingConversations: Map<string, OngoingConversation> = new Map();
 
 /**
+ * Removes a chat from the ongoingConversations map
+ * @param chatId The chat ID to remove
+ * @param userId The user ID who owns the chat
+ * @returns true if the chat was removed, false otherwise
+ */
+export function removeOngoingConversation(chatId: string, userId: string): boolean {
+    const conversation = ongoingConversations.get(chatId);
+    if (conversation && conversation.userId === userId) {
+        CLI.debug(`Removing conversation ${chatId} for user ${userId} due to chat deletion`);
+        ongoingConversations.delete(chatId);
+        return true;
+    }
+    return false;
+}
+
+/**
  * Cleans up old conversations from the ongoingConversations map
  * Conversations older than 1 hour are removed
  */
@@ -58,11 +74,12 @@ export function broadcastToUser(userId: string, message: BotanikaServerEvent<any
     if (connections) {
         CLI.debug(`Broadcasting to ${connections.size} connections for user ${userId}`);
         for (const connection of connections) {
-            try {
-                connection.send(JSON.stringify(message));
-            } catch (e) {
-                CLI.error(`Error sending message to connection: ${e}`);
-                // Don't remove the connection here, it will be removed when the connection is closed
+            if (connection.readyState === 1) {
+                try {
+                    connection.send(JSON.stringify(message));
+                } catch (e) {
+                    CLI.error(`Error sending message to connection: ${e}`);
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 import {
+    activateNextUpdate,
     activePage,
     availableModels,
     chatContext,
@@ -272,6 +273,7 @@ export class ChatTemplates {
         const files = signal<MessageFile[]>([]);
         const send = () => {
             try {
+                activateNextUpdate.value = true;
                 realtime.send({
                     type: BotanikaClientEventType.message,
                     data: <NewMessageEventData>{

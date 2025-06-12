@@ -2,15 +2,11 @@ import {Application, Request, Response} from "express";
 import {ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
-import {ChatContext} from "../../models/chat/ChatContext";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {signal} from "@targoninc/jess";
-import {sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
+import {removeOngoingConversation, sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
-
-export const currentChatContext = signal<ChatContext>(null);
 
 export async function getAudio(lastMessage: ChatMessage): Promise<string> {
     if (lastMessage.type === "assistant") {
@@ -67,6 +63,8 @@ export function deleteChatEndpoint(req: Request, res: Response) {
         res.status(400).send('Missing chatId parameter');
         return;
     }
+
+    removeOngoingConversation(chatId, req.user.id);
 
     ChatStorage.deleteChatContext(req.user.id, chatId).then(() => {
         res.status(200).send('Chat deleted');
