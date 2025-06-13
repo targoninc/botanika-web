@@ -4,13 +4,17 @@ A chat app. Bring your own API keys.
 
 ## Client Features
 
-| Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App |
-|----------|-----|-----|-------------|-------------|-------------|---------|
-| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       |
-| ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
-| Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
-| Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       |
-| T3.Chat  | ❌   | ❌   | ❌           | ❌           | ❌           | ✅       |
+- ✅ Fully supported
+- 🆗 Partially supported
+- ❌ Not supported
+
+| Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App | BYOK | File support |
+|----------|-----|-----|-------------|-------------|-------------|---------|------|--------------|
+| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       | ✅    | ✅            |
+| T3.Chat  | ❌   | ❌   | ❌           | ❌           | ❌           | ✅       | 🆗   | ✅            |
+| ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            |
+| Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            |
+| Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       | ❌    | ✅            |
 
 # Run
 
