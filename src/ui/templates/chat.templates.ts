@@ -4,7 +4,7 @@ import {
     availableModels,
     chatContext,
     chats,
-    configuration,
+    configuration, connected,
     currentChatId,
     currentlyPlayingAudio,
     currentText,
@@ -64,12 +64,17 @@ export class ChatTemplates {
 
     static botName() {
         return create("div")
-            .classes("flex", "align-center", "bot-name", "card")
+            .classes("flex", "align-center", "bot-name", "align-children")
             .children(
-                GenericTemplates.icon("person"),
+                create("div")
+                    .classes("relative")
+                    .children(
+                        GenericTemplates.icon("person", ["bot-icon"]),
+                        GenericTemplates.statusIndicator(connected),
+                    ).build(),
                 create("span")
                     .text(compute(c => c.botname ?? "Anika", configuration))
-                    .build()
+                    .build(),
             ).build();
     }
 

@@ -551,4 +551,11 @@ export class GenericTemplates {
                     ).build()
             ).build();
     }
+
+    static statusIndicator(status: Signal<boolean>) {
+        return create("div")
+            .classes("status-indicator", compute((s): string => s ? "on" : "off", status))
+            .title(compute(s => s ? "Connected to realtime server" : "Offline, trying to reconnect...", status))
+            .build();
+    }
 }

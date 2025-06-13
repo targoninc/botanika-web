@@ -4,6 +4,7 @@ import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
 import {BotanikaClientEvent} from "../../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {handleMessage} from "./handleMessage.ts";
 import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
+import {connected} from "../state/store.ts";
 
 export class Realtime {
     private static instance: Realtime;
@@ -68,9 +69,9 @@ export class Realtime {
      */
     private handleOpen(): void {
         console.log('Connected to WebSocket server');
-        toast('Connected to realtime server', null, ToastType.positive);
         this.reconnectAttempts = 0;
         this.isConnecting = false;
+        connected.value = true;
     }
 
     /**
@@ -100,6 +101,7 @@ export class Realtime {
         console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
         this.socket = null;
         this.isConnecting = false;
+        connected.value = false;
 
         if (!this.isClosing) {
             this.scheduleReconnect();
@@ -123,6 +125,7 @@ export class Realtime {
 
             this.socket.close(1000, 'Page unloaded');
             this.socket = null;
+            connected.value = false;
         }
     }
 

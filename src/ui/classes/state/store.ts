@@ -46,6 +46,7 @@ export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
 export const currentUser = signal<Tables<"users"> & UserinfoResponse>(null);
+export const connected = signal(false);
 
 export function initializeStore() {
     configuration.subscribe(c => {
