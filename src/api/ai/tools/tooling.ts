@@ -1,67 +1,51 @@
 import {CLI} from "../../CLI";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {v4 as uuidv4} from "uuid";
-import {ToolResultUnion, ToolSet} from "ai";
-import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {broadcastToUser, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {ToolExecutionOptions} from "ai";
 
-export function wrapTool(id: string, execute: (input: any) => Promise<any>, ws: WebsocketConnection, chat: ChatContext) {
-    return async (input: any, ...args: any[]) => {
-        let newMessage = <ChatMessage>{
-            type: "tool",
-            text: `Calling tool ${id}`,
-            toolResult: <ToolResultUnion<ToolSet>>{
-                toolName: id,
-                text: null,
-                references: [],
-            },
-            finished: false,
-            time: Date.now(),
-            references: [],
-            id: uuidv4()
-        };
-        sendChatUpdate(ws, {
+export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, ws: WebsocketConnection, chat: ChatContext) {
+    return async (input: TParams, options: ToolExecutionOptions) => {
+        const messageId = uuidv4();
+        broadcastToUser(ws.userId, {
+            type: "toolCallStarted",
             chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [newMessage]
+            toolName: toolName,
+            messageId
         });
         const start = performance.now();
-        CLI.debug(`Calling tool ${id}`);
-        let result;
-        try {
-            result = await execute(input);
-        } catch (e) {
-            result = <ChatToolResult>{
-                text: `Tool ${id} failed: ${e.toString()}`,
-            };
-        }
-        const diff = performance.now() - start;
-        CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
-        result.messageId = newMessage.id;
+        CLI.debug(`Calling tool ${toolName}`);
 
-        newMessage = {
-            id: newMessage.id,
-            type: "tool",
-            time: Date.now(),
-            finished: true,
-            text: result.text,
-            references: result.references,
-            // @ts-ignore
-            toolResult: {
-                toolName: id,
-                toolCallId: uuidv4(),
-                result,
-                type: "tool-result",
-                args: input
-            }
-        };
-        sendChatUpdate(ws, {
+        const result = await execute(input)
+            .catch(e => ({
+                error: `Tool ${toolName} failed: ${e.toString()}`,
+            }));
+
+        const diff = performance.now() - start;
+        CLI.success(`Tool ${toolName} took ${diff.toFixed()} ms to execute`);
+
+        broadcastToUser(ws.userId, {
+            type: "toolCallFinished",
             chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [newMessage]
+            messageId,
+            toolName: toolName,
+            toolResult: result
         });
-        chat.history.push(newMessage);
+
+        chat.history.push({
+            toolResult: {
+                type: "tool-result",
+                toolName: toolName,
+                toolCallId: options.toolCallId,
+                result,
+                isError: false,
+            },
+            finished: true,
+            text: `Tool ${toolName} finished`,
+            time: Date.now(),
+            type: "tool",
+            id: messageId,
+        });
         return result;
     }
 }

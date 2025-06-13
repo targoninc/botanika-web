@@ -9,6 +9,8 @@ import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts
 import { Configuration } from "src/models/Configuration.ts";
 import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
 import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
+import {Tool} from "ai";
+import {ErrorToolResult} from "../../../../../models/chat/ErrorToolResult.ts";
 
 dotenv.config();
 
@@ -37,12 +39,12 @@ async function search(userConfig: Configuration, query: string): Promise<GoogleS
     }
 }
 
-async function toolCall(input: any, userConfig: Configuration) {
+async function toolCall(input: { query: string }, userConfig: Configuration) : Promise<ChatToolResult> {
     const result = await search(userConfig, input.query);
-    return <ChatToolResult>{
+    return {
         text: `${result.items.length} Google search results`,
         references: result.items.map(i => {
-            return <ResourceReference>{
+            return {
                 type: "resource-reference",
                 name: i.title,
                 link: i.link,
@@ -53,13 +55,15 @@ async function toolCall(input: any, userConfig: Configuration) {
     };
 }
 
-export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
+const searchParameters = z.object({
+    query: z.string().describe('The query to search for'),
+});
+
+export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) : Tool<typeof searchParameters, ChatToolResult | ErrorToolResult> {
     return {
-        id: "google-search-engine",
+        type: "function",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
-        parameters: z.object({
-            query: z.string().describe('The query to search for'),
-        }),
-        execute: wrapTool("google-search-engine", input => toolCall(input, userConfig), ws, chat),
+        parameters: searchParameters,
+        execute: wrapTool<z.input<typeof searchParameters>, ChatToolResult>("google-search-engine", input => toolCall(input, userConfig), ws, chat),
     };
 }

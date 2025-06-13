@@ -4,7 +4,12 @@ import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {removeOngoingConversation, sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
+import {
+    broadcastToUser,
+    removeOngoingConversation,
+    sendChatUpdate,
+    WebsocketConnection
+} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
 
@@ -21,23 +26,18 @@ export async function getAudio(lastMessage: ChatMessage): Promise<string> {
 export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
-        sendChatUpdate(ws, {
+        broadcastToUser(ws.userId, {
+            type: "audioGenerated",
             chatId,
-            timestamp: Date.now(),
-            messages: [
-                {
-                    ...lastMessage,
-                    hasAudio: true
-                }
-            ]
-        })
+            messageId: lastMessage.id
+        });
     }
 }
 
 export async function getChatsEndpoint(req: Request, res: Response) {
     const from = req.query.from ? new Date(req.query.from as string) : null;
 
-    const chats = await ChatStorage.getUserChats(req.user.id, from);
+    const chats = await ChatStorage.getUserChats(req.user!.id, from);
     res.send(chats);
 }
 
@@ -48,7 +48,7 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
+    ChatStorage.readChatContext(req.user!.id, chatId).then(chatContext => {
         if (!chatContext) {
             res.status(404).send('Chat not found');
             return;

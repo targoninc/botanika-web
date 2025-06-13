@@ -33,7 +33,7 @@ async function getArtistTopTracksToolCall(input: any, userConfig: Configuration)
             imageUrl: track.album?.images[0].url ?? undefined,
             name: track.name,
             link: track.external_urls.spotify,
-            snippet: track.album ? `Part of album '${track.album.name}'` : undefined
+            snippet: track.album ? `Part of album '${track.album.name}'` : null
         }))
     };
 }

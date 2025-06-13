@@ -6,11 +6,12 @@ import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
 import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {broadcastToUser, sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {browserEmail} from "zod/dist/types/v4/core/regexes";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
-    thoughts: string;
+    thoughts: string | null;
     text: string;
     steps: Array<StepResult<ToolSet>>
 }> {
@@ -29,7 +30,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     if (res.text.length === 0) {
         CLI.warning("Got empty response");
         return {
-            thoughts: undefined,
+            thoughts: null,
             text: "",
             steps: []
         };
@@ -37,17 +38,15 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
 
     const thoughts = res.text.match(/<think>(.*?)<\/think>/gms);
     return {
-        thoughts: thoughts ? thoughts[0].trim() : undefined,
+        thoughts: thoughts ? thoughts[0].trim() : null,
         text: res.text.replace(/<think>(.*?)<\/think>/gms, "").trim(),
         steps: res.steps
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], chatId: string): Promise<{
-    message: Signal<ChatMessage>;
-    steps: Promise<Array<StepResult<ToolSet>>>
-}> {
+export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], chatId: string): Promise<Signal<ChatMessage>> {
     CLI.debug("Streaming response...");
+
     const {
         textStream,
         files,
@@ -67,7 +66,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
                 store: true
             }
         },
-        onError: event => sendError(ws, event.error.toString()),
+        onError: event => sendError(ws, event?.error?.toString() ?? event.toString()),
     });
 
     const messageId = uuidv4();
@@ -76,42 +75,83 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         type: "assistant",
         text: "",
         time: Date.now(),
-        references: [],
-        files: [],
         finished: false,
         provider: request.provider,
         model: request.model
     });
 
-    updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
+    const updateMessages = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
 
-    files.then((f: GeneratedFile[]) => {
+    const updateFiles = files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
         message.value = {
             ...message.value,
-            files: f.map(file => <MessageFile>{
+            files: f.map(file => ({
                 base64: file.base64,
                 mimeType: file.mimeType,
-            })
+            }))
         };
+
+        broadcastToUser(ws.userId, {
+            type: "updateFiles",
+            chatId: chatId,
+            messageId: message.value.id,
+            files: f.map(file => ({
+                base64: file.base64,
+                mimeType: file.mimeType,
+            }))
+        });
     }).catch((err) => {
         console.error(err);
     });
 
-    sources.then((s: LanguageModelSourceV1[]) => {
-        CLI.debug(`Got ${s.length} sources`);
-        message.value.references = s.map(source => ({
-            name: source.title,
-            link: source.url,
-            type: "resource-reference",
-            snippet: source.id
-        }));
+    const updateSources = sources.then((sources: LanguageModelSourceV1[]) => {
+        CLI.debug(`Got ${sources.length} sources`);
+        message.value = {
+            ...message.value,
+            references: sources.map(source => ({
+                name: source.title ?? source.id,
+                link: source.url,
+                type: "resource-reference",
+                snippet: source.id
+            }))
+        }
+
+        broadcastToUser(ws.userId, {
+            type: "updateSources",
+            chatId: chatId,
+            messageId: messageId,
+            sources
+        });
     }).catch((err) => {
         console.error(err);
     });
 
-    return {
-        message,
-        steps
-    };
+    const updateText = text.then((text: string) => {
+        broadcastToUser(ws.userId, {
+            type: "messageTextCompleted",
+            chatId: chatId,
+            messageId: message.value.id,
+            text
+        });
+    }).catch((err) => {
+        console.error(err);
+    });
+
+    const updateSteps = steps.then((steps: Array<StepResult<ToolSet>>) => {
+        /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.
+        broadcastToUser(ws.userId, {
+            type: "updateSteps",
+            chatId: chatId,
+            messageId: message.value.id,
+            steps: steps
+        });
+        */
+    }).catch((err) => {
+        console.error(err);
+    });
+
+    await Promise.allSettled([updateMessages, updateFiles, updateSources, updateSteps, updateText]);
+
+    return message;
 }
