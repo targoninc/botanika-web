@@ -775,7 +775,31 @@ pre {
     justify-content: center;
     width: max-content;
     align-self: center;
-    background: var(--gradient-1);
+}
+
+.bot-icon {
+    background: var(--bg-2);
+    border: 1px solid var(--tint-muted);
+    border-radius: 50%;
+    padding: var(--gap-h);
+}
+
+.status-indicator {
+    border-radius: 50%;
+    width: .5em;
+    height: .5em;
+    background: var(--bg-4);
+    position: absolute;
+    top: 1px;
+    right: 1px;
+}
+
+.status-indicator.on {
+    background: var(--green);
+}
+
+.status-indicator.off {
+    background: var(--red);
 }
 
 .select-container * {
