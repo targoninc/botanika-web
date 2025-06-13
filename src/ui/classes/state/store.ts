@@ -18,10 +18,22 @@ import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {focusChatInput} from "../../index.ts";
 
-export const activePage = signal<string>("chat");
+function getPathname() {
+    const path = new URL(window.location.href).pathname.split("/").at(-1);
+    return path === "" ? null : path;
+}
+
+export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
-export const currentChatId = signal<string | null>(null);
+
+function getUrlParameter(param: string, fallback: any) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(param) ?? fallback;
+}
+
+export const currentChatId = signal<string | null>(getUrlParameter("chatId", null));
 export const chats = signal<ChatContext[]>([]);
 export const chatContext = compute((id, chatsList) => {
     if (!id) return INITIAL_CONTEXT;
@@ -34,11 +46,25 @@ export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
 export const currentUser = signal<Tables<"users"> & UserinfoResponse>(null);
+export const connected = signal(false);
 
 export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
         setRootCssVar("--tint", c.tintColor ?? "#00ff00");
+    });
+
+    currentChatId.subscribe(c => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("chatId", c);
+        history.pushState({}, "", url);
+        focusChatInput();
+    });
+
+    activePage.subscribe(c => {
+        const url = new URL(window.location.href);
+        url.pathname = c;
+        history.pushState({}, "", url);
     });
 
     shortCutConfig.subscribe(async (sc, changed) => {

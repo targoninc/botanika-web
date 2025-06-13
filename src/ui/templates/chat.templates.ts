@@ -4,7 +4,7 @@ import {
     availableModels,
     chatContext,
     chats,
-    configuration,
+    configuration, connected,
     currentChatId,
     currentlyPlayingAudio,
     currentText,
@@ -25,21 +25,22 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {AnyNode, compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button, icon} from "@targoninc/jess-components";
+import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
-import {realtime} from "../index.ts";
+import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {attachFiles} from "../classes/attachFiles.ts";
-import {pasteFile} from "../classes/pasteFile.ts";
-import {handleDroppedFiles} from "../classes/handleDroppedFiles.ts";
+import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
+import {FileTemplates} from "./file.templates.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -63,12 +64,17 @@ export class ChatTemplates {
 
     static botName() {
         return create("div")
-            .classes("flex", "align-center", "bot-name", "card")
+            .classes("flex", "align-center", "bot-name", "align-children")
             .children(
-                GenericTemplates.icon("person"),
+                create("div")
+                    .classes("relative")
+                    .children(
+                        GenericTemplates.icon("person", ["bot-icon"]),
+                        GenericTemplates.statusIndicator(connected),
+                    ).build(),
                 create("span")
                     .text(compute(c => c.botname ?? "Anika", configuration))
-                    .build()
+                    .build(),
             ).build();
     }
 
@@ -154,31 +160,9 @@ export class ChatTemplates {
 
     private static messageFiles(message: ChatMessage) {
         return create("div")
-            .classes("flex", "align-center", "card", "message-content")
+            .classes("flex", "align-center", "message-content", "no-wrap")
             .children(
-                ...message.files.map(f => {
-                    if (f.mimeType.startsWith("image/")) {
-                        return GenericTemplates.messageImage(f);
-                    }
-
-                    if (f.mimeType === "application/pdf") {
-                        return ChatTemplates.fillButton("open_in_new", f.name, () => {
-                            window.open(`data:${f.mimeType};base64,` + f.base64, "_blank");
-                        });
-                    }
-
-                    return button({
-                        icon: {icon: "download"},
-                        text: "File",
-                        onclick: () => {
-                            const a = document.createElement("a");
-                            a.href = f.base64;
-                            a.download = `file.${f.mimeType.split("/")[1]}`;
-                            document.body.appendChild(a);
-                            a.click();
-                        }
-                    })
-                }),
+                ...message.files.map(f => FileTemplates.fileDisplayContent(f).content),
             ).build();
     }
 
@@ -221,7 +205,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch from here", async (e) => {
+                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch to new chat", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {
@@ -294,12 +278,12 @@ export class ChatTemplates {
             document.getElementById("chat-input-field")?.focus();
         }
         const updateInputHeight = () => {
-            const input = document.getElementById("chat-input-field");
-            if (!input) {
+            const field = document.getElementById("chat-input-field");
+            if (!field) {
                 return;
             }
-            input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, 300) + "px";
+            field.style.height = "auto";
+            field.style.height = Math.min(field.scrollHeight, 300) + "px";
         }
         input.subscribe(() => {
             updateInputHeight();
@@ -307,9 +291,14 @@ export class ChatTemplates {
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
         const flyoutVisible = signal(false);
         const isDraggingOver = signal(false);
+        const hasText = compute(i => i.length > 0, input);
+        const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
+        const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
+        const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
+        const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
 
         return create("div")
-            .classes("chat-input", "relative", "flex-v", "small-gap")
+            .classes("chat-input", "relative", "flex-v", "small-gap", noHistoryClass)
             .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
             .ondragover((e: DragEvent) => {
                 e.preventDefault();
@@ -322,6 +311,12 @@ export class ChatTemplates {
                 isDraggingOver.value = false;
                 handleDroppedFiles(e, files);
             })
+            .onclick((e) => {
+                const preventIn = ["BUTTON", "INPUT", "SELECT"];
+                if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
+                    focusChatInput();
+                }
+            })
             .children(
                 create("div")
                     .classes("flex", "space-between")
@@ -330,7 +325,11 @@ export class ChatTemplates {
                         create("div")
                             .classes("flex-v", "flex-grow")
                             .children(
-                                when(compute(f => f.length > 0, files), ChatTemplates.filesDisplay(files)),
+                                when(noHistory, create("span")
+                                    .classes("onboarding-text")
+                                    .text("What's on your mind?")
+                                    .build()),
+                                when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
                                 ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                             ).build(),
                     ).build(),
@@ -355,7 +354,7 @@ export class ChatTemplates {
                             .classes("flex", "align-center")
                             .children(
                                 when(voiceConfigured, AudioTemplates.voiceButton()),
-                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button"]),
+                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
                             ).build(),
                     ).build(),
             ).build();
@@ -377,7 +376,7 @@ export class ChatTemplates {
             .id("chat-input-field")
             .classes("flex-grow", "chat-input-field", "full-width", disabledClass)
             .styles("resize", "none")
-            .placeholder(compute((c, conf) => conf ? `[Shift] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
+            .placeholder(compute((c, conf) => conf ? `[Ctrl] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
             .value(input)
             .oninput((e: any) => {
                 input.value = target(e).value;
@@ -529,35 +528,62 @@ export class ChatTemplates {
     static chatListItem(chat: ChatContext) {
         const active = compute(c => c && c.id === chat.id, chatContext);
         const activeClass = compute((c): string => c ? "active" : "_", active);
+        const editing = signal(false);
+        const chatName = signal(chat.name);
 
         return create("div")
-            .classes("flex-v", "small-gap", "chat-list-item", activeClass)
+            .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
             .onclick(() => currentChatId.value = chat.id)
             .children(
                 create("div")
                     .classes("flex", "align-center", "no-wrap", "space-between")
                     .children(
-                        create("span")
-                            .text(chat.name)
-                            .build(),
-                        button({
-                            icon: {
-                                icon: "delete",
-                            },
-                            classes: ["flex", "align-center"],
-                            onclick: (e) => {
-                                e.stopPropagation();
-                                createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
-                                    .classes("flex-v")
-                                    .children(
-                                        create("p")
-                                            .text(`Are you sure you want to delete this chat?`)
-                                            .build(),
-                                    ).build(), "Yes", "No", () => {
-                                    deleteChat(chat.id);
-                                }));
-                            }
-                        })
+                        when(editing, create("span")
+                            .text(chatName)
+                            .build(), true),
+                        when(editing, input({
+                            type: InputType.text,
+                            placeholder: "Chat name",
+                            value: chatName,
+                            name: "chatName",
+                            onchange: value => chatName.value = value
+                        })),
+                        create("div")
+                            .classes("flex", "align-children", "no-wrap", "chat-actions")
+                            .children(
+                                when(compute(cn => cn !== chat.name, chatName), GenericTemplates.buttonWithIcon("check", "", () => {
+                                    realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
+                                        type: BotanikaClientEventType.chatNameChanged,
+                                        data: {
+                                            chatId: chat.id,
+                                            name: chatName.value
+                                        }
+                                    });
+                                    editing.value = false;
+                                }, ["no-wrap"])),
+                                when(editing, button({
+                                    icon: { icon: "edit" },
+                                    onclick: () => editing.value = true
+                                }), true),
+                                button({
+                                    icon: {
+                                        icon: "delete",
+                                    },
+                                    classes: ["flex", "align-center"],
+                                    onclick: (e) => {
+                                        e.stopPropagation();
+                                        createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
+                                            .classes("flex-v")
+                                            .children(
+                                                create("p")
+                                                    .text(`Are you sure you want to delete this chat?`)
+                                                    .build(),
+                                            ).build(), "Yes", "No", () => {
+                                            deleteChat(chat.id);
+                                        }));
+                                    }
+                                })
+                            ).build()
                     ).build(),
                 ChatTemplates.date(chat.createdAt),
             ).build();
@@ -607,71 +633,6 @@ export class ChatTemplates {
                                 .build(),
                         ).build()
                     : null,
-            ).build();
-    }
-
-    private static filesDisplay(files: Signal<MessageFile[]>) {
-        return create("div")
-            .children(
-                signalMap(files, create("div").classes("flex"), f => ChatTemplates.fileDisplay(files, f))
-            ).build();
-    }
-
-    private static fileDisplay(files: Signal<MessageFile[]>, file: MessageFile) {
-        let content: AnyNode;
-        let width = "5em";
-        if (file.mimeType.startsWith("image/")) {
-            content = create("img")
-                .classes("file-display-image")
-                .src(`data:${file.mimeType};base64,` + file.base64)
-                .build();
-        } else if (file.mimeType.startsWith("audio/")) {
-            width = "10em";
-            content = create("audio")
-                .attributes("controls", "")
-                .classes("file-display-image")
-                .src(`data:${file.mimeType};base64,` + file.base64)
-                .build();
-        } else if (file.mimeType === "application/pdf") {
-            width = "10em";
-            content = ChatTemplates.fillButton("open_in_new", file.name, () => {
-                window.open(`data:${file.mimeType};base64,` + file.base64, "_blank");
-            });
-        } else {
-            content = create("span")
-                .text(file.name ?? file.mimeType)
-                .build();
-        }
-
-        return create("div")
-            .classes("file-display", "relative")
-            .styles("min-width", width, "max-width", width)
-            .children(
-                content,
-                create("div")
-                    .classes("file-actions")
-                    .children(
-                        GenericTemplates.buttonWithIcon("close", "", () => files.value = files.value.filter(f => f.id !== file.id)),
-                    ).build()
-            ).build();
-    }
-
-    private static fillButton(iconStr: string, text: string, onclick: () => void) {
-        return create("div")
-            .classes("full-width", "full-height", "flex", "card", "clickable", "align-children", "center-content")
-            .onclick(onclick)
-            .children(
-                create("div")
-                    .classes("flex-v", "small-gap")
-                    .children(
-                        icon({
-                            icon: iconStr,
-                        }),
-                        create("span")
-                            .classes("text-small")
-                            .text(text)
-                            .build()
-                    ).build()
             ).build();
     }
 }

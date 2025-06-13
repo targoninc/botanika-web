@@ -87,8 +87,6 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
     };
 }
 
-// This function has been replaced by inline code in the newMessageEventHandler function
-
 /**
  * Requests another assistant message without tools just to have a summary or description of what happened
  */

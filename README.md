@@ -4,19 +4,23 @@ A chat app. Bring your own API keys.
 
 ## Client Features
 
-| Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App |
-|----------|-----|-----|-------------|-------------|-------------|---------|
-| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       |
-| ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
-| Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       |
-| Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       |
-| T3.Chat  | ❌   | ❌   | ❌           | ❌           | ❌           | ✅       |
+- ✅ Fully supported
+- 🆗 Partially supported
+- ❌ Not supported
+
+| Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App | BYOK | File support |
+|----------|-----|-----|-------------|-------------|-------------|---------|------|--------------|
+| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       | ✅    | ✅            |
+| T3.Chat  | ❌   | ❌   | ❌           | ❌           | ❌           | ✅       | 🆗   | ✅            |
+| ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            |
+| Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            |
+| Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       | ❌    | ✅            |
 
 # Run
 
-This app uses [Prisma](https://www.prisma.io/) with PostgreSQL as a database. You can run it locally or use Docker Compose for a complete setup.
+This app uses PostgreSQL as a database. You can run it locally or use Docker Compose for a complete setup.
 
-**You can set your environment variables in the `.env` file or through the "Settings" page.**
+**You can set your environment variables in the `.env` file. Just copy `.env.example` and fill in the values.**
 
 ### Local Development
 
@@ -49,9 +53,7 @@ docker-compose up -d
 docker-compose down
 ```
 
-The PostgreSQL database will be initialized with the schema defined in `src/api/database/db_setup.sql`. The database data will be persisted in a Docker volume.
-
-The application is configured to automatically initialize the database if it's fresh. It will wait for the database to be ready before starting, and then run the initialization script if needed. This ensures that the application always has the required database tables available.
+The PostgreSQL database will be initialized with the schema defined in [db_setup.sql](src/api/database/db_setup.sql).
 
 ### Database Configuration
 
