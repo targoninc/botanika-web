@@ -99,7 +99,7 @@ export class SettingsTemplates {
                     .children(
                         GenericTemplates.buttonWithIcon("chevron_left", "Back to chat", async () => {
                             activePage.value = "chat";
-                        }, ["fixed"]),
+                        }, ["fixed", "layer-shadow"]),
                         create("h1")
                             .classes("flex")
                             .styles("margin-top", "1.5em")
@@ -161,7 +161,7 @@ export class SettingsTemplates {
                 }, 200);
             });
         }
-        const changed = compute((v, c) => v !== (getter(c) ?? null), value, configuration);
+        const changed = compute((v, c) => v !== (getter(c) ?? null) && sc.type !== "boolean", value, configuration);
 
         return create("div")
             .classes("flex-v", "card", "small-gap")
@@ -173,7 +173,12 @@ export class SettingsTemplates {
                             .children(
                                 GenericTemplates.icon(sc.icon),
                             ).build() : null,
-                        SettingsTemplates.settingImplementation(sc, value, (_, val) => value.value = val),
+                        SettingsTemplates.settingImplementation(sc, value, async (_, val) => {
+                            value.value = val;
+                            if (sc.type === "boolean") {
+                                await updateKey(sc.key, value.value);
+                            }
+                        }),
                         when(changed, button({
                             icon: {icon: "save"},
                             text: "Set",
@@ -195,7 +200,12 @@ export class SettingsTemplates {
             case "password":
                 return GenericTemplates.input(InputType.password, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "color":
-                return GenericTemplates.input(InputType.color, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
+                return create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        GenericTemplates.input(InputType.color, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue)),
+                        GenericTemplates.input(InputType.text, sc.key, value, sc.label, "", sc.key, [], (newValue) => updateKey(sc.key, newValue)),
+                    ).build();
             case "date":
                 return GenericTemplates.input(InputType.date, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "long-string":

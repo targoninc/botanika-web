@@ -23,7 +23,8 @@
     --tint-present: color-mix(in oklab, #a9a9a9, var(--tint) calc(var(--tint-strength) * 2));
     --tint-transpresent: color-mix(in oklab, rgba(0, 0, 0, 0), var(--tint) calc(var(--tint-strength) * 2));
     --tint-muted: color-mix(in oklab, #525252, var(--tint) var(--tint-strength));
-    --red: #c43e40;
+    --green: color-mix(in oklab, #37ac43, var(--tint) var(--tint-strength));
+    --red: color-mix(in oklab, #c43e40, var(--tint) var(--tint-strength));
     --yellow: #f0c929ff;
     --orange: #f09029;
     --purple: #6a4c93ff;
@@ -61,6 +62,7 @@
     --text-4: var(--white-4);
     --neutral-light: var(--grey-light);
     --neutral-dark: var(--grey-dark);
+    --tint-shadow: 0 0 10px var(--tint-transpresent);
 
     --animation-duration: 0.2s;
 }
@@ -142,6 +144,11 @@ button, input, textarea, select {
     margin: 0;
     padding: var(--input-padding-v) var(--input-padding-h);
     height: max-content;
+}
+
+input[type="color"] {
+    height: 1.5em;
+    width: 2.5em;
 }
 
 button.invalid, input.invalid, textarea.invalid, select.invalid {
@@ -529,4 +536,8 @@ label.required {
 
 .relative {
     position: relative;
+}
+
+.layer-shadow {
+    box-shadow: 0 0 15px 0px var(--bg);
 }
