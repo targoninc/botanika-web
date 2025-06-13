@@ -18,6 +18,7 @@ import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {focusChatInput} from "../../index.ts";
 
 function getPathname() {
     const path = new URL(window.location.href).pathname.split("/").at(-1);
@@ -56,6 +57,7 @@ export function initializeStore() {
         const url = new URL(window.location.href);
         url.searchParams.set("chatId", c);
         history.pushState({}, "", url);
+        focusChatInput();
     });
 
     activePage.subscribe(c => {
