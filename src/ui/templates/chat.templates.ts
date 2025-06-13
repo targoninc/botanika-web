@@ -307,7 +307,8 @@ export class ChatTemplates {
                 handleDroppedFiles(e, files);
             })
             .onclick((e) => {
-                if (target(e).tagName !== "BUTTON" && !target(e).classList.contains("clickable")) {
+                const preventIn = ["BUTTON", "INPUT", "SELECT"];
+                if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
                     focusChatInput();
                 }
             })
