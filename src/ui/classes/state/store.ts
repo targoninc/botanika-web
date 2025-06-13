@@ -20,7 +20,8 @@ import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
 function getPathname() {
-    return new URL(window.location.href).pathname.split("/").at(-1);
+    const path = new URL(window.location.href).pathname.split("/").at(-1);
+    return path === "" ? null : path;
 }
 
 export const activePage = signal<string>(getPathname() ?? "chat");
