@@ -653,6 +653,18 @@ kbd {
     background: var(--bg-4);
 }
 
+.chat-actions {
+    display: none;
+    position: absolute;
+    top: 50%;
+    right: var(--gap-v);
+    transform: translateY(-50%);
+}
+
+.chat-list-item:hover .chat-actions {
+    display: flex;
+}
+
 .chat-list-item.active {
     border-color: var(--tint-present);
     background: var(--bg);

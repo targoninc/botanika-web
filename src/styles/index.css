@@ -145,6 +145,11 @@ button, input, textarea, select {
     height: max-content;
 }
 
+input[type="color"] {
+    height: 1.5em;
+    width: 2.5em;
+}
+
 button.invalid, input.invalid, textarea.invalid, select.invalid {
     border-color: var(--red);
 }

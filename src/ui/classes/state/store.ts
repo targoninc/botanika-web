@@ -19,7 +19,11 @@ import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 
-export const activePage = signal<string>("chat");
+function getPathname() {
+    return new URL(window.location.href).pathname.split("/").at(-1);
+}
+
+export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
 
 function getUrlParameter(param: string, fallback: any) {
@@ -50,6 +54,12 @@ export function initializeStore() {
     currentChatId.subscribe(c => {
         const url = new URL(window.location.href);
         url.searchParams.set("chatId", c);
+        history.pushState({}, "", url);
+    });
+
+    activePage.subscribe(c => {
+        const url = new URL(window.location.href);
+        url.pathname = c;
         history.pushState({}, "", url);
     });
 

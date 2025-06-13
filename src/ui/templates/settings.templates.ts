@@ -200,7 +200,12 @@ export class SettingsTemplates {
             case "password":
                 return GenericTemplates.input(InputType.password, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "color":
-                return GenericTemplates.input(InputType.color, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
+                return create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        GenericTemplates.input(InputType.color, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue)),
+                        GenericTemplates.input(InputType.text, sc.key, value, sc.label, "", sc.key, [], (newValue) => updateKey(sc.key, newValue)),
+                    ).build();
             case "date":
                 return GenericTemplates.input(InputType.date, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "long-string":
