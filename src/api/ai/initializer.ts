@@ -7,7 +7,7 @@ export async function getMcpTools(userId: string) {
     const mcpClients = await createClients(userId);
     const tools = await getAllMcpTools(mcpClients);
 
-    return <McpInfo>{
+    return {
         tools,
         onClose: () => {
             for (const client of mcpClients) {

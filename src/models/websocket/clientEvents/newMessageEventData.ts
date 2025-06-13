@@ -6,5 +6,5 @@ export interface NewMessageEventData {
     provider: LlmProvider;
     model: string;
     chatId?: string;
-    files?: MessageFile[],
+    files: MessageFile[],
 }

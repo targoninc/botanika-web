@@ -1,5 +1,8 @@
 export enum BotanikaServerEventType {
-    chatUpdate = "chatUpdate",
+    chatCreated = "chatCreated",
+    messageChunkUpdate = "messageChunkUpdate",
+    messageCompleted = "messageCompleted",
+    newMessage = "newMessage",
     error = "error",
     log = "log",
     warning = "warning",

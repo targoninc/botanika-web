@@ -6,61 +6,13 @@ import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaC
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {BotanikaServerEvent} from "../../models/websocket/serverEvents/botanikaServerEvent.ts";
 import {newMessageEventHandler} from "./newMessageEventHandler.ts";
-import {BotanikaServerEventType} from "../../models/websocket/serverEvents/botanikaServerEventType.ts";
-import {ServerErrorEvent} from "../../models/websocket/serverEvents/serverErrorEvent.ts";
-import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
-import {ServerWarningEvent} from "../../models/websocket/serverEvents/serverWarningEvent.ts";
 import {signingKey} from "../../index.ts";
 
 // Map to store active connections for each user
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
 export const UPDATE_LIMIT = 100;
 
-// Map to store ongoing conversations for each chat
-// Key: chatId, Value: { userId: string, updates: ChatUpdate[], lastUpdated: number, isGenerating: boolean }
-interface OngoingConversation {
-    userId: string;
-    updates: ChatUpdate[];
-    lastUpdated: number;
-    isGenerating: boolean;
-}
-export const ongoingConversations: Map<string, OngoingConversation> = new Map();
-
-/**
- * Removes a chat from the ongoingConversations map
- * @param chatId The chat ID to remove
- * @param userId The user ID who owns the chat
- * @returns true if the chat was removed, false otherwise
- */
-export function removeOngoingConversation(chatId: string, userId: string): boolean {
-    const conversation = ongoingConversations.get(chatId);
-    if (conversation && conversation.userId === userId) {
-        CLI.debug(`Removing conversation ${chatId} for user ${userId} due to chat deletion`);
-        ongoingConversations.delete(chatId);
-        return true;
-    }
-    return false;
-}
-
-/**
- * Cleans up old conversations from the ongoingConversations map
- * Conversations older than 1 hour are removed
- */
-function cleanupOldConversations() {
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
-
-    for (const [chatId, conversation] of ongoingConversations.entries()) {
-        if (now - conversation.lastUpdated > oneHour) {
-            CLI.debug(`Removing old conversation ${chatId} for user ${conversation.userId}`);
-            ongoingConversations.delete(chatId);
-        }
-    }
-}
-
-setInterval(cleanupOldConversations, 60 * 60 * 1000);
-
-export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>) {
+export function send(ws: WebsocketConnection, message: BotanikaServerEvent) {
     ws.send(JSON.stringify(message));
 }
 
@@ -69,7 +21,9 @@ export function send(ws: WebsocketConnection, message: BotanikaServerEvent<any>)
  * @param userId The user ID to broadcast to
  * @param message The message to broadcast
  */
-export function broadcastToUser(userId: string, message: BotanikaServerEvent<any>) {
+export function broadcastToUser(userId: string, message: BotanikaServerEvent) {
+    message.timestamp = message.timestamp ?? Date.now();
+
     const connections = userConnections.get(userId);
     if (connections) {
         const connectionsArray = Array.from(connections);
@@ -100,119 +54,20 @@ export function broadcastToUser(userId: string, message: BotanikaServerEvent<any
     }
 }
 
-/**
- * Sends all updates for a specific chat to a connection
- * @param ws The WebSocket connection to send updates to
- * @param chatId The chat ID to get updates for
- */
-export function sendChatHistory(ws: WebsocketConnection, chatId: string) {
-    const conversation = ongoingConversations.get(chatId);
-    if (conversation && conversation.userId === ws.userId) {
-        CLI.debug(`Sending ${conversation.updates.length} updates for chat ${chatId} to user ${ws.userId}`);
-        for (const update of conversation.updates) {
-            send(ws, {
-                type: BotanikaServerEventType.chatUpdate,
-                data: update
-            });
-        }
-    }
-}
-
-/**
- * Sends all ongoing conversations for a user to a connection
- * @param ws The WebSocket connection to send updates to
- */
-export function sendAllOngoingConversations(ws: WebsocketConnection) {
-    CLI.debug(`Checking for ongoing conversations for user ${ws.userId}`);
-    for (const [chatId, conversation] of ongoingConversations.entries()) {
-        if (conversation.userId === ws.userId) {
-            sendChatHistory(ws, chatId);
-
-            // If the conversation is still being generated, send a special message
-            if (conversation.isGenerating) {
-                CLI.debug(`Chat ${chatId} is still generating, sending status to client`);
-                send(ws, {
-                    type: BotanikaServerEventType.chatUpdate,
-                    data: {
-                        chatId,
-                        timestamp: Date.now(),
-                        messages: conversation.updates[conversation.updates.length - 1]?.messages || []
-                    }
-                });
-            }
-        }
-    }
-}
-
 export function sendError(ws: WebsocketConnection, message: string) {
     CLI.error(`Error in realtime: ${message}`);
-    const errorEvent = {
-        type: BotanikaServerEventType.error,
-        data: <ServerErrorEvent>{
-            error: message
-        }
-    };
-    broadcastToUser(ws.userId, errorEvent);
+    broadcastToUser(ws.userId, {
+        type: "error",
+        error: message,
+    });
 }
 
 export function sendWarning(ws: WebsocketConnection, message: string) {
     CLI.warning(`Warning in realtime: ${message}`);
-    const warningEvent = {
-        type: BotanikaServerEventType.warning,
-        data: <ServerWarningEvent>{
-            warning: message
-        }
-    };
-    broadcastToUser(ws.userId, warningEvent);
-}
-
-export function sendChatUpdate(ws: WebsocketConnection, update: ChatUpdate) {
-    const chatUpdateEvent = {
-        type: BotanikaServerEventType.chatUpdate,
-        data: update
-    };
-
-    if (update.chatId) {
-        if (!ongoingConversations.has(update.chatId)) {
-            ongoingConversations.set(update.chatId, {
-                userId: ws.userId,
-                updates: [],
-                lastUpdated: Date.now(),
-                isGenerating: false
-            });
-        }
-
-        const conversation = ongoingConversations.get(update.chatId);
-
-        if (conversation.userId === ws.userId) {
-            if (update.messages) {
-                conversation.updates.push(update);
-
-                if (update.messages.some(m => !m.finished)) {
-                    conversation.isGenerating = true;
-                    CLI.debug(`Chat ${update.chatId} is now generating`);
-                } else {
-                    conversation.isGenerating = false;
-                    CLI.debug(`Chat ${update.chatId} is no longer generating`);
-                }
-            } else if (update.name) {
-                for (const prevUpdate of conversation.updates) {
-                    if (!prevUpdate.name) {
-                        prevUpdate.name = update.name;
-                    }
-                }
-                conversation.updates.push(update);
-            }
-
-            conversation.lastUpdated = Date.now();
-
-            if (conversation.updates.length > UPDATE_LIMIT) {
-                conversation.updates = conversation.updates.slice(-UPDATE_LIMIT);
-            }
-        }
-    }
-
-    broadcastToUser(ws.userId, chatUpdateEvent);
+    broadcastToUser(ws.userId, {
+        type: "warning",
+        warning: message,
+    });
 }
 
 async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {

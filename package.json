@@ -12,6 +12,7 @@
     "test": "vitest run",
     "build-dev": "bun build src/ui/index.ts --outdir ./out --sourcemap=linked --watch",
     "start-dev": "bun --watch src/index.ts",
+    "start-dev-all": "bun install && bunx prisma generate && bun run build-dev",
     "build-prod": "bun build src/ui/index.ts --outdir ./out --sourcemap=linked --minify",
     "start-prod": "bun src/index.ts",
     "init-db": "bun src/api/database/initDb.ts",

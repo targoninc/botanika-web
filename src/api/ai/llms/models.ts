@@ -16,36 +16,37 @@ import dotenv from "dotenv";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition";
 import { BotanikaFeature } from "../../../models/features/BotanikaFeature";
 import {Configuration} from "../../../models/Configuration.ts";
+import {featureOption} from "../tools/servers/allTools.ts";
 
 dotenv.config();
 
 export const providerMap: Record<LlmProvider, ProviderV1|any> = {
     [LlmProvider.groq]: (modelName: string, config: Configuration) => {
         return createGroq({
-            apiKey: config.featureOptions[BotanikaFeature.Groq].apiKey,
+            apiKey: featureOption(config, BotanikaFeature.Groq).apiKey,
         }).languageModel(modelName);
     },
     [LlmProvider.openai]: (modelName: string, config: Configuration) => {
         return createOpenAI({
-            apiKey: config.featureOptions[BotanikaFeature.OpenAI].apiKey,
+            apiKey: featureOption(config, BotanikaFeature.OpenAI).apiKey,
         }).languageModel(modelName);
     },
     [LlmProvider.ollama]: (modelName: string, config: Configuration) => {
         return createOllama({
-            baseURL: config.featureOptions[BotanikaFeature.Ollama].url,
+            baseURL: featureOption(config, BotanikaFeature.Ollama).baseUrl,
         }).languageModel(modelName, {
             simulateStreaming: true
         });
     },
     [LlmProvider.azure]: (modelName: string, config: Configuration) => {
         return createAzure({
-            resourceName: config.featureOptions[BotanikaFeature.Azure].resourceName,
-            apiKey: config.featureOptions[BotanikaFeature.Azure].apiKey,
+            resourceName: featureOption(config, BotanikaFeature.Azure).resourceName,
+            apiKey: featureOption(config, BotanikaFeature.Azure).apiKey,
         }).languageModel(modelName);
     },
     [LlmProvider.openrouter]: (modelName: string, config: Configuration) => {
         return createOpenRouter({
-            apiKey: config.featureOptions[BotanikaFeature.OpenRouter].apiKey
+            apiKey: featureOption(config, BotanikaFeature.OpenRouter).apiKey
         }).languageModel(modelName);
     }
 }
