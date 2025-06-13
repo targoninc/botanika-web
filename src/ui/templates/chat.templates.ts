@@ -200,7 +200,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch from here", async (e) => {
+                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch to new chat", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {
@@ -526,7 +526,7 @@ export class ChatTemplates {
         const chatName = signal(chat.name);
 
         return create("div")
-            .classes("flex-v", "small-gap", "chat-list-item", activeClass)
+            .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
             .onclick(() => currentChatId.value = chat.id)
             .children(
                 create("div")
@@ -543,7 +543,7 @@ export class ChatTemplates {
                             onchange: value => chatName.value = value
                         })),
                         create("div")
-                            .classes("flex", "align-children", "no-wrap")
+                            .classes("flex", "align-children", "no-wrap", "chat-actions")
                             .children(
                                 when(compute(cn => cn !== chat.name, chatName), GenericTemplates.buttonWithIcon("check", "", () => {
                                     realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{

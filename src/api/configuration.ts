@@ -11,7 +11,9 @@ export async function getConfig(userId: string): Promise<Configuration> {
         where: { id: userId },
         select: { configuration: true }
     });
-    return (user?.configuration ?? {}) as Configuration;
+    const config = (user?.configuration ?? {}) as Configuration;
+    config.tintColor ??= "#00ff00";
+    return config;
 }
 
 export async function setConfig(req: Request, newConfig: Configuration) {
