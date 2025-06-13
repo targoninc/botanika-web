@@ -25,8 +25,8 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button} from "@targoninc/jess-components";
+import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
@@ -34,11 +34,13 @@ import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {attachFiles, downloadFile, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
+import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
 import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -520,6 +522,8 @@ export class ChatTemplates {
     static chatListItem(chat: ChatContext) {
         const active = compute(c => c && c.id === chat.id, chatContext);
         const activeClass = compute((c): string => c ? "active" : "_", active);
+        const editing = signal(false);
+        const chatName = signal(chat.name);
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", activeClass)
@@ -528,27 +532,52 @@ export class ChatTemplates {
                 create("div")
                     .classes("flex", "align-center", "no-wrap", "space-between")
                     .children(
-                        create("span")
-                            .text(chat.name)
-                            .build(),
-                        button({
-                            icon: {
-                                icon: "delete",
-                            },
-                            classes: ["flex", "align-center"],
-                            onclick: (e) => {
-                                e.stopPropagation();
-                                createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
-                                    .classes("flex-v")
-                                    .children(
-                                        create("p")
-                                            .text(`Are you sure you want to delete this chat?`)
-                                            .build(),
-                                    ).build(), "Yes", "No", () => {
-                                    deleteChat(chat.id);
-                                }));
-                            }
-                        })
+                        when(editing, create("span")
+                            .text(chatName)
+                            .build(), true),
+                        when(editing, input({
+                            type: InputType.text,
+                            placeholder: "Chat name",
+                            value: chatName,
+                            name: "chatName",
+                            onchange: value => chatName.value = value
+                        })),
+                        create("div")
+                            .classes("flex", "align-children", "no-wrap")
+                            .children(
+                                when(compute(cn => cn !== chat.name, chatName), GenericTemplates.buttonWithIcon("check", "", () => {
+                                    realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
+                                        type: BotanikaClientEventType.chatNameChanged,
+                                        data: {
+                                            chatId: chat.id,
+                                            name: chatName.value
+                                        }
+                                    });
+                                    editing.value = false;
+                                }, ["no-wrap"])),
+                                when(editing, button({
+                                    icon: { icon: "edit" },
+                                    onclick: () => editing.value = true
+                                }), true),
+                                button({
+                                    icon: {
+                                        icon: "delete",
+                                    },
+                                    classes: ["flex", "align-center"],
+                                    onclick: (e) => {
+                                        e.stopPropagation();
+                                        createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
+                                            .classes("flex-v")
+                                            .children(
+                                                create("p")
+                                                    .text(`Are you sure you want to delete this chat?`)
+                                                    .build(),
+                                            ).build(), "Yes", "No", () => {
+                                            deleteChat(chat.id);
+                                        }));
+                                    }
+                                })
+                            ).build()
                     ).build(),
                 ChatTemplates.date(chat.createdAt),
             ).build();
