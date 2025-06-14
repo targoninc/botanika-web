@@ -5,7 +5,7 @@ import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
 import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
-import {broadcastToUser, sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {sendEvent, sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {browserEmail} from "zod/dist/types/v4/core/regexes";
 
@@ -46,7 +46,15 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
 export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], chatId: string): Promise<Signal<ChatMessage>> {
+export async function streamResponseAsMessage(
+    ws: WebsocketConnection,
+    maxSteps: number,
+    request: NewMessageEventData,
+    model: LanguageModelV1,
+    tools: ToolSet,
+    messages: CoreMessage[],
+    chatId: string
+): Promise<Signal<{ type: "assistant" } & ChatMessage>> {
     CLI.debug("Streaming response...");
 
     const {
@@ -75,72 +83,81 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
     });
 
     const messageId = uuidv4();
-    const message = signal<ChatMessage>({
-        id: messageId,
-        type: "assistant",
-        text: "",
-        time: Date.now(),
-        finished: false,
-        provider: request.provider,
-        model: request.model
+
+    sendEvent({
+        userId: ws.userId,
+        type: "messageCreated",
+        chatId: chatId,
+        message: {
+            id: messageId,
+            text: "",
+            time: Date.now(),
+            type: "assistant",
+            model: request.model,
+            provider: request.provider,
+            hasAudio: false,
+            files: [],
+            references: [],
+            finished: false
+        }
     });
 
     const updateMessages = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
 
     const updateFiles = files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
-        message.value = {
-            ...message.value,
-            files: f.map(file => ({
-                base64: file.base64,
-                mimeType: file.mimeType,
-            }))
-        };
 
-        broadcastToUser(ws.userId, {
+        const files = f.map(file => ({
+            base64: file.base64,
+            mimeType: file.mimeType,
+        }));
+
+        sendEvent({
             type: "updateFiles",
-            chatId: chatId,
-            messageId: message.value.id,
-            files: f.map(file => ({
-                base64: file.base64,
-                mimeType: file.mimeType,
-            }))
+            userId: ws.userId,
+            chatId,
+            messageId,
+            files
         });
+
+        return files;
     }).catch((err) => {
         console.error(err);
+        return [];
     });
 
     const updateSources = sources.then((sources: LanguageModelSourceV1[]) => {
         CLI.debug(`Got ${sources.length} sources`);
-        message.value = {
-            ...message.value,
-            references: sources.map(source => ({
-                name: source.title ?? source.id,
-                link: source.url,
-                type: "resource-reference",
-                snippet: source.id
-            }))
-        }
+        const references = sources.map(source => ({
+            name: source.title ?? source.id,
+            link: source.url,
+            type: "resource-reference",
+            snippet: source.id
+        } as const));
 
-        broadcastToUser(ws.userId, {
-            type: "updateSources",
+        sendEvent({
+            type: "updateReferences",
+            userId: ws.userId,
             chatId: chatId,
             messageId: messageId,
-            sources
+            references
         });
+
+        return references;
     }).catch((err) => {
         console.error(err);
+        return [];
     });
 
     const updateText = text.then((text: string) => {
-        broadcastToUser(ws.userId, {
+        sendEvent(ws.userId, {
             type: "messageTextCompleted",
             chatId: chatId,
-            messageId: message.value.id,
+            messageId,
             text
         });
-    }).catch((err) => {
-        console.error(err);
+
+        return text;
     });
 
     const updateSteps = steps.then((steps: Array<StepResult<ToolSet>>) => {
@@ -152,11 +169,22 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
             steps: steps
         });
         */
+
+        return steps;
     }).catch((err) => {
         console.error(err);
+        return [];
     });
 
-    await Promise.allSettled([updateMessages, updateFiles, updateSources, updateSteps, updateText]);
-
-    return message;
+    return signal<ChatMessage>({
+        id: messageId,
+        type: "assistant",
+        text: await updateText,
+        time: Date.now(),
+        finished: false,
+        provider: request.provider,
+        model: request.model,
+        files: await updateFiles,
+        references: await updateSources
+    });
 }

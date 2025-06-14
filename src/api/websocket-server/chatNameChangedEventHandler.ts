@@ -1,5 +1,5 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
+import {sendEvent, WebsocketConnection} from "./websocket.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 
@@ -10,12 +10,17 @@ export async function chatNameChangedEventHandler(ws: WebsocketConnection, messa
     }
 
     const chat = await ChatStorage.readChatContext(ws.userId, request.chatId);
+    if (!chat) {
+        throw new Error(`Chat ${request.chatId} not found for user ${ws.userId}`);
+    }
+
     chat.name = request.name;
     await ChatStorage.writeChatContext(ws.userId, chat);
 
-    sendChatUpdate(ws, {
+    sendEvent({
+        userId: ws.userId,
+        type: "chatNameSet",
         chatId: request.chatId,
-        timestamp: Date.now(),
-        name: request.name.substring(0, 100),
+        name: request.name
     });
 }

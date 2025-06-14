@@ -15,6 +15,7 @@ import {addWebsocketServer} from "./api/websocket-server/websocket.ts";
 import * as http from "node:http";
 import path from "node:path";
 import {ApiEndpoint} from "./models/ApiEndpoints.ts";
+import {initializeEventHandlers} from "./api/database/events/eventHandlerInitializer.ts";
 
 dotenv.config();
 
@@ -107,6 +108,9 @@ app.get('*', async (req, res) => {
 
 const server = http.createServer(app);
 addWebsocketServer(server);
+
+// Initialize event handlers
+initializeEventHandlers();
 
 server.listen(APP_PORT, () => {
     console.log(`Server started: http://localhost:${APP_PORT}`);

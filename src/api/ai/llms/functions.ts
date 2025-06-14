@@ -1,6 +1,6 @@
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Signal} from "@targoninc/jess";
-import {broadcastToUser} from "../../websocket-server/websocket.ts";
+import {sendEvent} from "../../websocket-server/websocket.ts";
 
 export async function updateMessageFromStream(
     messageId: string,
@@ -16,8 +16,8 @@ export async function updateMessageFromStream(
             break;
         }
 
-        broadcastToUser(userId, {
-            type: "chatUpdate",
+        sendEvent(userId, {
+            type: "messageTextAdded",
             messageChunk: value,
             chatId: chatId,
             messageId: messageId

@@ -2,7 +2,7 @@ import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
 import {LanguageModelV1,} from "ai";
 import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
@@ -27,8 +27,8 @@ export function newUserMessage(provider: string, model: string, message: string,
     };
 }
 
-export function newAssistantMessage(responseText: string, provider: string, modelName: string) {
-    return <ChatMessage>{
+export function newAssistantMessage(responseText: string, provider: string, modelName: string) : AssistantMessage {
+    return {
         id: uuidv4(),
         type: "assistant",
         text: responseText,
@@ -76,7 +76,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                 return {
                     role: "user",
                     content: m.text,
-                    experimental_attachments: addAttachments ? m.files.map(f => ({
+                experimental_attachments: addAttachments ? (m.files ?? []).map(f => ({
                         contentType: f.mimeType,
                         url: `data:${f.mimeType};base64,${f.base64}`
                     })) : []

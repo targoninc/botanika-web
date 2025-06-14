@@ -3,18 +3,38 @@ import {ToolResultPart} from "ai";
 import {ResourceReference} from "./ResourceReference.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 
-export interface ChatMessage {
-    type: "system" | "user" | "assistant" | "tool";
-    reasoning?: ReasoningDetail[];
-    text: string;
-    time: number;
+type BaseMessage = {
     id: string;
-    finished: boolean;
-    hasAudio?: boolean;
-    provider?: string;
-    model?: string;
-    toolResult?: ToolResultPart;
-    references?: ResourceReference[];
+    time: number;
+}
+
+export type ToolMessage = BaseMessage & {
+    type: "tool";
+    toolResult: ToolResultPart;
+}
+
+export type UserMessage = BaseMessage & {
+    type: "user";
+    text: string;
     files?: Omit<MessageFile, "id">[];
 }
+
+export type SystemMessage = BaseMessage & {
+    type: "system";
+    text: string;
+}
+
+export type AssistantMessage = BaseMessage & {
+    type: "assistant";
+    text: string;
+    model: string;
+    finished: boolean;
+    provider: string;
+    hasAudio?: boolean;
+    references: ResourceReference[];
+    files: Omit<MessageFile, "id">[];
+    resoning?: ReasoningDetail[];
+}
+
+export type ChatMessage = (ToolMessage | UserMessage | SystemMessage | AssistantMessage);
 
