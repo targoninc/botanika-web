@@ -601,6 +601,10 @@ kbd {
     margin-bottom: -1.5em;
 }
 
+.chat-search {
+    width: calc(100% - var(--gap-v));
+}
+
 .send-button, .voice-button {
     border-radius: var(--input-border-radius);
     background: var(--gradient-1);
