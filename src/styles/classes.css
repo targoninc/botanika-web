@@ -676,6 +676,7 @@ kbd {
     position: absolute;
     top: var(--gap-v);
     left: var(--gap-v);
+    z-index: 999;
 }
 
 @media only screen and (max-width: 1200px) {
