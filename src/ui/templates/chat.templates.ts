@@ -54,13 +54,15 @@ function parseMarkdown(text: string) {
 export class ChatTemplates {
     static chat() {
         const menuShown = signal(false);
+        const width = signal(200);
 
         return create("div")
             .classes("flex", "no-wrap", "relative", "restrict-to-parent")
             .children(
-                ChatTemplates.chatList("sidebar", menuShown),
+                ChatTemplates.chatList("sidebar", menuShown, width),
+                GenericTemplates.movableDivider(width),
                 ChatTemplates.chatBox(menuShown),
-                when(menuShown, ChatTemplates.chatList("burger-menu", menuShown))
+                when(menuShown, ChatTemplates.chatList("burger-menu", menuShown, width))
             ).build();
     }
 
@@ -494,7 +496,7 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static chatList(context: string, shown: Signal<boolean>) {
+    private static chatList(context: string, shown: Signal<boolean>, width: Signal<number>) {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
         const userPopupVisible = signal(false);
         const search = signal("");
@@ -502,6 +504,7 @@ export class ChatTemplates {
 
         return create("div")
             .classes("flex-v", "container", "small-gap", "chat-list", context)
+            .styles("width", context === "sidebar" ? compute(w => `${w}px`, width) : "max(30%, 200px)")
             .children(
                 when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
                 create("div")
