@@ -26,5 +26,5 @@ export async function updateMessageFromStream(
         if (done) {
             break;
         }
-    }
+        }
 }

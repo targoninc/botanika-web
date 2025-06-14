@@ -11,6 +11,8 @@ import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
 import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
 import {Tool} from "ai";
 import {ErrorToolResult} from "../../../../../models/chat/ErrorToolResult.ts";
+import {Signal} from "@targoninc/jess";
+import {ChatMessage} from "../../../../../models/chat/ChatMessage.ts";
 
 dotenv.config();
 

@@ -17,7 +17,6 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -34,6 +33,15 @@ export class GenericTemplates {
             onchange,
             attributes,
             required
+        });
+    }
+
+    static iconButton(icon: StringOrSignal, text: string, onclick: (e: any) => void) {
+        return button({
+            icon: { icon },
+            classes: ["flex", "align-center", "icon-button"],
+            title: text,
+            onclick
         });
     }
 
@@ -78,8 +86,9 @@ export class GenericTemplates {
             .classes("flex", ...classes)
             .onclick(onclick)
             .children(
-                GenericTemplates.icon(icon, iconClasses),
+                GenericTemplates.icon(icon, iconClasses.concat("no-pointer-events")),
                 when(text, create("span")
+                    .classes("no-pointer-events")
                     .text(text)
                     .build()),
                 GenericTemplates.hotkey(hotkey),
@@ -371,20 +380,11 @@ export class GenericTemplates {
         return create("div")
             .classes("parent-top-left", "flex", "code-copy-button")
             .children(
-                GenericTemplates.iconButton("content_copy", () => {
+                GenericTemplates.iconButton("content_copy", "Copy to clipboard", () => {
                     navigator.clipboard.writeText(content);
                     toast("Copied to clipboard");
                 }),
             ).build();
-    }
-
-    static iconButton(icon: string, onclick = () => {
-    }) {
-        return button({
-            icon: {icon},
-            classes: ["flex"],
-            onclick
-        });
     }
 
     static keyValueInput(headers: Record<string, string> = {}, onChange: (value: Record<string, string>) => void) {
@@ -521,7 +521,6 @@ export class GenericTemplates {
             .classes("clickable")
             .onclick(() => {
                 userPopupVisible.value = !userPopupVisible.value;
-                closeOnClickIfOutsideOfParent("flyout", userPopupVisible);
             })
             .children(
                 GenericTemplates.icon(image, ["user-image"])

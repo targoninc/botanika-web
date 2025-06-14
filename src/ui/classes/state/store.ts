@@ -19,19 +19,10 @@ import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
-
-function getPathname() {
-    const path = new URL(window.location.href).pathname.split("/").at(-1);
-    return path === "" ? null : path;
-}
+import {getPathname, getUrlParameter} from "./urlHelpers.ts";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
-
-function getUrlParameter(param: string, fallback: any) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(param) ?? fallback;
-}
 
 export const currentChatId = signal<string | null>(getUrlParameter("chatId", null));
 export const chats = signal<ChatContext[]>([]);

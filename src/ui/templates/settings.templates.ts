@@ -92,7 +92,7 @@ export class SettingsTemplates {
         const loading = signal(false);
 
         return create("div")
-            .classes("flex-v", "bordered-panel", "overflow")
+            .classes("flex-v", "container", "overflow")
             .children(
                 create("div")
                     .classes("flex-v", "restrict-width")
@@ -109,6 +109,8 @@ export class SettingsTemplates {
                                     .build(),
                                 when(loading, GenericTemplates.spinner()),
                             ).build(),
+                        GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
+                        GenericTemplates.buttonWithIcon("open_in_new", "Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
                         GenericTemplates.heading(2, "General"),
                         ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                             ...c,
@@ -263,7 +265,7 @@ export class SettingsTemplates {
                     }))) : [];
 
                     return create("div")
-                        .classes("flex-v", "card")
+                        .classes("flex-v")
                         .children(
                             create("div")
                                 .classes("flex", allSet ? "positive" : "negative")
