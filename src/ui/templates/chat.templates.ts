@@ -330,7 +330,7 @@ export class ChatTemplates {
                             .classes("flex", "align-center", "space-between")
                             .children(
                                 create("div")
-                                    .classes("flex")
+                                    .classes("flex", "align-children")
                                     .children(
                                         create("div")
                                             .classes("relative")
@@ -341,7 +341,7 @@ export class ChatTemplates {
                                                 }),
                                                 when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
                                             ).build(),
-                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
+                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files), ["onlyIconOnSmall"]),
                                     ).build(),
                                 create("div")
                                     .classes("flex", "align-center")
