@@ -179,6 +179,32 @@ export class ChatTemplates {
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
+                when(message.type === "user", GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
+                    e.stopPropagation();
+                    createModal(GenericTemplates.confirmModal("Retry message", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
+                        const r = await Api.deleteAfterMessage(chatContext.value.id, message.id, true);
+                        if (r.success) {
+                            updateChats(chats.value.map(c => {
+                                if (c.id === chatContext.value.id) {
+                                    const updatedChat = structuredClone(c);
+                                    updatedChat.history = updatedChat.history.filter(m => m.time < message.time);
+                                    return updatedChat;
+                                }
+                                return c;
+                            }));
+                            realtime.send({
+                                type: BotanikaClientEventType.message,
+                                data: <NewMessageEventData>{
+                                    chatId: currentChatId.value,
+                                    message: message.text,
+                                    files: message.files,
+                                    provider: configuration.value.provider,
+                                    model: configuration.value.model,
+                                }
+                            })
+                        }
+                    }));
+                })),
                 when(message.type === "assistant", GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
