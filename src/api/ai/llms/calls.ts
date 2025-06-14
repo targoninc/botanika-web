@@ -62,7 +62,10 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         maxRetries: 0,
         providerOptions: {
             openai: {
-                store: true
+                store: true,
+                reasoning: {
+                    effort: "medium"
+                }
             }
         },
         onError: event => sendError(ws, event.error.toString()),

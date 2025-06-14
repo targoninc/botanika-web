@@ -718,6 +718,12 @@ pre {
     font-size: .8em;
 }
 
+.reasoning {
+    opacity: .8;
+    font-style: italic;
+    padding-left: 1em;
+}
+
 .expand-button {
     background: transparent;
     border: none;

@@ -127,7 +127,6 @@ export function sendAllOngoingConversations(ws: WebsocketConnection) {
         if (conversation.userId === ws.userId) {
             sendChatHistory(ws, chatId);
 
-            // If the conversation is still being generated, send a special message
             if (conversation.isGenerating) {
                 CLI.debug(`Chat ${chatId} is still generating, sending status to client`);
                 send(ws, {
