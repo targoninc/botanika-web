@@ -178,13 +178,13 @@ button.positive:hover, button.fjsc.positive:hover {
     background: var(--gradient-2);
 }
 
-button.message-action {
+button.icon-button {
     background: var(--gradient-2);
     border: var(--input-border-width) solid var(--tint-muted);
     color: var(--text-4);
 }
 
-button.message-action:hover {
+button.icon-button:hover {
     background: var(--gradient-1);
     border-color: var(--tint-present);
 }
