@@ -5,63 +5,49 @@ import {ToolResultUnion, ToolSet} from "ai";
 import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {Signal} from "@targoninc/jess";
 
-export function wrapTool(id: string, execute: (input: any) => Promise<any>, ws: WebsocketConnection, chat: ChatContext) {
+async function getToolResult(id: string, execute: (input: any) => Promise<any>, input: any) {
+    const start = performance.now();
+    CLI.debug(`Calling tool ${id}`);
+    let result: ChatToolResult;
+    try {
+        result = await execute(input);
+    } catch (e) {
+        result = <ChatToolResult>{
+            text: `Tool ${id} failed: ${e.toString()}`,
+        };
+    }
+    const diff = performance.now() - start;
+    CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
+    return result;
+}
+
+export function wrapTool(id: string, execute: (input: any) => Promise<any>, message: Signal<ChatMessage>) {
     return async (input: any, ...args: any[]) => {
-        let newMessage = <ChatMessage>{
-            type: "tool",
-            text: `Calling tool ${id}`,
-            toolResult: <ToolResultUnion<ToolSet>>{
-                toolName: id,
-                text: null,
-                references: [],
-            },
-            finished: false,
-            time: Date.now(),
-            references: [],
-            id: uuidv4()
-        };
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [newMessage]
+        const assMsg = structuredClone(message.value);
+        const callId = uuidv4();
+        assMsg.toolInvocations.push({
+            toolCallId: callId,
+            args: input,
+            toolName: id,
+            state: "call"
         });
-        const start = performance.now();
-        CLI.debug(`Calling tool ${id}`);
-        let result;
-        try {
-            result = await execute(input);
-        } catch (e) {
-            result = <ChatToolResult>{
-                text: `Tool ${id} failed: ${e.toString()}`,
-            };
-        }
-        const diff = performance.now() - start;
-        CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
-        result.messageId = newMessage.id;
+        message.value = assMsg;
 
-        newMessage = {
-            id: newMessage.id,
-            type: "tool",
-            time: Date.now(),
-            finished: true,
-            text: result.text,
-            references: result.references,
-            // @ts-ignore
-            toolResult: {
-                toolName: id,
-                toolCallId: uuidv4(),
-                result,
-                type: "tool-result",
-                args: input
+        let result = await getToolResult(id, execute, input);
+
+        assMsg.toolInvocations.map(ti => {
+            if (ti.toolCallId === callId) {
+                return {
+                    ...ti,
+                    state: "result",
+                    result
+                };
             }
-        };
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [newMessage]
+            return ti;
         });
-        chat.history.push(newMessage);
+        message.value = assMsg;
         return result;
     }
 }

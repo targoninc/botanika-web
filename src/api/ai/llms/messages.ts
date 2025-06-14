@@ -1,16 +1,13 @@
-import {v4, v4 as uuidv4} from "uuid";
+import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {
-    CoreMessage,
-    LanguageModelV1,
-    Message,
-} from "ai";
-import {FileUIPart, SourceUIPart} from "@ai-sdk/ui-utils";
+import {LanguageModelV1,} from "ai";
+import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {AiMessage} from "./aiMessage.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -24,7 +21,6 @@ export function newUserMessage(provider: string, model: string, message: string,
         text: message,
         time: Date.now(),
         finished: true,
-        references: [],
         files,
         provider,
         model
@@ -37,7 +33,6 @@ export function newAssistantMessage(responseText: string, provider: string, mode
         type: "assistant",
         text: responseText,
         time: Date.now(),
-        references: [],
         files: [],
         finished: true,
         provider,
@@ -58,9 +53,7 @@ export async function createChat(userId: string, newMessage: ChatMessage, chatId
     return chatContext;
 }
 
-type ConvertableMessage = Omit<Message, "id">;
-
-export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): Array<ConvertableMessage> {
+export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): Array<AiMessage> {
     return [
         {
             role: "system",
@@ -87,7 +80,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                         contentType: f.mimeType,
                         url: `data:${f.mimeType};base64,${f.base64}`
                     })) : []
-                } satisfies ConvertableMessage;
+                } satisfies AiMessage;
             }
 
             return {
@@ -98,14 +91,9 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                         type: "text",
                         text: m.text,
                     },
-                    ...m.references.map(r => (<SourceUIPart>{
-                        type: "source",
-                        source: {
-                            title: r.name,
-                            url: r.link,
-                            id: v4(),
-                            sourceType: "url",
-                        }
+                    ...(m.toolInvocations ?? []).map(ti => (<ToolInvocationUIPart>{
+                        type: "tool-invocation",
+                        toolInvocation: ti,
                     })),
                     ...m.files.map(f => (<FileUIPart>{
                         type: "file",
@@ -113,12 +101,12 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                         mimeType: f.mimeType,
                     }))
                 ],
-            } satisfies ConvertableMessage;
+            } satisfies AiMessage;
         }).filter(m => !!m)
     ];
 }
 
-export function getChatNameMessages(message: string): CoreMessage[] {
+export function getChatNameMessages(message: string): AiMessage[] {
     return [
         {
             role: "system",

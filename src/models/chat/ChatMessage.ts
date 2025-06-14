@@ -1,11 +1,12 @@
-import {ResourceReference} from "./ResourceReference";
-import {ToolResultUnion, ToolSet} from "ai";
 import {MessageFile} from "./MessageFile.ts";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
+import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 
 export interface ChatMessage {
     type: "system" | "user" | "assistant";
-    references: ResourceReference[];
+    toolInvocations?: Array<ToolInvocation>;
     files: MessageFile[];
+    reasoning?: ReasoningDetail[];
     text: string;
     time: number;
     id: string;

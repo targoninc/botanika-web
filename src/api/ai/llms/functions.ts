@@ -59,16 +59,19 @@ export async function updateMessageFromStream(
     while (true) {
         const {value, done} = await reader.read();
         const m = message.value;
+
+        if (value) {
+            message.value = {
+                ...m,
+                text: m.text + value
+            }
+
+            updateConversation(chatId, userId, message.value, true);
+        }
+
         if (done) {
             break;
         }
-
-        message.value = {
-            ...m,
-            text: m.text + value
-        }
-
-        updateConversation(chatId, userId, message.value, true);
     }
 
     const finalText = await text;
