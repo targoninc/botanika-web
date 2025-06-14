@@ -2,7 +2,6 @@ import {LayoutTemplates} from "../templates/layout.templates";
 import {ToastType} from "../enums/ToastType";
 import {GenericTemplates} from "../templates/generic.templates";
 import {AnyNode, create} from "@targoninc/jess";
-import {closeOnClickIfOutsideOfParent} from "./closeOnClickIfOutsideOfParent.ts";
 
 export const container = document.body;
 

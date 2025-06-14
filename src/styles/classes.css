@@ -598,6 +598,7 @@ kbd {
     width: min(100%, 800px);
     position: relative;
     max-height: max-content;
+    margin-bottom: -1.5em;
 }
 
 .send-button, .voice-button {

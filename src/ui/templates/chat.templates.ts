@@ -42,6 +42,7 @@ import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chat
 import {getHost} from "../classes/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
+import {searchList} from "../classes/search.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -496,9 +497,11 @@ export class ChatTemplates {
     private static chatList(context: string, shown: Signal<boolean>) {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
         const userPopupVisible = signal(false);
+        const search = signal("");
+        const filteredChats = compute((c, s) => searchList(["history", "name"], c, s), chats, search);
 
         return create("div")
-            .classes("flex-v", "container", "chat-list", context)
+            .classes("flex-v", "container", "small-gap", "chat-list", context)
             .children(
                 when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
                 create("div")
@@ -525,7 +528,17 @@ export class ChatTemplates {
                                 when(userPopupVisible, GenericTemplates.userPopup()),
                             ).build(),
                     ).build(),
-                compute(c => ChatTemplates.chatListItems(c, shown), chats),
+                input({
+                    type: InputType.text,
+                    placeholder: "Search chats...",
+                    name: "chatsSearch",
+                    value: search,
+                    classes: ["full-width"],
+                    onchange: value => {
+                        search.value = value;
+                    }
+                }),
+                compute(c => ChatTemplates.chatListItems(c, shown), filteredChats),
             ).build();
     }
 
