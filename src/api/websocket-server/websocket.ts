@@ -278,7 +278,7 @@ export function addWebsocketServer(server: Server) {
             try {
                 await handleMessage(message, ws);
             } catch (e) {
-                CLI.error(e);
+                console.error(e);
                 sendError(ws, e);
             }
         });
