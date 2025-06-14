@@ -595,6 +595,7 @@ export class GenericTemplates {
 
             const deltaX = e.clientX - startX;
             const newWidth = Math.max(200, Math.min(800, startWidth + deltaX));
+            localStorage.setItem(`divider-width-${querySelector}`, newWidth.toString());
 
             toResize.style.width = `${newWidth}px`;
         };
