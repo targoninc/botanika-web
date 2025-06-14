@@ -115,18 +115,13 @@ export async function loadAllChats(newChats: ChatContext[]) {
         }
     });
 
-    return await Promise.allSettled(chatUpdates)
-        .then(results => {
-            const response: ApiResponse<ChatContext[] | string> = {
-                success: true,
-                status: 200,
-                data: results
-                    .filter(result => result.status === "fulfilled" && result.value !== null)
-                    .map(result => (result as PromiseFulfilledResult<ChatContext>).value)
-            };
+    await Promise.allSettled(chatUpdates);
 
-            return response;
-        })
+    return {
+        success: true,
+        data: null,
+        status: 200
+    }
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -170,7 +165,7 @@ export async function processUpdate(update: ChatUpdate) {
 }
 
 export function deleteChat(chatId: string) {
-    chats.value = chats.value.filter(c => c.id !== chatId);
+    updateChats(chats.value.filter(c => c.id !== chatId));
     Api.deleteChat(chatId).then(() => {
         if (currentChatId.value === chatId) {
             currentChatId.value = null;
