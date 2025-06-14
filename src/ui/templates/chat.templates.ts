@@ -21,7 +21,6 @@ import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
 import {ResourceReference} from "../../models/chat/ResourceReference";
-import {ModelDefinition} from "../../models/llms/ModelDefinition";
 import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
@@ -42,6 +41,7 @@ import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaC
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 import {getHost} from "../classes/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
+import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -214,10 +214,10 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static date(time: number) {
-        return create("span")
-            .classes("time")
-            .text(new Date(time).toLocaleString("default", {
+    private static date(time: number, extended: boolean = false) {
+        let formatted = toHumanizedTime(time);
+        if (extended) {
+            formatted = signal(new Date(time).toLocaleString("default", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
@@ -225,7 +225,12 @@ export class ChatTemplates {
                 hour: "numeric",
                 minute: "numeric",
                 second: "numeric",
-            }))
+            }));
+        }
+
+        return create("span")
+            .classes("time")
+            .text(formatted)
             .build();
     }
 
@@ -500,7 +505,7 @@ export class ChatTemplates {
 
     static chatListItems(chat: ChatContext[], menuShown: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flex-grow", "chat-list-items")
+            .classes("flex-v", "flex-grow", "small-gap", "chat-list-items")
             .children(
                 when(chat.length === 0, create("span")
                     .text("No chats yet")
@@ -529,6 +534,7 @@ export class ChatTemplates {
                     .classes("flex", "align-center", "no-wrap", "space-between")
                     .children(
                         when(editing, create("span")
+                            .classes("text-small")
                             .text(chatName)
                             .build(), true),
                         when(editing, input({
