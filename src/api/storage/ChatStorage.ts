@@ -4,6 +4,7 @@ import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {ResourceReference} from "../../models/chat/ResourceReference.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import { MessageType } from "@prisma/client";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 export class ChatStorage {
     static async writeChatContext(userId: string, chat: ChatContext) {
@@ -56,7 +57,7 @@ export class ChatStorage {
                     text: message.text,
                     type: message.type as MessageType,
                     hasAudio: message.hasAudio,
-                    references: message.references as any,
+                    toolInvocations: message.toolInvocations as any,
                     files: message.files as any
                 }
             });
@@ -96,7 +97,7 @@ export class ChatStorage {
                     type: m.type,
                     provider: m.provider,
                     hasAudio: m.hasAudio,
-                    references: m.references as ResourceReference[],
+                    toolInvocations: m.toolInvocations as unknown as ToolInvocation[],
                     files: m.files as MessageFile[],
                 };
             }).sort((a, b) => b.time - a.time)

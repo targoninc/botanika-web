@@ -200,5 +200,12 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     await waitForMessageFinished;
     toolInfo.mcpInfo.onClose();
 
+    chat.history.map(m => {
+        if (m.id === assMessage.value.id) {
+            return assMessage.value;
+        }
+        return m;
+    });
+
     await ChatStorage.writeChatContext(ws.userId, chat);
 }

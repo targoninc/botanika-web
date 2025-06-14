@@ -25,8 +25,13 @@ async function getToolResult(id: string, execute: (input: any) => Promise<any>, 
 
 export function wrapTool(id: string, execute: (input: any) => Promise<any>, message: Signal<ChatMessage>) {
     return async (input: any, ...args: any[]) => {
-        const assMsg = structuredClone(message.value);
+        let assMsg = structuredClone(message.value);
         const callId = uuidv4();
+
+        if (!assMsg.toolInvocations) {
+            assMsg.toolInvocations = [];
+        }
+
         assMsg.toolInvocations.push({
             toolCallId: callId,
             args: input,
@@ -37,7 +42,8 @@ export function wrapTool(id: string, execute: (input: any) => Promise<any>, mess
 
         let result = await getToolResult(id, execute, input);
 
-        assMsg.toolInvocations.map(ti => {
+        assMsg = structuredClone(message.value);
+        assMsg.toolInvocations = assMsg.toolInvocations.map(ti => {
             if (ti.toolCallId === callId) {
                 return {
                     ...ti,
