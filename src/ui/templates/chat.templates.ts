@@ -41,6 +41,7 @@ import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 export class ChatTemplates {
     static chat() {
@@ -105,29 +106,6 @@ export class ChatTemplates {
     }
 
     private static chatMessage(message: ChatMessage, isLast: boolean) {
-        if (message.type === "tool") {
-            const textIsJson = typeof message.text.constructor === "object";
-
-            return create("div")
-                .classes("flex-v", "small-gap", "bordered-panel")
-                .children(
-                    create("div")
-                        .classes("flex", "align-center", "chat-message", message.type)
-                        .children(
-                            GenericTemplates.icon("build_circle"),
-                            textIsJson ? GenericTemplates.properties(JSON.parse(message.text))
-                                : create("span")
-                                    .text(message.text)
-                                    .build(),
-                        ).build(),
-                    (message.references && message.references.length > 0) ? create("div")
-                        .classes("flex-v", "small-gap", "chat-message-references")
-                        .children(
-                            ...(message.references ?? []).map(r => ChatTemplates.reference(r)),
-                        ).build() : null,
-                ).build();
-        }
-
         if (message.text.trim().length === 0) {
             return nullElement();
         }
@@ -152,6 +130,11 @@ export class ChatTemplates {
                             .html(sanitized)
                             .build(),
                     ).build(),
+                (message.toolInvocations && message.toolInvocations.length > 0) ? create("div")
+                    .classes("flex-v", "small-gap", "chat-message-references")
+                    .children(
+                        ...(message.toolInvocations ?? []).map(ti => ChatTemplates.toolInvocation(ti)),
+                    ).build() : null,
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
                 ChatTemplates.messageActions(message),
                 when(isLast, GenericTemplates.spacer()),
@@ -633,6 +616,20 @@ export class ChatTemplates {
                                 .build(),
                         ).build()
                     : null,
+            ).build();
+    }
+
+    private static toolInvocation(ti: ToolInvocation) {
+        return create("div")
+            .classes("flex", "align-children", "relative")
+            .children(
+                when(ti.state !== "result", create("span")
+                    .text("Calling tool")
+                    .build()),
+                create("span")
+                    .text(ti.toolName)
+                    .build(),
+                when(ti.result, GenericTemplates.codeCopyButton(JSON.stringify(ti.result))),
             ).build();
     }
 }

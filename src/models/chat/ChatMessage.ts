@@ -4,7 +4,7 @@ import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 
 export interface ChatMessage {
     type: "system" | "user" | "assistant";
-    toolInvocations?: Array<ToolInvocation>;
+    toolInvocations?: ToolInvocation[];
     files: MessageFile[];
     reasoning?: ReasoningDetail[];
     text: string;

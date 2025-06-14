@@ -80,7 +80,6 @@ export function broadcastToUser(userId: string, message: BotanikaServerEvent<any
             const connection = connectionsArray[i];
             if (connection.readyState === 1) {
                 try {
-                    CLI.debug(`Broadcasting to conn ${i + 1} for user ${connection.userId}`);
                     connection.send(JSON.stringify(message));
                 } catch (e) {
                     CLI.error(`Error sending message to connection: ${e}`);
