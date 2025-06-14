@@ -41,7 +41,8 @@ import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
-import {ToolInvocation} from "@ai-sdk/ui-utils";
+import {ToolCall} from "../../models/chat/ToolCall.ts";
+import {getHost} from "../classes/state/urlHelpers.ts";
 
 export class ChatTemplates {
     static chat() {
@@ -126,17 +127,13 @@ export class ChatTemplates {
                 create("div")
                     .classes("flex", "align-center", "card", "message-content")
                     .children(
+                        ChatTemplates.toolCalls(message),
                         create("div")
                             .html(sanitized)
                             .build(),
                     ).build(),
-                (message.toolInvocations && message.toolInvocations.length > 0) ? create("div")
-                    .classes("flex-v", "small-gap", "chat-message-references")
-                    .children(
-                        ...(message.toolInvocations ?? []).map(ti => ChatTemplates.toolInvocation(ti)),
-                    ).build() : null,
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
-                ChatTemplates.messageActions(message),
+                when(message.finished, ChatTemplates.messageActions(message)),
                 when(isLast, GenericTemplates.spacer()),
             ).build();
     }
@@ -573,36 +570,36 @@ export class ChatTemplates {
     }
 
     private static reference(r: ResourceReference) {
-        const expanded = signal(false);
-        const expandedClass = compute((e): string => e ? "expanded" : "_", expanded);
-
         return create("div")
-            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_", expandedClass)
-            .onclick(() => {
-                if (!r.snippet) {
-                    return;
+            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_")
+            .onmousedown((e) => {
+                if (r.link && e.button !== 2) {
+                    e.preventDefault();
+                    window.open(r.link, "_blank");
                 }
-
-                expanded.value = !expanded.value;
             })
             .children(
                 create("div")
-                    .classes("flex", "align-center", "padded", "pill-padding", "no-wrap")
+                    .classes("flex", "align-center", "no-wrap")
                     .children(
-                        r.link ? GenericTemplates.icon("link") : null,
                         (r.link && !r.link.startsWith("file://")) ? create("a")
                                 .href(r.link)
                                 .target("_blank")
                                 .title(r.link)
-                                .text(r.name)
-                                .build()
+                                .classes("flex", "align-children")
+                                .children(
+                                    GenericTemplates.icon("link"),
+                                    create("span")
+                                        .text(r.name)
+                                ).build()
                             : create("span")
                                 .classes("text-small")
                                 .text(r.name)
                                 .build(),
                     ).build(),
+                r.link ? create("span").classes("link-host").text(getHost(r.link)).build() : null,
                 r.snippet ? create("div")
-                        .classes("flex", "small-gap", "reference-preview", "padded-big")
+                        .classes("flex", "no-wrap", "small-gap", "reference-preview")
                         .children(
                             r.imageUrl ? create("img")
                                     .classes("thumbnail")
@@ -619,17 +616,20 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static toolInvocation(ti: ToolInvocation) {
+    private static toolCalls(message: ChatMessage) {
+        const sourcesExpanded = signal(false);
+        const sources = message.toolInvocations.flatMap(ti => ti.result.references);
+        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", sourcesExpanded);
+
         return create("div")
-            .classes("flex", "align-children", "relative")
+            .classes("flex-v", "small-gap", "no-wrap")
             .children(
-                when(ti.state !== "result", create("span")
-                    .text("Calling tool")
-                    .build()),
-                create("span")
-                    .text(ti.toolName)
-                    .build(),
-                when(ti.result, GenericTemplates.codeCopyButton(JSON.stringify(ti.result))),
+                when(sources.length > 0, GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => sourcesExpanded.value = !sourcesExpanded.value, ["expand-button"])),
+                when(compute(e => e && sources.length > 0, sourcesExpanded), create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        ...sources.map(ChatTemplates.reference),
+                    ).build())
             ).build();
     }
 }

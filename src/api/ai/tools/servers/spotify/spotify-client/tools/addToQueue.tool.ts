@@ -4,6 +4,8 @@ import {wrapTool} from "../../../../tooling";
 import {z} from "zod";
 import { Configuration } from "src/models/Configuration";
 import { WebsocketConnection } from "src/api/websocket-server/websocket";
+import {ChatMessage} from "../../../../../../../models/chat/ChatMessage.ts";
+import {Signal} from "@targoninc/jess";
 
 async function addToQueue(userConfig: Configuration, uri: string, deviceId: string): Promise<SpotifyApi.AddToQueueResponse> {
     const api = await createClient(userConfig);
@@ -31,7 +33,7 @@ async function addToQueueToolCall(input: any, userConfig: Configuration) {
     };
 }
 
-export function spotifyAddToQueueTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string) {
+export function spotifyAddToQueueTool(userConfig: Configuration, message: Signal<ChatMessage>) {
     return {
         id: "spotify-addToQueue",
         description: "Add a Spotify URI to the queue.",
@@ -39,6 +41,6 @@ export function spotifyAddToQueueTool(userConfig: Configuration, ws: WebsocketCo
             uri: z.string().describe('The URI to add to the queue'),
             deviceId: z.string().describe('The device ID to add to the queue on'),
         }),
-        execute: wrapTool("spotify-addToQueue", input => addToQueueToolCall(userConfig, userConfig)),
+        execute: wrapTool("spotify-addToQueue", input => addToQueueToolCall(userConfig, userConfig), message),
     };
 }

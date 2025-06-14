@@ -123,7 +123,6 @@ export function sendChatHistory(ws: WebsocketConnection, chatId: string) {
  * @param ws The WebSocket connection to send updates to
  */
 export function sendAllOngoingConversations(ws: WebsocketConnection) {
-    CLI.debug(`Checking for ongoing conversations for user ${ws.userId}`);
     for (const [chatId, conversation] of ongoingConversations.entries()) {
         if (conversation.userId === ws.userId) {
             sendChatHistory(ws, chatId);
