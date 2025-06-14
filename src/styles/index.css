@@ -134,6 +134,7 @@ h4 {
 span {
     text-align: start;
     height: max-content;
+    word-break: break-word;
 }
 
 button, input, textarea, select {
