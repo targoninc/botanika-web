@@ -78,10 +78,11 @@ export class Api extends ApiBase {
         return this.streamWithFormData(ApiEndpoint.TRANSCRIBE, formData, false);
     }
 
-    static deleteAfterMessage(chatId: string, messageId: string) {
+    static deleteAfterMessage(chatId: string, messageId: string, exclusive: boolean = false) {
         return this.post(ApiEndpoint.DELETE_AFTER_MESSAGE, {
             chatId,
             messageId,
+            exclusive,
         });
     }
 

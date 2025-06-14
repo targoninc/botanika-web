@@ -89,7 +89,13 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
         const message = c.history.find(m => m.id === messageId);
-        c.history = c.history.filter(m => m.time <= message.time);
+
+        if (req.body.exclusive) {
+            c.history = c.history.filter(m => m.time < message.time);
+        } else {
+            c.history = c.history.filter(m => m.time <= message.time);
+        }
+
         await ChatStorage.writeChatContext(req.user.id, c);
         res.status(200).send();
     });
