@@ -109,6 +109,8 @@ export class SettingsTemplates {
                                     .build(),
                                 when(loading, GenericTemplates.spinner()),
                             ).build(),
+                        GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
+                        GenericTemplates.buttonWithIcon("open_in_new", "Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
                         GenericTemplates.heading(2, "General"),
                         ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                             ...c,
