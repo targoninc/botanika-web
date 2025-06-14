@@ -36,7 +36,7 @@ export class GenericTemplates {
         });
     }
 
-    static iconButton(icon: StringOrSignal, text: string, onclick: (e: any) => void) {
+    static iconButton(icon: StringOrSignal, text: StringOrSignal, onclick: (e: any) => void) {
         return button({
             icon: { icon },
             classes: ["flex", "align-center", "icon-button"],

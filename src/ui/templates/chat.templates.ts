@@ -519,8 +519,10 @@ export class ChatTemplates {
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
             .onclick(() => {
-                currentChatId.value = chat.id;
-                menuShown.value = false;
+                if (!editing.value) {
+                    currentChatId.value = chat.id;
+                    menuShown.value = false;
+                }
             })
             .children(
                 create("div")
@@ -549,7 +551,7 @@ export class ChatTemplates {
                                     });
                                     editing.value = false;
                                 }, ["no-wrap"])),
-                                when(editing, GenericTemplates.iconButton("edit", "Edit chat name", () => editing.value = true), true),
+                                GenericTemplates.iconButton(compute(e => e ? "close" : "edit", editing), compute(e => e ? "Cancel editing" : "Edit chat name", editing), () => editing.value = !editing.value),
                                 GenericTemplates.iconButton("delete", "Edit chat name", (e) => {
                                     e.stopPropagation();
                                     createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
