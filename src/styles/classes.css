@@ -534,12 +534,8 @@ kbd {
     font-size: 0.8em;
 }
 
-.reference a {
-    font-size: 0.8em;
-}
-
 .reference img {
-    border-radius: var(--input-border-radius);
+    border-radius: var(--attachment-border-radius);
 }
 
 .pill-padding {
@@ -616,12 +612,6 @@ kbd {
 .chat-message.user {
     align-self: flex-end;
     align-items: flex-end;
-}
-
-.chat-message.tool {
-    opacity: 0.75;
-    font-size: 0.8em;
-    font-weight: 400;
 }
 
 .chat-message:hover .card {
@@ -707,25 +697,33 @@ pre {
     border-radius: var(--input-border-radius);
 }
 
-.reference-preview {
-    display: none;
-    background: var(--bg);
-    border-radius: var(--input-border-radius);
-    padding-top: 0;
-}
-
-.reference.expanded .reference-preview {
-    display: flex;
-}
-
 .reference {
     border-radius: var(--input-border-radius);
     border: 1px solid transparent;
+    padding: var(--gap-v);
+    background: var(--bg);
 }
 
-.reference:hover, .reference.expanded {
-    background: var(--bg);
-    border-color: var(--tint-main);
+.reference:hover {
+    background: var(--bg-2);
+    border-color: var(--tint-present);
+}
+
+.reference:hover * {
+    text-decoration: underline;
+}
+
+.link-host {
+    font-weight: bold;
+    font-size: .8em;
+}
+
+.expand-button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    opacity: .8;
+    font-size: .8em;
 }
 
 .snippet {

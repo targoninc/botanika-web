@@ -57,6 +57,7 @@ export class ChatStorage {
                     text: message.text,
                     type: message.type as MessageType,
                     hasAudio: message.hasAudio,
+                    reasoning: message.reasoning,
                     toolInvocations: message.toolInvocations as any,
                     files: message.files as any
                 }
@@ -97,6 +98,7 @@ export class ChatStorage {
                     type: m.type,
                     provider: m.provider,
                     hasAudio: m.hasAudio,
+                    reasoning: m.reasoning,
                     toolInvocations: m.toolInvocations as unknown as ToolInvocation[],
                     files: m.files as MessageFile[],
                 };

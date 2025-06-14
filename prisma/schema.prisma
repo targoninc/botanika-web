@@ -60,6 +60,7 @@ model Message {
   model           String?
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
   toolInvocations Json        @default("[]") @map("toolInvocations") @db.Json
+  reasoning       Json        @default("[]") @map("reasoning") @db.Json
   files           Json        @default("[]") @db.Json
   chat            Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 

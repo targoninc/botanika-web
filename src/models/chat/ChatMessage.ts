@@ -1,10 +1,10 @@
 import {MessageFile} from "./MessageFile.ts";
-import {ToolInvocation} from "@ai-sdk/ui-utils";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
+import {ToolCall} from "./ToolCall.ts";
 
 export interface ChatMessage {
     type: "system" | "user" | "assistant";
-    toolInvocations?: ToolInvocation[];
+    toolInvocations?: ToolCall[];
     files: MessageFile[];
     reasoning?: ReasoningDetail[];
     text: string;
