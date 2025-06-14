@@ -569,4 +569,14 @@ export class GenericTemplates {
             .title(compute(s => s ? "Connected to realtime server" : "Offline, trying to reconnect...", status))
             .build();
     }
+
+    static movableDivider(width: Signal<number>) {
+        // set width.value to current width.value combined with mouse X delta
+
+        return create("div")
+            .classes("full-height", "movable-divider")
+            .children(
+                GenericTemplates.icon("drag_handle", ["rotate90"])
+            ).build();
+    }
 }
