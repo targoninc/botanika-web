@@ -281,10 +281,10 @@ export class ChatTemplates {
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
 
         return create("div")
-            .classes("chat-input")
+            .classes("chat-input", noHistoryClass)
             .children(
                 create("div")
-                    .classes("dropzone", "relative", "flex-v", "small-gap", noHistoryClass)
+                    .classes("dropzone", "relative", "flex-v", "small-gap")
                     .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
                     .ondragover((e: DragEvent) => {
                         e.preventDefault();
