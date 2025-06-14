@@ -6,10 +6,10 @@
     --black-3: color-mix(in oklab, #303030, var(--tint) var(--tint-strength));;
     --black-4: color-mix(in oklab, #353535, var(--tint) var(--tint-strength));
     --black-trans: rgba(10, 10, 13, 0.9);
-    --white: #efe9e7ff;
-    --white-2: #e7ddda;
-    --white-3: #ded2ce;
-    --white-4: #d6c9c5;
+    --white: #e5dfdd;
+    --white-2: #ded5d2;
+    --white-3: #d4c8c4;
+    --white-4: #c7bbb7;
     --grey-light: #9f9f9f;
     --grey-dark: #646464;
     --grey-darker: #4c4848;
