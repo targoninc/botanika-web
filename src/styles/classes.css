@@ -643,6 +643,10 @@ kbd {
     .burger-button {
         display: flex;
     }
+
+    .onlyIconOnSmall span:not(.material-symbols-outlined) {
+        display: none;
+    }
 }
 
 .burger-menu {
