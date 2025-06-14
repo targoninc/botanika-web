@@ -4,7 +4,8 @@ import {
     availableModels,
     chatContext,
     chats,
-    configuration, connected,
+    configuration,
+    connected,
     currentChatId,
     currentlyPlayingAudio,
     currentText,
@@ -41,8 +42,14 @@ import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
-import {ToolCall} from "../../models/chat/ToolCall.ts";
 import {getHost} from "../classes/state/urlHelpers.ts";
+
+function parseMarkdown(text: string) {
+    const rawMdParsed = marked.parse(text, {
+        async: false
+    });
+    return DOMPurify.sanitize(rawMdParsed);
+}
 
 export class ChatTemplates {
     static chat() {
@@ -111,11 +118,6 @@ export class ChatTemplates {
             return nullElement();
         }
 
-        const rawMdParsed = marked.parse(message.text, {
-            async: false
-        });
-        const sanitized = DOMPurify.sanitize(rawMdParsed);
-
         return create("div")
             .classes("flex-v", "small-gap", "chat-message", message.type)
             .children(
@@ -128,8 +130,9 @@ export class ChatTemplates {
                     .classes("flex", "align-center", "card", "message-content")
                     .children(
                         ChatTemplates.toolCalls(message),
+                        ChatTemplates.reasoning(message),
                         create("div")
-                            .html(sanitized)
+                            .html(parseMarkdown(message.text))
                             .build(),
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
@@ -617,18 +620,46 @@ export class ChatTemplates {
     }
 
     private static toolCalls(message: ChatMessage) {
-        const sourcesExpanded = signal(false);
-        const sources = message.toolInvocations.flatMap(ti => ti.result.references);
-        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", sourcesExpanded);
+        const expanded = signal(false);
+        const sources = message.toolInvocations?.flatMap(ti => ti.result.references) ?? [];
+        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
         return create("div")
             .classes("flex-v", "small-gap", "no-wrap")
             .children(
-                when(sources.length > 0, GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => sourcesExpanded.value = !sourcesExpanded.value, ["expand-button"])),
-                when(compute(e => e && sources.length > 0, sourcesExpanded), create("div")
+                when(sources.length > 0, GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"])),
+                when(compute(e => e && sources.length > 0, expanded), create("div")
                     .classes("flex-v", "small-gap")
                     .children(
                         ...sources.map(ChatTemplates.reference),
+                    ).build())
+            ).build();
+    }
+
+    private static reasoning(message: ChatMessage) {
+        const expanded = signal(false);
+        const hasReasoning = (message.reasoning?.length ?? 0) > 0;
+        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
+
+        return create("div")
+            .classes("flex-v", "small-gap", "no-wrap")
+            .children(
+                when(hasReasoning, GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"])),
+                when(compute(e => e && hasReasoning, expanded), create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        create("div")
+                            .classes("reasoning", "flex-v", "small-gap")
+                            .html(parseMarkdown((message.reasoning ?? []).reduce((acc, r) => {
+                                if (r.type === "text") {
+                                    acc += r.text;
+                                } else {
+                                    acc += "~~redacted reasoning~~";
+                                }
+
+                                return acc + "\r\n";
+                            }, "")))
+                            .build(),
                     ).build())
             ).build();
     }

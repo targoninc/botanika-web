@@ -1,6 +1,5 @@
-import {activePage, shortCutConfig, target} from "../state/store";
+import {shortCutConfig, target} from "../state/store";
 import {shortCutActions} from "./shortCutActions";
-import {pages} from "../../enums/pages";
 import {closeModal} from "../ui";
 
 export function addShortCutListener() {
@@ -16,11 +15,6 @@ export function addShortCutListener() {
 
         if (blockShortcuts.includes(target(e).tagName)) {
             return;
-        }
-
-        const isNumber = e.key.match(/^[0-9]+$/);
-        if (isNumber) {
-            activePage.value = pages.find((p, _) => p.hotkey === e.key)?.id ?? "chat";
         }
 
         if (e.key === "Escape") {
