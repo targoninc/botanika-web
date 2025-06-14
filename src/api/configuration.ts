@@ -12,7 +12,7 @@ export async function getConfig(userId: string): Promise<Configuration> {
         select: { configuration: true }
     });
     const config = (user?.configuration ?? {}) as Configuration;
-    config.tintColor ??= "#00ff00";
+    config.tintColor ??= "#5367ac";
     return config;
 }
 
