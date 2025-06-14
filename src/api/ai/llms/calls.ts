@@ -68,7 +68,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
                 }
             }
         },
-        onError: event => sendError(ws, event.error.toString()),
+        onError: event => sendError(ws, JSON.stringify(event.error)),
     });
 
     updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();

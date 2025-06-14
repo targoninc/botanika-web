@@ -1,8 +1,7 @@
 import {googleSearchTool} from "./google-search/google-search.tool.ts";
+import {extractImagesFromWebpageTool, extractContentFromWebpageTool} from "./web-browser/web-browser.tool.ts";
 import {Configuration} from "../../../../models/Configuration.ts";
-import {WebsocketConnection} from "../../../websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
-import {ChatContext} from "../../../../models/chat/ChatContext.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
 
@@ -11,11 +10,15 @@ function featureOption(config: Configuration, option: BotanikaFeature): any {
 }
 
 export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatMessage>) {
-    let tools = [];
+    const tools = [];
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
         tools.push(googleSearchTool(userConfig, message));
     }
+
+    // Add web browsing tools
+    tools.push(extractImagesFromWebpageTool(message));
+    tools.push(extractContentFromWebpageTool(message));
 
     /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
         tools = tools.concat(
