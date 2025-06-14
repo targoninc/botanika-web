@@ -53,7 +53,7 @@ create table if not exists public.messages
     provider     text,
     model        text,
     created_at   timestamp with time zone default now()             not null,
-    "references" json                     default '[]'::json        not null,
+    "toolInvocations" json                default '[]'::json        not null,
     files        json                     default '[]'::json        not null
     );
 

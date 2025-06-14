@@ -3,30 +3,32 @@ import {Configuration} from "../../../../models/Configuration.ts";
 import {WebsocketConnection} from "../../../websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 import {ChatContext} from "../../../../models/chat/ChatContext.ts";
+import {Signal} from "@targoninc/jess";
+import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
 
 function featureOption(config: Configuration, option: BotanikaFeature): any {
     return (config.featureOptions ?? {})[option] ?? {};
 }
 
-export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
+export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatMessage>) {
     let tools = [];
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
-        tools.push(googleSearchTool(userConfig, ws, chat));
+        tools.push(googleSearchTool(userConfig, message));
     }
 
     /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
         tools = tools.concat(
-            spotifyAddToSavedAlbumsTool(userConfig, ws, chatId),
-            spotifySearchTool(userConfig, ws, chatId),
-            spotifyGetDevicesTool(userConfig, ws, chatId),
-            spotifyPlayTool(userConfig, ws, chatId),
-            spotifyPauseTool(userConfig, ws, chatId),
-            spotifyGetCurrentPlaybackTool(userConfig, ws, chatId),
-            spotifyGetProfileTool(userConfig, ws, chatId),
-            spotifyAddToQueueTool(userConfig, ws, chatId),
-            spotifyAddToSavedTracksTool(userConfig, ws, chatId),
-            spotifyGetArtistTopTracksTool(userConfig, ws, chatId),
+            spotifyAddToSavedAlbumsTool(userConfig, message),
+            spotifySearchTool(userConfig, message),
+            spotifyGetDevicesTool(userConfig, message),
+            spotifyPlayTool(userConfig, message),
+            spotifyPauseTool(userConfig, message),
+            spotifyGetCurrentPlaybackTool(userConfig, message),
+            spotifyGetProfileTool(userConfig, message),
+            spotifyAddToQueueTool(userConfig, message),
+            spotifyAddToSavedTracksTool(userConfig, message),
+            spotifyGetArtistTopTracksTool(userConfig, message),
         );
     }*/
 
