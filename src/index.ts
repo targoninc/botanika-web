@@ -48,6 +48,8 @@ app.use(cors({
     optionsSuccessStatus: 204,
 }));
 
+addAuthenticationMiddleware(app);
+
 const baseUrl = process.env.BASE_URL || `http://localhost:${APP_PORT}`;
 const isPublicUrl = !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
 if (isPublicUrl) {
@@ -57,6 +59,7 @@ if (isPublicUrl) {
         limit,
         standardHeaders: true,
         legacyHeaders: false,
+        keyGenerator: (req: Request) => req.user.id,
         message: 'Too many requests, please try again later.',
     });
 
@@ -65,8 +68,6 @@ if (isPublicUrl) {
 } else {
     CLI.debug('Rate limiting disabled (running on localhost)');
 }
-
-addAuthenticationMiddleware(app);
 
 addTranscribeEndpoints(app);
 app.use(express.json());

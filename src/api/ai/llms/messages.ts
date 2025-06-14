@@ -1,14 +1,13 @@
 import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {
-    CoreMessage,
-    LanguageModelV1, UIMessage,
-} from "ai";
+import {LanguageModelV1,} from "ai";
+import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {AiMessage} from "./aiMessage.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -22,7 +21,6 @@ export function newUserMessage(provider: string, model: string, message: string,
         text: message,
         time: Date.now(),
         finished: true,
-        references: [],
         files,
         provider,
         model
@@ -35,7 +33,6 @@ export function newAssistantMessage(responseText: string, provider: string, mode
         type: "assistant",
         text: responseText,
         time: Date.now(),
-        references: [],
         files: [],
         finished: true,
         provider,
@@ -56,7 +53,7 @@ export async function createChat(userId: string, newMessage: ChatMessage, chatId
     return chatContext;
 }
 
-export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): CoreMessage[] {
+export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): Array<AiMessage> {
     return [
         {
             role: "system",
@@ -75,26 +72,41 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
             ${configuration.userDescription ? `Here is a self-written description about them: ${configuration.userDescription}` : ""}`
         },
         ...messages.map(m => {
-            if (m.type === "tool") {
+            if (m.type === "user") {
                 return {
-                    role: m.type,
-                    content: [m.toolResult]
-                };
+                    role: "user",
+                    content: m.text,
+                    experimental_attachments: addAttachments ? m.files.map(f => ({
+                        contentType: f.mimeType,
+                        url: `data:${f.mimeType};base64,${f.base64}`
+                    })) : []
+                } satisfies AiMessage;
             }
 
-            return <UIMessage>{
-                role: m.type,
+            return {
+                role: "assistant",
                 content: m.text,
-                experimental_attachments: addAttachments ? m.files.map(f => ({
-                    contentType: f.mimeType,
-                    url: `data:${f.mimeType};base64,${f.base64}`
-                })) : []
-            }
-        }) as CoreMessage[]
+                parts: [
+                    {
+                        type: "text",
+                        text: m.text,
+                    },
+                    ...(m.toolInvocations ?? []).map(ti => (<ToolInvocationUIPart>{
+                        type: "tool-invocation",
+                        toolInvocation: ti,
+                    })),
+                    ...m.files.map(f => (<FileUIPart>{
+                        type: "file",
+                        data: f.base64,
+                        mimeType: f.mimeType,
+                    }))
+                ],
+            } satisfies AiMessage;
+        }).filter(m => !!m)
     ];
 }
 
-export function getChatNameMessages(message: string): CoreMessage[] {
+export function getChatNameMessages(message: string): AiMessage[] {
     return [
         {
             role: "system",

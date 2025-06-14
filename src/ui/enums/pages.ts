@@ -4,13 +4,11 @@ export const pages: Tab[] = [
     {
         icon: "chat",
         name: "Chat",
-        id: "chat",
-        hotkey: "1"
+        id: "chat"
     },
     {
         icon: "settings",
         name: "Settings",
-        id: "settings",
-        hotkey: "2"
+        id: "settings"
     }
 ]

@@ -3,6 +3,8 @@ import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {broadcastToUser, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {ToolExecutionOptions} from "ai";
+import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {Signal} from "@targoninc/jess";
 
 export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, ws: WebsocketConnection, chat: ChatContext) {
     return async (input: TParams, options: ToolExecutionOptions) => {
@@ -13,7 +15,7 @@ export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TP
             toolName: toolName,
             messageId
         });
-        const start = performance.now();
+    const start = performance.now();
         CLI.debug(`Calling tool ${toolName}`);
 
         const result = await execute(input)
@@ -21,7 +23,7 @@ export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TP
                 error: `Tool ${toolName} failed: ${e.toString()}`,
             }));
 
-        const diff = performance.now() - start;
+    const diff = performance.now() - start;
         CLI.success(`Tool ${toolName} took ${diff.toFixed()} ms to execute`);
 
         broadcastToUser(ws.userId, {

@@ -50,18 +50,19 @@ model Chat {
 }
 
 model Message {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  chatId     String      @map("chat_id") @db.Uuid
-  type       MessageType
-  text       String?
-  finished   Boolean     @default(false)
-  hasAudio   Boolean     @default(false) @map("hasAudio")
-  provider   String?
-  model      String?
-  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  references Json        @default("[]") @map("references") @db.Json
-  files      Json        @default("[]") @db.Json
-  chat       Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chatId          String      @map("chat_id") @db.Uuid
+  type            MessageType
+  text            String?
+  finished        Boolean     @default(false)
+  hasAudio        Boolean     @default(false) @map("hasAudio")
+  provider        String?
+  model           String?
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  toolInvocations Json        @default("[]") @map("toolInvocations") @db.Json
+  reasoning       Json        @default("[]") @map("reasoning") @db.Json
+  files           Json        @default("[]") @db.Json
+  chat            Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("messages")
 }

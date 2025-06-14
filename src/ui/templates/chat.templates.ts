@@ -4,7 +4,8 @@ import {
     availableModels,
     chatContext,
     chats,
-    configuration, connected,
+    configuration,
+    connected,
     currentChatId,
     currentlyPlayingAudio,
     currentText,
@@ -27,7 +28,6 @@ import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
 import {focusChatInput, realtime} from "../index.ts";
@@ -35,27 +35,39 @@ import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botan
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
-import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {getHost} from "../classes/state/urlHelpers.ts";
+import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
+
+function parseMarkdown(text: string) {
+    const rawMdParsed = marked.parse(text, {
+        async: false
+    });
+    return DOMPurify.sanitize(rawMdParsed);
+}
 
 export class ChatTemplates {
     static chat() {
+        const menuShown = signal(false);
+
         return create("div")
-            .classes("flex", "flex-grow", "no-wrap", "relative")
+            .classes("flex", "no-wrap", "relative", "restrict-to-parent")
             .children(
-                ChatTemplates.chatList(),
-                ChatTemplates.chatBox(),
+                ChatTemplates.chatList("sidebar", menuShown),
+                ChatTemplates.chatBox(menuShown),
+                when(menuShown, ChatTemplates.chatList("burger-menu", menuShown))
             ).build();
     }
 
-    static chatBox() {
+    static chatBox(shown: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flex-grow", "bordered-panel", "relative", "chat-box", "no-gap")
+            .classes("flex-v", "container", "relative", "no-gap", "no-padding", "chat-box")
             .children(
+                ChatTemplates.burgerButton(shown),
                 ChatTemplates.botName(),
                 ChatTemplates.chatHistory(),
                 ChatTemplates.chatInput(),
@@ -105,37 +117,9 @@ export class ChatTemplates {
     }
 
     private static chatMessage(message: ChatMessage, isLast: boolean) {
-        if (message.type === "tool") {
-            const textIsJson = typeof message.text.constructor === "object";
-
-            return create("div")
-                .classes("flex-v", "small-gap", "bordered-panel")
-                .children(
-                    create("div")
-                        .classes("flex", "align-center", "chat-message", message.type)
-                        .children(
-                            GenericTemplates.icon("build_circle"),
-                            textIsJson ? GenericTemplates.properties(JSON.parse(message.text))
-                                : create("span")
-                                    .text(message.text)
-                                    .build(),
-                        ).build(),
-                    (message.references && message.references.length > 0) ? create("div")
-                        .classes("flex-v", "small-gap", "chat-message-references")
-                        .children(
-                            ...(message.references ?? []).map(r => ChatTemplates.reference(r)),
-                        ).build() : null,
-                ).build();
-        }
-
         if (message.text.trim().length === 0) {
             return nullElement();
         }
-
-        const rawMdParsed = marked.parse(message.text, {
-            async: false
-        });
-        const sanitized = DOMPurify.sanitize(rawMdParsed);
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-message", message.type)
@@ -148,12 +132,14 @@ export class ChatTemplates {
                 create("div")
                     .classes("flex", "align-center", "card", "message-content")
                     .children(
+                        ChatTemplates.toolCalls(message),
+                        ChatTemplates.reasoning(message),
                         create("div")
-                            .html(sanitized)
+                            .html(parseMarkdown(message.text))
                             .build(),
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
-                ChatTemplates.messageActions(message),
+                when(message.finished, ChatTemplates.messageActions(message)),
                 when(isLast, GenericTemplates.spacer()),
             ).build();
     }
@@ -182,14 +168,14 @@ export class ChatTemplates {
                             playAudio(message.id).then();
                         }
                     },
-                    classes: ["flex", "align-center"]
+                    classes: ["flex", "align-center", "icon-button"]
                 }) : null,
-                ChatTemplates.messageAction("content_copy", "Copy", async (e) => {
+                GenericTemplates.iconButton("content_copy", "Copy", async (e) => {
                     e.stopPropagation();
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
-                when(message.type === "assistant", ChatTemplates.messageAction("alt_route", "Branch within chat", async (e) => {
+                when(message.type === "assistant", GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
@@ -205,7 +191,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", ChatTemplates.messageAction("graph_1", "Branch to new chat", async (e) => {
+                when(message.type === "assistant", GenericTemplates.iconButton("graph_1", "Branch to new chat", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {
@@ -222,15 +208,6 @@ export class ChatTemplates {
                     .text(`Generated by ${message.provider}/${message.model}`)
                     .build())
             ).build();
-    }
-
-    static messageAction(icon: string, text: string, onclick: (e: any) => void) {
-        return button({
-            icon: { icon },
-            classes: ["flex", "align-center", "message-action"],
-            title: text,
-            onclick
-        });
     }
 
     private static date(time: number) {
@@ -298,73 +275,80 @@ export class ChatTemplates {
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
 
         return create("div")
-            .classes("chat-input", "relative", "flex-v", "small-gap", noHistoryClass)
-            .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
-            .ondragover((e: DragEvent) => {
-                e.preventDefault();
-                isDraggingOver.value = true;
-            })
-            .ondragleave(() => {
-                isDraggingOver.value = false;
-            })
-            .ondrop((e: DragEvent) => {
-                isDraggingOver.value = false;
-                handleDroppedFiles(e, files);
-            })
-            .onclick((e) => {
-                const preventIn = ["BUTTON", "INPUT", "SELECT"];
-                if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
-                    focusChatInput();
-                }
-            })
+            .classes("chat-input", noHistoryClass)
             .children(
                 create("div")
-                    .classes("flex", "space-between")
-                    .onclick(focusInput)
+                    .classes("dropzone", "relative", "flex-v", "small-gap")
+                    .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
+                    .ondragover((e: DragEvent) => {
+                        e.preventDefault();
+                        isDraggingOver.value = true;
+                    })
+                    .ondragleave(() => {
+                        isDraggingOver.value = false;
+                    })
+                    .ondragend(() => {
+                        isDraggingOver.value = false;
+                    })
+                    .ondrop((e: DragEvent) => {
+                        isDraggingOver.value = false;
+                        handleDroppedFiles(e, files);
+                    })
+                    .onclick((e) => {
+                        const preventIn = ["BUTTON", "INPUT", "SELECT"];
+                        if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
+                            console.log("focusing chat input")
+                            focusChatInput();
+                        }
+                    })
                     .children(
                         create("div")
-                            .classes("flex-v", "flex-grow")
-                            .children(
-                                when(noHistory, create("span")
-                                    .classes("onboarding-text")
-                                    .text("What's on your mind?")
-                                    .build()),
-                                when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
-                                ChatTemplates.actualChatInput(input, modelConfigured, send, files),
-                            ).build(),
-                    ).build(),
-                create("div")
-                    .classes("flex", "align-center", "space-between")
-                    .children(
-                        create("div")
-                            .classes("flex")
+                            .classes("flex", "space-between")
+                            .onclick(focusInput)
                             .children(
                                 create("div")
-                                    .classes("relative")
+                                    .classes("flex-v", "flex-grow")
                                     .children(
-                                        GenericTemplates.buttonWithIcon("settings", model, () => {
-                                            flyoutVisible.value = !flyoutVisible.value;
-                                            closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
-                                        }),
-                                        when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
+                                        when(noHistory, create("span")
+                                            .classes("onboarding-text")
+                                            .text("What's on your mind?")
+                                            .build()),
+                                        when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
+                                        ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                                     ).build(),
-                                GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                             ).build(),
                         create("div")
-                            .classes("flex", "align-center")
+                            .classes("flex", "align-center", "space-between")
                             .children(
-                                when(voiceConfigured, AudioTemplates.voiceButton()),
-                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
+                                create("div")
+                                    .classes("flex", "align-children")
+                                    .children(
+                                        create("div")
+                                            .classes("relative")
+                                            .children(
+                                                GenericTemplates.buttonWithIcon("settings", model, () => {
+                                                    flyoutVisible.value = !flyoutVisible.value;
+                                                }),
+                                                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
+                                            ).build(),
+                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files), ["onlyIconOnSmall"]),
+                                    ).build(),
+                                create("div")
+                                    .classes("flex", "align-center")
+                                    .children(
+                                        when(voiceConfigured, AudioTemplates.voiceButton()),
+                                        GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
+                                    ).build(),
                             ).build(),
-                    ).build(),
+                    ).build()
             ).build();
     }
 
-    static settingsFlyout(configured: Signal<boolean>) {
+    static settingsFlyout(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flyout", "above", "right")
+            .classes("flex-v", "flyout", "no-padding", "above", "right")
             .children(
-                ChatTemplates.llmSelector(configured),
+                ChatTemplates.llmSelector(configured, flyoutVisible),
             ).build();
     }
 
@@ -391,14 +375,7 @@ export class ChatTemplates {
             .build();
     }
 
-    static llmSelector(configured: Signal<boolean>) {
-        const providerFeatureMap: Record<LlmProvider, BotanikaFeature> = {
-            [LlmProvider.openai]: BotanikaFeature.OpenAI,
-            [LlmProvider.ollama]: BotanikaFeature.Ollama,
-            [LlmProvider.groq]: BotanikaFeature.Groq,
-            [LlmProvider.azure]: BotanikaFeature.Azure,
-            [LlmProvider.openrouter]: BotanikaFeature.OpenRouter,
-        };
+    private static llmSelector(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         const availableProviders = compute(c => Object.keys(LlmProvider).filter(p => {
             const feat = providerFeatureMap[p];
             if (!c.featureOptions || !c.featureOptions[feat]) {
@@ -436,55 +413,59 @@ export class ChatTemplates {
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
         anyProvider.subscribe((a) => configured.value = a);
         configured.value = anyProvider.value;
+        const currentProvider = compute(c => c.provider, configuration);
+        const currentModel = compute(c => c.model, configuration);
 
         return create("div")
-            .classes("flex-v", "select-container")
+            .classes("flex-v")
             .children(
                 when(anyProvider, create("div")
-                    .classes("flex")
+                    .classes("flex", "no-gap", "no-wrap", "full-width")
                     .children(
-                        compute(p => GenericTemplates.select("Provider", p.map(m => {
-                            return {
-                                value: m,
-                                text: m
-                            };
-                        }), provider, setProvider), availableProviders),
+                        compute(p => ChatTemplates.selectorPane(p.map(provider => ({
+                            id: provider,
+                            displayName: provider
+                        })), currentProvider, setProvider), availableProviders),
+                        compute((p, a) => {
+                            if (!a[p] || Object.keys(a).length === 0) {
+                                return nullElement();
+                            }
+
+                            return ChatTemplates.selectorPane(a[p].models ?? [], currentModel, async (newModel: string) => {
+                                configuration.value = {
+                                    ...configuration.value,
+                                    model: newModel
+                                };
+                                await Api.setConfigKey("model", newModel);
+                                flyoutVisible.value = false;
+                            });
+                        }, provider, filteredModels),
                     ).build()),
-                compute((p, a) => {
-                    if (!a[p] || Object.keys(a).length === 0) {
-                        return nullElement();
-                    }
-                    return ChatTemplates.modelSelector(a[p].models ?? []);
-                }, provider, filteredModels),
                 when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
             ).build();
     }
 
-    private static modelSelector(models: ModelDefinition[]) {
-        const model = compute(c => c.model, configuration);
-
-        return GenericTemplates.select("Model", models.sort((a, b) => a.id.localeCompare(b.id))
-            .map(m => {
-                return {
-                    value: m.id,
-                    text: m.id
-                };
-            }), model, async (newModel) => {
-            configuration.value = {
-                ...configuration.value,
-                model: newModel
-            };
-            await Api.setConfigKey("model", newModel);
-        });
+    private static selectorPane(p: { id: string, displayName: string }[], selected: Signal<string>, setValue: Function) {
+        return create("div")
+            .classes("flex-v", "no-gap", "selector-pane")
+            .children(
+                ...p.map(item => {
+                    return create("div")
+                        .classes("selector-row", compute((s): string => s === item.id ? "selected" : "_", selected))
+                        .onclick(() => setValue(item.id))
+                        .text(item.displayName);
+                })
+            ).build();
     }
 
-    private static chatList() {
+    private static chatList(context: string, shown: Signal<boolean>) {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
         const userPopupVisible = signal(false);
 
         return create("div")
-            .classes("flex-v", "bordered-panel", "chat-list")
+            .classes("flex-v", "container", "chat-list", context)
             .children(
+                when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
                 create("div")
                     .classes("flex", "space-between", "align-children")
                     .children(
@@ -509,11 +490,11 @@ export class ChatTemplates {
                                 when(userPopupVisible, GenericTemplates.userPopup()),
                             ).build(),
                     ).build(),
-                compute(c => ChatTemplates.chatListItems(c), chats),
+                compute(c => ChatTemplates.chatListItems(c, shown), chats),
             ).build();
     }
 
-    static chatListItems(chat: ChatContext[]) {
+    static chatListItems(chat: ChatContext[], menuShown: Signal<boolean>) {
         return create("div")
             .classes("flex-v", "flex-grow")
             .children(
@@ -521,11 +502,11 @@ export class ChatTemplates {
                     .text("No chats yet")
                     .build()
                 ),
-                ...chat.map(chatId => ChatTemplates.chatListItem(chatId))
+                ...chat.map(chatId => ChatTemplates.chatListItem(chatId, menuShown))
             ).build();
     }
 
-    static chatListItem(chat: ChatContext) {
+    static chatListItem(chat: ChatContext, menuShown: Signal<boolean>) {
         const active = compute(c => c && c.id === chat.id, chatContext);
         const activeClass = compute((c): string => c ? "active" : "_", active);
         const editing = signal(false);
@@ -533,7 +514,10 @@ export class ChatTemplates {
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
-            .onclick(() => currentChatId.value = chat.id)
+            .onclick(() => {
+                currentChatId.value = chat.id;
+                menuShown.value = false;
+            })
             .children(
                 create("div")
                     .classes("flex", "align-center", "no-wrap", "space-between")
@@ -561,28 +545,19 @@ export class ChatTemplates {
                                     });
                                     editing.value = false;
                                 }, ["no-wrap"])),
-                                when(editing, button({
-                                    icon: { icon: "edit" },
-                                    onclick: () => editing.value = true
-                                }), true),
-                                button({
-                                    icon: {
-                                        icon: "delete",
-                                    },
-                                    classes: ["flex", "align-center"],
-                                    onclick: (e) => {
-                                        e.stopPropagation();
-                                        createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
-                                            .classes("flex-v")
-                                            .children(
-                                                create("p")
-                                                    .text(`Are you sure you want to delete this chat?`)
-                                                    .build(),
-                                            ).build(), "Yes", "No", () => {
-                                            deleteChat(chat.id);
-                                        }));
-                                    }
-                                })
+                                when(editing, GenericTemplates.iconButton("edit", "Edit chat name", () => editing.value = true), true),
+                                GenericTemplates.iconButton("delete", "Edit chat name", (e) => {
+                                    e.stopPropagation();
+                                    createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
+                                        .classes("flex-v")
+                                        .children(
+                                            create("p")
+                                                .text(`Are you sure you want to delete this chat?`)
+                                                .build(),
+                                        ).build(), "Yes", "No", () => {
+                                        deleteChat(chat.id);
+                                    }));
+                                }),
                             ).build()
                     ).build(),
                 ChatTemplates.date(chat.createdAt),
@@ -590,36 +565,36 @@ export class ChatTemplates {
     }
 
     private static reference(r: ResourceReference) {
-        const expanded = signal(false);
-        const expandedClass = compute((e): string => e ? "expanded" : "_", expanded);
-
         return create("div")
-            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_", expandedClass)
-            .onclick(() => {
-                if (!r.snippet) {
-                    return;
+            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_")
+            .onmousedown((e) => {
+                if (r.link && e.button !== 2) {
+                    e.preventDefault();
+                    window.open(r.link, "_blank");
                 }
-
-                expanded.value = !expanded.value;
             })
             .children(
                 create("div")
-                    .classes("flex", "align-center", "padded", "pill-padding", "no-wrap")
+                    .classes("flex", "align-center", "no-wrap")
                     .children(
-                        r.link ? GenericTemplates.icon("link") : null,
                         (r.link && !r.link.startsWith("file://")) ? create("a")
                                 .href(r.link)
                                 .target("_blank")
                                 .title(r.link)
-                                .text(r.name)
-                                .build()
+                                .classes("flex", "align-children")
+                                .children(
+                                    GenericTemplates.icon("link"),
+                                    create("span")
+                                        .text(r.name)
+                                ).build()
                             : create("span")
                                 .classes("text-small")
                                 .text(r.name)
                                 .build(),
                     ).build(),
+                r.link ? create("span").classes("link-host").text(getHost(r.link)).build() : null,
                 r.snippet ? create("div")
-                        .classes("flex", "small-gap", "reference-preview", "padded-big")
+                        .classes("flex", "no-wrap", "small-gap", "reference-preview")
                         .children(
                             r.imageUrl ? create("img")
                                     .classes("thumbnail")
@@ -633,6 +608,59 @@ export class ChatTemplates {
                                 .build(),
                         ).build()
                     : null,
+            ).build();
+    }
+
+    private static toolCalls(message: ChatMessage) {
+        const expanded = signal(false);
+        const sources = message.toolInvocations?.flatMap(ti => ti.result?.references ?? []) ?? [];
+        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
+
+        return create("div")
+            .classes("flex-v", "small-gap", "no-wrap")
+            .children(
+                when(sources.length > 0, GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"])),
+                when(compute(e => e && sources.length > 0, expanded), create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        ...sources.map(ChatTemplates.reference),
+                    ).build())
+            ).build();
+    }
+
+    private static reasoning(message: ChatMessage) {
+        const expanded = signal(false);
+        const hasReasoning = (message.reasoning?.length ?? 0) > 0;
+        const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
+
+        return create("div")
+            .classes("flex-v", "small-gap", "no-wrap")
+            .children(
+                when(hasReasoning, GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"])),
+                when(compute(e => e && hasReasoning, expanded), create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        create("div")
+                            .classes("reasoning", "flex-v", "small-gap")
+                            .html(parseMarkdown((message.reasoning ?? []).reduce((acc, r) => {
+                                if (r.type === "text") {
+                                    acc += r.text;
+                                } else {
+                                    acc += "~~redacted reasoning~~";
+                                }
+
+                                return acc + "\r\n";
+                            }, "")))
+                            .build(),
+                    ).build())
+            ).build();
+    }
+
+    private static burgerButton(shown: Signal<boolean>) {
+        return create("div")
+            .classes("burger-button", compute(s => s ? "inline" : "absolute", shown))
+            .children(
+                GenericTemplates.iconButton(compute(s => s ? "close" : "menu", shown), "Close chat list", () => shown.value = !shown.value),
             ).build();
     }
 }
