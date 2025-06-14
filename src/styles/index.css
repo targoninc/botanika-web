@@ -214,7 +214,7 @@ div {
 }
 
 a {
-    color: var(--text);
+    color: var(--tint-main);
     text-decoration: none;
 }
 
