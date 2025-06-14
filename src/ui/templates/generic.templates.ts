@@ -570,13 +570,18 @@ export class GenericTemplates {
             .build();
     }
 
-    static movableDivider(width: Signal<number>) {
+    static movableDivider(querySelector: string) {
         let startX = 0;
         let startWidth = 0;
+        let toResize: HTMLElement | null = null;
 
         const handleDragStart = (e: MouseEvent) => {
             startX = e.clientX;
-            startWidth = width.value;
+            toResize = document.querySelector(querySelector);
+            if (!toResize) {
+                return;
+            }
+            startWidth = toResize.clientWidth;
 
             document.addEventListener('mousemove', handleDrag);
             document.addEventListener('mouseup', handleDragEnd);
@@ -586,14 +591,19 @@ export class GenericTemplates {
         };
 
         const handleDrag = (e: MouseEvent) => {
+            if (!toResize) return;
+
             const deltaX = e.clientX - startX;
-            width.value = Math.max(200, Math.min(800, startWidth + deltaX));
+            const newWidth = Math.max(200, Math.min(800, startWidth + deltaX));
+
+            toResize.style.width = `${newWidth}px`;
         };
 
         const handleDragEnd = () => {
             document.removeEventListener('mousemove', handleDrag);
             document.removeEventListener('mouseup', handleDragEnd);
             document.body.style.userSelect = '';
+            toResize = null;
         };
 
         return create("div")
