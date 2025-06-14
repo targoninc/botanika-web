@@ -533,7 +533,7 @@ export class ChatTemplates {
                     placeholder: "Search chats...",
                     name: "chatsSearch",
                     value: search,
-                    classes: ["full-width"],
+                    classes: ["chat-search"],
                     onchange: value => {
                         search.value = value;
                     }
