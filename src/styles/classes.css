@@ -672,6 +672,12 @@ kbd {
     display: none;
 }
 
+.burger-button.absolute {
+    position: absolute;
+    top: var(--gap-v);
+    left: var(--gap-v);
+}
+
 @media only screen and (max-width: 1200px) {
     .chat-list.sidebar {
         display: none;

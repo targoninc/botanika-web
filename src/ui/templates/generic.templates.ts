@@ -36,6 +36,15 @@ export class GenericTemplates {
         });
     }
 
+    static iconButton(icon: StringOrSignal, text: string, onclick: (e: any) => void) {
+        return button({
+            icon: { icon },
+            classes: ["flex", "align-center", "icon-button"],
+            title: text,
+            onclick
+        });
+    }
+
     static segmentedText(segments: TextSegment[]) {
         return create("span")
             .classes("segmented-text")
@@ -371,20 +380,11 @@ export class GenericTemplates {
         return create("div")
             .classes("parent-top-left", "flex", "code-copy-button")
             .children(
-                GenericTemplates.iconButton("content_copy", () => {
+                GenericTemplates.iconButton("content_copy", "Copy to clipboard", () => {
                     navigator.clipboard.writeText(content);
                     toast("Copied to clipboard");
                 }),
             ).build();
-    }
-
-    static iconButton(icon: string, onclick = () => {
-    }) {
-        return button({
-            icon: {icon},
-            classes: ["flex"],
-            onclick
-        });
     }
 
     static keyValueInput(headers: Record<string, string> = {}, onChange: (value: Record<string, string>) => void) {
