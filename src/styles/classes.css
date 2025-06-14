@@ -709,8 +709,12 @@ kbd {
     max-height: 100%;
     width: max(30%, 200px);
     max-width: min(30%, 500px);
-    overflow-y: auto;
     min-width: 200px;
+}
+
+.chat-list-items {
+    overflow: auto;
+    padding-bottom: 20dvh;
 }
 
 .chat-list-item {
@@ -872,11 +876,17 @@ pre {
     box-shadow: var(--flyout-shadow);
 }
 
-.bot-icon {
+.bot-icon, .bot-name-text {
     background: var(--bg-2);
     border: 1px solid var(--tint-muted);
-    border-radius: 50%;
+    border-radius: 999px;
     padding: var(--gap-h);
+}
+
+.bot-name-text {
+    border-radius: 0 999px 999px 0;
+    padding-left: 1.5em;
+    margin-left: -1.5em;
 }
 
 .status-indicator {

@@ -85,7 +85,11 @@ export class ChatTemplates {
                         GenericTemplates.statusIndicator(connected),
                     ).build(),
                 create("span")
+                    .classes("bot-name-text")
                     .text(compute(c => c.botname ?? "Anika", configuration))
+                    .build(),
+                create("span")
+                    .text(compute(c => c.name ?? "New chat", chatContext))
                     .build(),
             ).build();
     }
@@ -125,12 +129,12 @@ export class ChatTemplates {
             .classes("flex-v", "small-gap", "chat-message", message.type)
             .children(
                 create("div")
-                    .classes("flex", "align-center", "message-time")
+                    .classes("flex", "message-time")
                     .children(
                         ChatTemplates.date(message.time),
                     ).build(),
                 create("div")
-                    .classes("flex", "align-center", "card", "message-content")
+                    .classes("flex-v", "card", "message-content")
                     .children(
                         ChatTemplates.toolCalls(message),
                         ChatTemplates.reasoning(message),
@@ -496,7 +500,7 @@ export class ChatTemplates {
 
     static chatListItems(chat: ChatContext[], menuShown: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flex-grow")
+            .classes("flex-v", "flex-grow", "chat-list-items")
             .children(
                 when(chat.length === 0, create("span")
                     .text("No chats yet")
@@ -616,16 +620,16 @@ export class ChatTemplates {
         const sources = message.toolInvocations?.flatMap(ti => ti.result?.references ?? []) ?? [];
         const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
-        return create("div")
+        return when(sources.length > 0, create("div")
             .classes("flex-v", "small-gap", "no-wrap")
             .children(
-                when(sources.length > 0, GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"])),
-                when(compute(e => e && sources.length > 0, expanded), create("div")
+                GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"]),
+                when(expanded, create("div")
                     .classes("flex-v", "small-gap")
                     .children(
                         ...sources.map(ChatTemplates.reference),
                     ).build())
-            ).build();
+            ).build());
     }
 
     private static reasoning(message: ChatMessage) {
@@ -633,11 +637,11 @@ export class ChatTemplates {
         const hasReasoning = (message.reasoning?.length ?? 0) > 0;
         const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
-        return create("div")
+        return when(hasReasoning, create("div")
             .classes("flex-v", "small-gap", "no-wrap")
             .children(
-                when(hasReasoning, GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"])),
-                when(compute(e => e && hasReasoning, expanded), create("div")
+                GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"]),
+                when(expanded, create("div")
                     .classes("flex-v", "small-gap")
                     .children(
                         create("div")
@@ -653,7 +657,7 @@ export class ChatTemplates {
                             }, "")))
                             .build(),
                     ).build())
-            ).build();
+            ).build());
     }
 
     private static burgerButton(shown: Signal<boolean>) {
