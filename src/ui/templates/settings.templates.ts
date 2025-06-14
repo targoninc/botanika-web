@@ -263,7 +263,7 @@ export class SettingsTemplates {
                     }))) : [];
 
                     return create("div")
-                        .classes("flex-v", "card")
+                        .classes("flex-v")
                         .children(
                             create("div")
                                 .classes("flex", allSet ? "positive" : "negative")
