@@ -146,6 +146,11 @@
     transition: width var(--animation-duration) ease;
 }
 
+.container {
+    padding: var(--gap-v);
+    background: var(--gradient-2);
+}
+
 .panel, .bordered-panel, .card, .secondary-card {
     padding: var(--gap-v);
     border-radius: var(--input-border-radius);
@@ -469,13 +474,16 @@ kbd {
     margin: 0 auto;
     outline: 1px solid var(--bg-4);
     border-radius: var(--input-border-radius);
-    padding: var(--gap-v);
     background: var(--gradient-1);
     transition: outline-color var(--animation-duration) ease,
     box-shadow var(--animation-duration) ease,
     width var(--animation-duration) ease,
     outline-width var(--animation-duration) ease,
     transform var(--animation-duration) ease;
+    position: absolute;
+    bottom: var(--gap-v);
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .chat-input:focus-within {
@@ -491,12 +499,16 @@ kbd {
     transform: translateY(-50dvh);
 }
 
-.chat-input.drag-over {
+.dropzone {
+    padding: var(--gap-v);
+}
+
+.dropzone.drag-over {
     border-color: var(--tint-present);
     box-shadow: var(--tint-shadow);
 }
 
-.chat-input.drag-over:after {
+.dropzone.drag-over:after {
     content: "";
     position: absolute;
     top: 0;

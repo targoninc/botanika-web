@@ -92,7 +92,7 @@ export class SettingsTemplates {
         const loading = signal(false);
 
         return create("div")
-            .classes("flex-v", "bordered-panel", "overflow")
+            .classes("flex-v", "container", "overflow")
             .children(
                 create("div")
                     .classes("flex-v", "restrict-width")
