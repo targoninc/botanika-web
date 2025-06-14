@@ -17,7 +17,6 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -78,8 +77,9 @@ export class GenericTemplates {
             .classes("flex", ...classes)
             .onclick(onclick)
             .children(
-                GenericTemplates.icon(icon, iconClasses),
+                GenericTemplates.icon(icon, iconClasses.concat("no-pointer-events")),
                 when(text, create("span")
+                    .classes("no-pointer-events")
                     .text(text)
                     .build()),
                 GenericTemplates.hotkey(hotkey),
@@ -521,7 +521,6 @@ export class GenericTemplates {
             .classes("clickable")
             .onclick(() => {
                 userPopupVisible.value = !userPopupVisible.value;
-                closeOnClickIfOutsideOfParent("flyout", userPopupVisible);
             })
             .children(
                 GenericTemplates.icon(image, ["user-image"])

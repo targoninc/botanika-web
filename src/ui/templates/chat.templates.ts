@@ -28,7 +28,6 @@ import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
 import {focusChatInput, realtime} from "../index.ts";
@@ -36,13 +35,13 @@ import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botan
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
-import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 import {getHost} from "../classes/state/urlHelpers.ts";
+import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -66,7 +65,7 @@ export class ChatTemplates {
 
     static chatBox(shown: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "container", "relative", "no-gap", "chat-box")
+            .classes("flex-v", "container", "relative", "no-gap", "no-padding", "chat-box")
             .children(
                 ChatTemplates.burgerButton(shown),
                 ChatTemplates.botName(),
@@ -307,6 +306,7 @@ export class ChatTemplates {
                     .onclick((e) => {
                         const preventIn = ["BUTTON", "INPUT", "SELECT"];
                         if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
+                            console.log("focusing chat input")
                             focusChatInput();
                         }
                     })
@@ -337,9 +337,8 @@ export class ChatTemplates {
                                             .children(
                                                 GenericTemplates.buttonWithIcon("settings", model, () => {
                                                     flyoutVisible.value = !flyoutVisible.value;
-                                                    closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
                                                 }),
-                                                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
+                                                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
                                             ).build(),
                                         GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files), ["onlyIconOnSmall"]),
                                     ).build(),
@@ -354,11 +353,11 @@ export class ChatTemplates {
             ).build();
     }
 
-    static settingsFlyout(configured: Signal<boolean>) {
+    static settingsFlyout(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flyout", "above", "right")
+            .classes("flex-v", "flyout", "no-padding", "above", "right")
             .children(
-                ChatTemplates.llmSelector(configured),
+                ChatTemplates.llmSelector(configured, flyoutVisible),
             ).build();
     }
 
@@ -385,14 +384,7 @@ export class ChatTemplates {
             .build();
     }
 
-    static llmSelector(configured: Signal<boolean>) {
-        const providerFeatureMap: Record<LlmProvider, BotanikaFeature> = {
-            [LlmProvider.openai]: BotanikaFeature.OpenAI,
-            [LlmProvider.ollama]: BotanikaFeature.Ollama,
-            [LlmProvider.groq]: BotanikaFeature.Groq,
-            [LlmProvider.azure]: BotanikaFeature.Azure,
-            [LlmProvider.openrouter]: BotanikaFeature.OpenRouter,
-        };
+    private static llmSelector(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         const availableProviders = compute(c => Object.keys(LlmProvider).filter(p => {
             const feat = providerFeatureMap[p];
             if (!c.featureOptions || !c.featureOptions[feat]) {
@@ -430,46 +422,49 @@ export class ChatTemplates {
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
         anyProvider.subscribe((a) => configured.value = a);
         configured.value = anyProvider.value;
+        const currentProvider = compute(c => c.provider, configuration);
+        const currentModel = compute(c => c.model, configuration);
 
         return create("div")
-            .classes("flex-v", "select-container")
+            .classes("flex-v")
             .children(
                 when(anyProvider, create("div")
-                    .classes("flex")
+                    .classes("flex", "no-gap", "no-wrap", "full-width")
                     .children(
-                        compute(p => GenericTemplates.select("Provider", p.map(m => {
-                            return {
-                                value: m,
-                                text: m
-                            };
-                        }), provider, setProvider), availableProviders),
+                        compute(p => ChatTemplates.selectorPane(p.map(provider => ({
+                            id: provider,
+                            displayName: provider
+                        })), currentProvider, setProvider), availableProviders),
+                        compute((p, a) => {
+                            if (!a[p] || Object.keys(a).length === 0) {
+                                return nullElement();
+                            }
+
+                            return ChatTemplates.selectorPane(a[p].models ?? [], currentModel, async (newModel: string) => {
+                                configuration.value = {
+                                    ...configuration.value,
+                                    model: newModel
+                                };
+                                await Api.setConfigKey("model", newModel);
+                                flyoutVisible.value = false;
+                            });
+                        }, provider, filteredModels),
                     ).build()),
-                compute((p, a) => {
-                    if (!a[p] || Object.keys(a).length === 0) {
-                        return nullElement();
-                    }
-                    return ChatTemplates.modelSelector(a[p].models ?? []);
-                }, provider, filteredModels),
                 when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
             ).build();
     }
 
-    private static modelSelector(models: ModelDefinition[]) {
-        const model = compute(c => c.model, configuration);
-
-        return GenericTemplates.select("Model", models.sort((a, b) => a.id.localeCompare(b.id))
-            .map(m => {
-                return {
-                    value: m.id,
-                    text: m.id
-                };
-            }), model, async (newModel) => {
-            configuration.value = {
-                ...configuration.value,
-                model: newModel
-            };
-            await Api.setConfigKey("model", newModel);
-        });
+    private static selectorPane(p: { id: string, displayName: string }[], selected: Signal<string>, setValue: Function) {
+        return create("div")
+            .classes("flex-v", "no-gap", "selector-pane")
+            .children(
+                ...p.map(item => {
+                    return create("div")
+                        .classes("selector-row", compute((s): string => s === item.id ? "selected" : "_", selected))
+                        .onclick(() => setValue(item.id))
+                        .text(item.displayName);
+                })
+            ).build();
     }
 
     private static chatList(context: string, shown: Signal<boolean>) {
