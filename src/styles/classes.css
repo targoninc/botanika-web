@@ -961,14 +961,15 @@ pre {
     min-height: max-content;
     max-width: max-content;
     max-height: max-content;
+    box-shadow: var(--flyout-shadow);
 }
 
 .flyout.above {
-    bottom: 100%;
+    bottom: calc(100% + 1px);
 }
 
 .flyout.below {
-    top: 100%;
+    top: calc(100% + 1px);
 }
 
 .flyout.left {
