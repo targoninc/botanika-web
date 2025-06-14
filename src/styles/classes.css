@@ -927,10 +927,11 @@ pre {
     border: 1px solid var(--tint-muted);
     padding: var(--gap-v);
     z-index: 999;
-    min-width: max-content;
+    min-width: 100%;
     min-height: max-content;
     max-width: max-content;
     max-height: max-content;
+    width: calc(100% - 2 * var(--gap-v));
 }
 
 .flyout.above {
