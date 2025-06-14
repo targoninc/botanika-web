@@ -869,6 +869,7 @@ pre {
     padding: var(--gap-h) var(--gap-v) var(--gap-h) var(--gap-h);
     border-radius: 999px;
     border: 1px solid var(--tint-main);
+    box-shadow: var(--flyout-shadow);
 }
 
 .bot-icon {

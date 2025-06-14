@@ -53,7 +53,7 @@ export async function createChat(userId: string, newMessage: ChatMessage, chatId
     return chatContext;
 }
 
-export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): Array<AiMessage> {
+export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): AiMessage[] {
     return [
         {
             role: "system",
@@ -71,7 +71,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
             Don't refer to info about the user explicitly, only if it is necessary or requested by the user.
             ${configuration.userDescription ? `Here is a self-written description about them: ${configuration.userDescription}` : ""}`
         },
-        ...messages.map(m => {
+        ...messages.map<AiMessage>(m => {
             if (m.type === "user") {
                 return {
                     role: "user",
@@ -80,7 +80,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                         contentType: f.mimeType,
                         url: `data:${f.mimeType};base64,${f.base64}`
                     })) : []
-                } satisfies AiMessage;
+                };
             }
 
             return {
@@ -101,8 +101,8 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                         mimeType: f.mimeType,
                     }))
                 ],
-            } satisfies AiMessage;
-        }).filter(m => !!m)
+            };
+        })
     ];
 }
 
