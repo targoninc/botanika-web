@@ -42,7 +42,7 @@ export const connected = signal(false);
 export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
-        setRootCssVar("--tint", c.tintColor ?? "#00ff00");
+        setRootCssVar("--tint", c.tintColor ?? "#5367ac");
     });
 
     currentChatId.subscribe(c => {
