@@ -721,6 +721,14 @@ kbd {
     width: max(30%, 200px);
 }
 
+.movable-divider {
+    cursor: ew-resize;
+}
+
+.rotate90 {
+    transform: rotate(90deg);
+}
+
 .chat-list-items {
     overflow: auto;
     padding-bottom: 20dvh;

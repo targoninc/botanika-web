@@ -571,10 +571,34 @@ export class GenericTemplates {
     }
 
     static movableDivider(width: Signal<number>) {
-        // set width.value to current width.value combined with mouse X delta
+        let startX = 0;
+        let startWidth = 0;
+
+        const handleDragStart = (e: MouseEvent) => {
+            startX = e.clientX;
+            startWidth = width.value;
+
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', handleDragEnd);
+
+            // Prevent text selection while dragging
+            document.body.style.userSelect = 'none';
+        };
+
+        const handleDrag = (e: MouseEvent) => {
+            const deltaX = e.clientX - startX;
+            width.value = Math.max(200, Math.min(800, startWidth + deltaX));
+        };
+
+        const handleDragEnd = () => {
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.body.style.userSelect = '';
+        };
 
         return create("div")
-            .classes("full-height", "movable-divider")
+            .classes("full-height", "movable-divider", "flex", "align-children")
+            .onmousedown(handleDragStart)
             .children(
                 GenericTemplates.icon("drag_handle", ["rotate90"])
             ).build();

@@ -57,7 +57,7 @@ export class ChatTemplates {
         const width = signal(200);
 
         return create("div")
-            .classes("flex", "no-wrap", "relative", "restrict-to-parent")
+            .classes("flex", "no-wrap", "no-gap", "relative", "restrict-to-parent")
             .children(
                 ChatTemplates.chatList("sidebar", menuShown, width),
                 GenericTemplates.movableDivider(width),
