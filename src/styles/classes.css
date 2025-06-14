@@ -484,6 +484,7 @@ kbd {
     bottom: var(--gap-v);
     left: 50%;
     transform: translateX(-50%);
+    max-width: calc(100% - 2 * var(--gap-v));
 }
 
 .chat-input:focus-within {
@@ -630,10 +631,29 @@ kbd {
     box-shadow: 0 0 30px -10px rgba(125, 125, 125, 0.2);
 }
 
+.burger-button {
+    display: none;
+}
+
 @media only screen and (max-width: 1200px) {
-    .chat-list {
+    .chat-list.sidebar {
         display: none;
     }
+
+    .burger-button {
+        display: flex;
+    }
+}
+
+.burger-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    width: 100dvw !important;
+    height: 100dvh !important;
+    z-index: 1000;
+    max-width: 100dvw !important;
 }
 
 .chat-list {
