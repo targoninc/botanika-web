@@ -576,9 +576,8 @@ kbd {
 }
 
 .time {
-    font-size: 0.8em;
+    font-size: 0.7em;
     color: var(--text-4);
-    font-family: monospace;
 }
 
 .text-small {
@@ -716,6 +715,7 @@ kbd {
 .chat-list-items {
     overflow: auto;
     padding-bottom: 20dvh;
+    padding-right: var(--gap-v);
 }
 
 .chat-list-item {
