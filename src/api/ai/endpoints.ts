@@ -1,43 +1,41 @@
 import {Application, Request, Response} from "express";
-import {ChatMessage} from "../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {removeOngoingConversation, sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
+import {
+    sendEvent,
+    removeOngoingConversation,
+    sendChatUpdate,
+    WebsocketConnection
+} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
 
-export async function getAudio(lastMessage: ChatMessage): Promise<string> {
-    if (lastMessage.type === "assistant") {
-        const blob = await getTtsAudio(lastMessage.text);
-        await AudioStorage.writeAudio(lastMessage.id, blob);
-        return AudioStorage.getLocalFileUrl(lastMessage.id);
-    }
-
-    return null;
+export async function getAudio(lastMessage: AssistantMessage): Promise<string> {
+    const blob = await getTtsAudio(lastMessage.text);
+    await AudioStorage.writeAudio(lastMessage.id, blob);
+    return AudioStorage.getLocalFileUrl(lastMessage.id);
 }
 
-export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
+export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: AssistantMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
-        sendChatUpdate(ws, {
+        sendEvent({
+            type: "audioGenerated",
             chatId,
-            timestamp: Date.now(),
-            messages: [
-                {
-                    ...lastMessage,
-                    hasAudio: true
-                }
-            ]
-        })
+            userId: ws.userId,
+            messageId: lastMessage.id,
+            audioUrl
+        });
     }
 }
 
 export async function getChatsEndpoint(req: Request, res: Response) {
     const from = req.query.from ? new Date(req.query.from as string) : null;
 
-    const chats = await ChatStorage.getUserChats(req.user.id, from);
+    const chats = await ChatStorage.getUserChats(req.user!.id, from);
     res.send(chats);
 }
 
@@ -48,7 +46,7 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
+    ChatStorage.readChatContext(req.user!.id, chatId).then(chatContext => {
         if (!chatContext) {
             res.status(404).send('Chat not found');
             return;

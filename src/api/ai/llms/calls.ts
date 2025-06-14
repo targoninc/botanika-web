@@ -4,12 +4,13 @@ import {CLI} from "../../CLI";
 import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
-import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
+import {sendEvent, sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
-import {AiMessage} from "./aiMessage.ts";
+import {browserEmail} from "zod/dist/types/v4/core/regexes";
 
-export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{
-    thoughts: string;
+export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
+    thoughts: string | null;
     text: string;
     steps: Array<StepResult<ToolSet>>
 }> {
@@ -28,7 +29,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     if (res.text.length === 0) {
         CLI.warning("Got empty response");
         return {
-            thoughts: undefined,
+            thoughts: null,
             text: "",
             steps: []
         };
@@ -36,7 +37,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
 
     const thoughts = res.text.match(/<think>(.*?)<\/think>/gms);
     return {
-        thoughts: thoughts ? thoughts[0].trim() : undefined,
+        thoughts: thoughts ? thoughts[0].trim() : null,
         text: res.text.replace(/<think>(.*?)<\/think>/gms, "").trim(),
         steps: res.steps
     };
@@ -45,7 +46,17 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
 export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
+export async function streamResponseAsMessage(
+    ws: WebsocketConnection,
+    maxSteps: number,
+    request: NewMessageEventData,
+    model: LanguageModelV1,
+    tools: ToolSet,
+    messages: CoreMessage[],
+    chatId: string
+): Promise<Signal<{ type: "assistant" } & ChatMessage>> {
     CLI.debug("Streaming response...");
+
     const {
         textStream,
         files,
@@ -68,32 +79,112 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
                 }
             }
         },
-        onError: event => sendError(ws, event.error.toString()),
+        onError: event => sendError(ws, event?.error?.toString() ?? event.toString()),
     });
 
-    updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
+    const messageId = uuidv4();
 
-    files.then((f: GeneratedFile[]) => {
+    sendEvent({
+        userId: ws.userId,
+        type: "messageCreated",
+        chatId: chatId,
+        message: {
+            id: messageId,
+            text: "",
+            time: Date.now(),
+            type: "assistant",
+            model: request.model,
+            provider: request.provider,
+            hasAudio: false,
+            files: [],
+            references: [],
+            finished: false
+        }
+    });
+
+    const updateMessages = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
+
+    const updateFiles = files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
-        message.value = {
-            ...message.value,
-            files: f.map(file => <MessageFile>{
-                base64: file.base64,
-                mimeType: file.mimeType,
-            })
-        };
+
+        const files = f.map(file => ({
+            base64: file.base64,
+            mimeType: file.mimeType,
+        }));
+
+        sendEvent({
+            type: "updateFiles",
+            userId: ws.userId,
+            chatId,
+            messageId,
+            files
+        });
+
+        return files;
     }).catch((err) => {
         console.error(err);
+        return [];
     });
 
-    reasoningDetails.then(r => {
-        message.value = {
-            ...message.value,
-            reasoning: r
-        };
-    })
+    const updateSources = sources.then((sources: LanguageModelSourceV1[]) => {
+        CLI.debug(`Got ${sources.length} sources`);
+        const references = sources.map(source => ({
+            name: source.title ?? source.id,
+            link: source.url,
+            type: "resource-reference",
+            snippet: source.id
+        } as const));
 
-    return {
-        steps
-    };
+        sendEvent({
+            type: "updateReferences",
+            userId: ws.userId,
+            chatId: chatId,
+            messageId: messageId,
+            references
+        });
+
+        return references;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
+
+    const updateText = text.then((text: string) => {
+        sendEvent(ws.userId, {
+            type: "messageTextCompleted",
+            chatId: chatId,
+            messageId,
+            text
+        });
+
+        return text;
+    });
+
+    const updateSteps = steps.then((steps: Array<StepResult<ToolSet>>) => {
+        /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.
+        broadcastToUser(ws.userId, {
+            type: "updateSteps",
+            chatId: chatId,
+            messageId: message.value.id,
+            steps: steps
+        });
+        */
+
+        return steps;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
+
+    return signal<ChatMessage>({
+        id: messageId,
+        type: "assistant",
+        text: await updateText,
+        time: Date.now(),
+        finished: false,
+        provider: request.provider,
+        model: request.model,
+        files: await updateFiles,
+        references: await updateSources
+    });
 }

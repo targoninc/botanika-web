@@ -42,7 +42,7 @@ export async function createClients(userId: string) {
 export async function getAllMcpTools(clients: TempMcpClient[]) {
     const tools: ToolSet = {};
     for (const client of clients) {
-        const clientTools = await client.tools() as ToolSet;
+        const clientTools = await client.tools();
         for (const toolKey in clientTools) {
             tools[toolKey] = clientTools[toolKey];
         }

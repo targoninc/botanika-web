@@ -65,7 +65,7 @@ export class ChatStorage {
         }
     }
 
-    static async readChatContext(userId: string, chatId: string): Promise<ChatContext> {
+    static async readChatContext(userId: string, chatId: string): Promise<ChatContext | null> {
         const chat = await db.chat.findFirst({
             where: {
                 id: chatId,
@@ -115,7 +115,7 @@ export class ChatStorage {
         });
     }
 
-    static async getUserChats(userId: string, from: Date = null): Promise<ChatContext[]> {
+    static async getUserChats(userId: string, from: Date | null = null): Promise<Omit<ChatContext, "history">[]> {
         const whereClause: any = { userId: userId };
 
         if (from) {
@@ -127,7 +127,7 @@ export class ChatStorage {
         });
 
         return chats.map(c => {
-            return <ChatContext>{
+            return {
                 id: c.id,
                 name: c.name,
                 createdAt: c.createdAt.getTime(),

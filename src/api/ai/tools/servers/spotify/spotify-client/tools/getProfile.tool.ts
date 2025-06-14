@@ -17,7 +17,7 @@ async function getProfile(userConfig: Configuration): Promise<SpotifyApi.Current
     }
 }
 
-async function getProfileToolCall(userConfig: Configuration) {
+async function getProfileToolCall(userConfig: Configuration) : Promise<ChatToolResult> {
     if (!checkIfEnabled(userConfig)) {
         throw new Error("Spotify is not configured");
     }
@@ -25,7 +25,7 @@ async function getProfileToolCall(userConfig: Configuration) {
     const result = await getProfile(userConfig);
     const country = result.country ? `, ${result.country}` : "";
 
-    return <ChatToolResult>{
+    return {
         text: "Found profile info",
         references: [{
             type: "resource-reference",

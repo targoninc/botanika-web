@@ -1,6 +1,6 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
+import {sendEvent, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
 import {CLI} from "../CLI.ts";
@@ -30,10 +30,11 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
     const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
-    sendChatUpdate(ws, {
+    sendEvent({
+        userId: ws.userId,
+        type: "chatCreated",
         chatId: chatId,
-        timestamp: Date.now(),
-        messages: [chatMsg]
+        userMessage: chatMsg
     });
 
     let chat: ChatContext;
@@ -42,9 +43,10 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
-            sendChatUpdate(ws, {
+            sendEvent({
+                userId: ws.userId,
+                type: "chatNameSet",
                 chatId: chat.id,
-                timestamp: Date.now(),
                 name,
             });
             chat.name = name;
@@ -55,17 +57,11 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         });
     }
 
-    sendChatUpdate(ws, {
-        chatId: chatId,
-        timestamp: Date.now(),
-        name: chat.name
-    });
-
     CLI.debug(`Chat created for user ${ws.userId}`);
     return chat;
 }
 
-async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1, modelSupportsFiles: boolean) {
+async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     let chat: ChatContext;
     if (!request.chatId) {
         chat = await createNewChat(ws, request, model);
@@ -76,13 +72,7 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
             throw new Error("Chat not found");
         }
 
-        CLI.debug(`${chat.history.length} existing messages`);
-        chat.history.push(newUserMessage(request.provider, request.model, request.message, modelSupportsFiles ? request.files : []));
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: chat.history
-        });
+
     }
     return chat;
 }
@@ -95,7 +85,7 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
     const builtInTools = getBuiltInTools(userConfig, message);
     return {
         mcpInfo,
-        tools: Object.assign(builtInTools, mcpInfo.tools) as ToolSet
+        tools: Object.assign(builtInTools, mcpInfo.tools)
     };
 }
 
@@ -110,25 +100,22 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
         const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
-        const m = newAssistantMessage(response.text, request.provider, request.model);
+        const message = newAssistantMessage(response.text, request.provider, request.model);
 
         // Set the message as finished
-        m.time = Date.now();
-        m.finished = true;
+        message.time = Date.now();
+        message.finished = true;
 
-        // Send the message to the client
-        sendChatUpdate(ws, {
+        sendEvent({
+            userId: ws.userId,
+            type: "messageCreated",
             chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [m]
-        });
-
-        // Add the message to the chat history
-        chat.history.push(m);
+            message: message
+        })
 
         // Send audio if enabled
-        if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStop(ws, chat.id, m);
+        if (userConfig.enableTts && message.text.length > 0) {
+            await sendAudioAndStop(ws, chat.id, message);
         }
     }
 }
@@ -152,19 +139,14 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
 
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
-    const chat = await getOrCreateChat(ws, request, model, modelSupportsFiles);
-    const messageId = uuidv4();
-    const assMessage = signal<ChatMessage>({
-        id: messageId,
-        type: "assistant",
-        text: "",
-        time: Date.now(),
-        files: [],
-        finished: false,
-        provider: request.provider,
-        model: request.model
-    });
-    const toolInfo = await getTools(modelDefinition, userConfig, ws, assMessage);
+
+    const chat = await getOrCreateChatWithMessage(ws, request, model);
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
+
+    if (request.chatId) {
+        CLI.debug(`${chat.history.length} existing messages`);
+        chat.history.push(newUserMessage(request.provider, request.model, request.message, request.files));
+    }
 
     /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         sendWarning(ws, `Model ${request.model} might not support tool calls`);
@@ -176,17 +158,16 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const maxSteps = userConfig.maxSteps ?? 5;
     const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
 
-    // Wait for the steps to complete
-    const steps = await streamResponse.steps;
-
     // Wait for the message to be finished
     const waitForMessageFinished = new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
-            if (assMessage.value.finished) {
+            if (streamResponse.value.finished) {
                 clearInterval(checkInterval);
-                chat.history.push(assMessage.value);
-                if (userConfig.enableTts && assMessage.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, assMessage.value).then(() => {
+                // Add the finished message to the chat history
+                chat.history.push(streamResponse.value);
+                // Send audio if enabled
+                if (userConfig.enableTts && streamResponse.value.text.length > 0) {
+                    sendAudioAndStop(ws, chat.id, streamResponse.value).then(() => {
                         resolve();
                     });
                 } else {

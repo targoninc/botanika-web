@@ -9,18 +9,18 @@ import {processUpdate} from "../state/store.ts";
 
 export async function handleMessage(event: BotanikaServerEvent<any>) {
     switch (event.type) {
-        case BotanikaServerEventType.chatUpdate:
+        case "chatCreated":
             await processUpdate(event.data as ChatUpdate);
             break;
-        case BotanikaServerEventType.error:
+        case "error":
             console.error(`Error from server`, event.data);
             toast(`Error from server: ${(event.data as ServerErrorEvent).error}`, null, ToastType.negative);
             break;
-        case BotanikaServerEventType.warning:
+        case "warning":
             console.warn(`Warning from server`, event.data);
             toast(`Warning from server: ${(event.data as ServerWarningEvent).warning}`, null, ToastType.sensitive);
             break;
-        case BotanikaServerEventType.log:
+        case "log":
             console.log(`Log from server`, event.data);
             break;
         default:

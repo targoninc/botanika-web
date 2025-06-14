@@ -1,59 +1,53 @@
 import {CLI} from "../../CLI";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {v4 as uuidv4} from "uuid";
-import {ToolResultUnion, ToolSet} from "ai";
-import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
+import {sendEvent, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {ToolExecutionOptions} from "ai";
 import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {Signal} from "@targoninc/jess";
 
-async function getToolResult(id: string, execute: (input: any) => Promise<any>, input: any) {
+export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, ws: WebsocketConnection, chat: ChatContext) {
+    return async (input: TParams, options: ToolExecutionOptions) => {
+        const messageId = uuidv4();
+        sendEvent(ws.userId, {
+            type: "toolCallStarted",
+            chatId: chat.id,
+            toolName: toolName,
+            messageId
+        });
     const start = performance.now();
-    CLI.debug(`Calling tool ${id}`);
-    let result: ChatToolResult;
-    try {
-        result = await execute(input);
-    } catch (e) {
-        result = <ChatToolResult>{
-            text: `Tool ${id} failed: ${e.toString()}`,
-        };
-    }
+        CLI.debug(`Calling tool ${toolName}`);
+
+        const result = await execute(input)
+            .catch(e => ({
+                error: `Tool ${toolName} failed: ${e.toString()}`,
+            }));
+
     const diff = performance.now() - start;
-    CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
-    return result;
-}
+        CLI.success(`Tool ${toolName} took ${diff.toFixed()} ms to execute`);
 
-export function wrapTool(id: string, execute: (input: any) => Promise<any>, message: Signal<ChatMessage>) {
-    return async (input: any, ...args: any[]) => {
-        let assMsg = structuredClone(message.value);
-        const callId = uuidv4();
-
-        if (!assMsg.toolInvocations) {
-            assMsg.toolInvocations = [];
-        }
-
-        assMsg.toolInvocations.push({
-            toolCallId: callId,
-            args: input,
-            toolName: id,
-            state: "call"
+        sendEvent(ws.userId, {
+            type: "toolCallFinished",
+            chatId: chat.id,
+            messageId,
+            toolName: toolName,
+            toolResult: result
         });
-        message.value = assMsg;
 
-        let result = await getToolResult(id, execute, input);
-
-        assMsg = structuredClone(message.value);
-        assMsg.toolInvocations = assMsg.toolInvocations.map(ti => {
-            if (ti.toolCallId === callId) {
-                return {
-                    ...ti,
-                    state: "result",
-                    result
-                };
-            }
-            return ti;
+        chat.history.push({
+            toolResult: {
+                type: "tool-result",
+                toolName: toolName,
+                toolCallId: options.toolCallId,
+                result,
+                isError: false,
+            },
+            finished: true,
+            text: `Tool ${toolName} finished`,
+            time: Date.now(),
+            type: "tool",
+            id: messageId,
         });
-        message.value = assMsg;
         return result;
     }
 }

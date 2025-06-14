@@ -3,18 +3,24 @@ import {Configuration} from "../../../../models/Configuration.ts";
 import {WebsocketConnection} from "../../../websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 import {ChatContext} from "../../../../models/chat/ChatContext.ts";
+import {Tool} from "ai";
+import {z} from "zod";
 import {Signal} from "@targoninc/jess";
 import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
 
-function featureOption(config: Configuration, option: BotanikaFeature): any {
+export function featureOption(config: Configuration, option: BotanikaFeature): any {
     return (config.featureOptions ?? {})[option] ?? {};
 }
 
-export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatMessage>) {
-    let tools = [];
+export type BuiltInTools = {
+    ["google.search-engine"]?: ReturnType<typeof googleSearchTool>;
+} & Record<string, Tool>;
+
+export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) : BuiltInTools {
+    const tools: BuiltInTools = {};
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
-        tools.push(googleSearchTool(userConfig, message));
+        tools["google.search-engine"] = googleSearchTool(userConfig, ws, chat);
     }
 
     /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
@@ -32,5 +38,5 @@ export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatM
         );
     }*/
 
-    return tools;
+    return tools
 }
