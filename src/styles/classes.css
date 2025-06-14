@@ -472,6 +472,7 @@ input.invisible-input {
 .warning {
     color: var(--orange);
     cursor: help;
+    padding: var(--gap-h) var(--gap-v);
 }
 
 .error-indicator {
