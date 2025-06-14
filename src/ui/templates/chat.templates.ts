@@ -63,7 +63,7 @@ export class ChatTemplates {
 
     static chatBox() {
         return create("div")
-            .classes("flex-v", "flex-grow", "bordered-panel", "relative", "chat-box", "no-gap")
+            .classes("flex-v", "flex-grow", "container", "relative", "chat-box", "no-gap")
             .children(
                 ChatTemplates.botName(),
                 ChatTemplates.chatHistory(),
@@ -281,65 +281,72 @@ export class ChatTemplates {
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
 
         return create("div")
-            .classes("chat-input", "relative", "flex-v", "small-gap", noHistoryClass)
-            .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
-            .ondragover((e: DragEvent) => {
-                e.preventDefault();
-                isDraggingOver.value = true;
-            })
-            .ondragleave(() => {
-                isDraggingOver.value = false;
-            })
-            .ondrop((e: DragEvent) => {
-                isDraggingOver.value = false;
-                handleDroppedFiles(e, files);
-            })
-            .onclick((e) => {
-                const preventIn = ["BUTTON", "INPUT", "SELECT"];
-                if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
-                    focusChatInput();
-                }
-            })
+            .classes("chat-input")
             .children(
                 create("div")
-                    .classes("flex", "space-between")
-                    .onclick(focusInput)
+                    .classes("dropzone", "relative", "flex-v", "small-gap", noHistoryClass)
+                    .classes(compute(d => d ? "drag-over" : "_", isDraggingOver))
+                    .ondragover((e: DragEvent) => {
+                        e.preventDefault();
+                        isDraggingOver.value = true;
+                    })
+                    .ondragleave(() => {
+                        isDraggingOver.value = false;
+                    })
+                    .ondragend(() => {
+                        isDraggingOver.value = false;
+                    })
+                    .ondrop((e: DragEvent) => {
+                        isDraggingOver.value = false;
+                        handleDroppedFiles(e, files);
+                    })
+                    .onclick((e) => {
+                        const preventIn = ["BUTTON", "INPUT", "SELECT"];
+                        if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
+                            focusChatInput();
+                        }
+                    })
                     .children(
                         create("div")
-                            .classes("flex-v", "flex-grow")
-                            .children(
-                                when(noHistory, create("span")
-                                    .classes("onboarding-text")
-                                    .text("What's on your mind?")
-                                    .build()),
-                                when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
-                                ChatTemplates.actualChatInput(input, modelConfigured, send, files),
-                            ).build(),
-                    ).build(),
-                create("div")
-                    .classes("flex", "align-center", "space-between")
-                    .children(
-                        create("div")
-                            .classes("flex")
+                            .classes("flex", "space-between")
+                            .onclick(focusInput)
                             .children(
                                 create("div")
-                                    .classes("relative")
+                                    .classes("flex-v", "flex-grow")
                                     .children(
-                                        GenericTemplates.buttonWithIcon("settings", model, () => {
-                                            flyoutVisible.value = !flyoutVisible.value;
-                                            closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
-                                        }),
-                                        when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
+                                        when(noHistory, create("span")
+                                            .classes("onboarding-text")
+                                            .text("What's on your mind?")
+                                            .build()),
+                                        when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
+                                        ChatTemplates.actualChatInput(input, modelConfigured, send, files),
                                     ).build(),
-                                GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
                             ).build(),
                         create("div")
-                            .classes("flex", "align-center")
+                            .classes("flex", "align-center", "space-between")
                             .children(
-                                when(voiceConfigured, AudioTemplates.voiceButton()),
-                                GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
+                                create("div")
+                                    .classes("flex")
+                                    .children(
+                                        create("div")
+                                            .classes("relative")
+                                            .children(
+                                                GenericTemplates.buttonWithIcon("settings", model, () => {
+                                                    flyoutVisible.value = !flyoutVisible.value;
+                                                    closeOnClickIfOutsideOfParent("flyout", flyoutVisible);
+                                                }),
+                                                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured)),
+                                            ).build(),
+                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files)),
+                                    ).build(),
+                                create("div")
+                                    .classes("flex", "align-center")
+                                    .children(
+                                        when(voiceConfigured, AudioTemplates.voiceButton()),
+                                        GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
+                                    ).build(),
                             ).build(),
-                    ).build(),
+                    ).build()
             ).build();
     }
 
@@ -466,7 +473,7 @@ export class ChatTemplates {
         const userPopupVisible = signal(false);
 
         return create("div")
-            .classes("flex-v", "bordered-panel", "chat-list")
+            .classes("flex-v", "container", "chat-list")
             .children(
                 create("div")
                     .classes("flex", "space-between", "align-children")
