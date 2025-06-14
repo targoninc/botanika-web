@@ -48,7 +48,7 @@ export function wrapTool(id: string, execute: (input: any) => Promise<any>, mess
                 return {
                     ...ti,
                     state: "result",
-                    result
+                    result: result ?? null
                 };
             }
             return ti;
