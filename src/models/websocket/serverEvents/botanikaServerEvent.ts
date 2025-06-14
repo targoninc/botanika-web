@@ -4,6 +4,7 @@ import {MessageFile} from "../../chat/MessageFile.ts";
 import {ChatToolResult} from "../../chat/ChatToolResult.ts";
 import {ToolResultPart, ToolSet} from "ai";
 import {ErrorToolResult} from "../../chat/ErrorToolResult.ts";
+import {ResourceReference} from "../../chat/ResourceReference.ts";
 
 export type NewMessageEvent = {
     type: "newMessage";
@@ -31,11 +32,11 @@ export type UpdateFilesEvent = {
     files: Omit<MessageFile, "id">[];
 }
 
-export type UpdateSourcesEvent = {
-    type: "updateSources";
+export type UpdateReferencesEvent = {
+    type: "updateReferences";
     chatId: string;
     messageId: string;
-    sources: LanguageModelSourceV1[];
+    references: ResourceReference[];
 }
 
 export type ChatNameSetEvent = {
@@ -44,11 +45,11 @@ export type ChatNameSetEvent = {
     name: string;
 }
 
-export type ChatUpdateEvent = {
-    type: "chatUpdate";
+export type MessageTextAddedEvent = {
+    type: "messageTextAdded";
     chatId: string;
-    messageChunk: string;
     messageId: string;
+    messageChunk: string;
 }
 
 export type MessageCompletedEvent = {
@@ -75,6 +76,7 @@ export type AudioGeneratedEvent = {
     type: "audioGenerated";
     chatId: string;
     messageId: string;
+    audioUrl: string;
 }
 
 export type ToolCallStartedEvent = {
@@ -92,22 +94,64 @@ export type ToolCallFinishedEvent = {
     toolResult: unknown;
 }
 
+export type MessageCreatedEvent = {
+    type: "messageCreated";
+    chatId: string;
+    message: ChatMessage;
+}
+
 export type BotanikaServerEvent = {
+    userId: string,
     timestamp?: number;
 } & (
     ChatCreatedEvent
-    | ChatUpdateEvent
+    | MessageTextAddedEvent
     | MessageCompletedEvent
     | ErrorEvent
     | LogEvent
     | WarningEvent
     | AudioGeneratedEvent
     | ChatNameSetEvent
-    | UpdateSourcesEvent
+    | UpdateReferencesEvent
     | MessageTextCompletedEvent
     | UpdateFilesEvent
     | ToolCallStartedEvent
     | ToolCallFinishedEvent
+    | MessageCreatedEvent
 );
 
 export type BotanikaServerEventType = Extract<BotanikaServerEvent, { type: string }>["type"];
+
+export type ChatEvents = Extract<BotanikaServerEvent, { chatId: string }>;
+export type MessageEvents = Extract<BotanikaServerEvent, { messageId: string }>;
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+        k: infer I
+    ) => void
+    ? I
+    : never;
+
+// Converts union to overloaded function
+type UnionToOvlds<U> = UnionToIntersection<
+    U extends any ? (f: U) => void : never
+>;
+
+type PopUnion<U> = UnionToOvlds<U> extends (a: infer A) => void ? A : never;
+
+type IsUnion<T> = [T] extends [UnionToIntersection<T>] ? false : true;
+
+// Finally me)
+type UnionToArray<T, A extends unknown[] = []> = IsUnion<T> extends true
+    ? UnionToArray<Exclude<T, PopUnion<T>>, [PopUnion<T>, ...A]>
+    : [T, ...A];
+
+type Join<Texts extends string[], SplitCharacter extends string> = Texts extends [string]
+    ? Texts[0]
+    : Texts extends [infer Item]
+        ? Item
+    : Texts extends [infer Head extends string, ...infer Tail extends string[]]
+        ? `${Head}${SplitCharacter}${Join<Tail, SplitCharacter>}`
+        : never
+
+type ChatEventTypes = UnionToArray<ChatEvents["type"]>;
+export type ChatEventsString = Join<ChatEventTypes, ",">;

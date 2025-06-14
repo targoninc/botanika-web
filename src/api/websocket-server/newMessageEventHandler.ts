@@ -1,6 +1,6 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {broadcastToUser, sendWarning, WebsocketConnection} from "./websocket.ts";
+import {sendEvent, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
 import {CLI} from "../CLI.ts";
@@ -30,7 +30,8 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
     const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
-    broadcastToUser(ws.userId, {
+    sendEvent({
+        userId: ws.userId,
         type: "chatCreated",
         chatId: chatId,
         userMessage: chatMsg
@@ -42,7 +43,8 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
-            broadcastToUser(ws.userId, {
+            sendEvent({
+                userId: ws.userId,
                 type: "chatNameSet",
                 chatId: chat.id,
                 name,
@@ -98,25 +100,22 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
         const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
-        const m = newAssistantMessage(response.text, request.provider, request.model);
+        const message = newAssistantMessage(response.text, request.provider, request.model);
 
         // Set the message as finished
-        m.time = Date.now();
-        m.finished = true;
+        message.time = Date.now();
+        message.finished = true;
 
-        // Send the message to the client
-        sendChatUpdate(ws, {
+        sendEvent({
+            userId: ws.userId,
+            type: "messageCreated",
             chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [m]
-        });
-
-        // Add the message to the chat history
-        chat.history.push(m);
+            message: message
+        })
 
         // Send audio if enabled
-        if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStop(ws, chat.id, m);
+        if (userConfig.enableTts && message.text.length > 0) {
+            await sendAudioAndStop(ws, chat.id, message);
         }
     }
 }
@@ -162,11 +161,13 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     // Wait for the message to be finished
     const waitForMessageFinished = new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
-            if (assMessage.value.finished) {
+            if (streamResponse.value.finished) {
                 clearInterval(checkInterval);
-                chat.history.push(assMessage.value);
-                if (userConfig.enableTts && assMessage.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, assMessage.value).then(() => {
+                // Add the finished message to the chat history
+                chat.history.push(streamResponse.value);
+                // Send audio if enabled
+                if (userConfig.enableTts && streamResponse.value.text.length > 0) {
+                    sendAudioAndStop(ws, chat.id, streamResponse.value).then(() => {
                         resolve();
                     });
                 } else {

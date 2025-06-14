@@ -1,11 +1,11 @@
 import {Application, Request, Response} from "express";
-import {ChatMessage} from "../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
 import {
-    broadcastToUser,
+    sendEvent,
     removeOngoingConversation,
     sendChatUpdate,
     WebsocketConnection
@@ -13,23 +13,21 @@ import {
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
 
-export async function getAudio(lastMessage: ChatMessage): Promise<string> {
-    if (lastMessage.type === "assistant") {
-        const blob = await getTtsAudio(lastMessage.text);
-        await AudioStorage.writeAudio(lastMessage.id, blob);
-        return AudioStorage.getLocalFileUrl(lastMessage.id);
-    }
-
-    return null;
+export async function getAudio(lastMessage: AssistantMessage): Promise<string> {
+    const blob = await getTtsAudio(lastMessage.text);
+    await AudioStorage.writeAudio(lastMessage.id, blob);
+    return AudioStorage.getLocalFileUrl(lastMessage.id);
 }
 
-export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
+export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: AssistantMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
-        broadcastToUser(ws.userId, {
+        sendEvent({
             type: "audioGenerated",
             chatId,
-            messageId: lastMessage.id
+            userId: ws.userId,
+            messageId: lastMessage.id,
+            audioUrl
         });
     }
 }
