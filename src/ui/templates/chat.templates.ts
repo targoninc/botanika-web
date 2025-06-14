@@ -500,10 +500,15 @@ export class ChatTemplates {
         const userPopupVisible = signal(false);
         const search = signal("");
         const filteredChats = compute((c, s) => searchList(["history", "name"], c, s), chats, search);
+        const cachedWidth = localStorage.getItem(`divider-width-.chat-list.sidebar`);
+        let initialWidth = "max(30%, 200px)";
+        if (cachedWidth) {
+            initialWidth = cachedWidth + "px";
+        }
 
         return create("div")
             .classes("flex-v", "container", "small-gap", "chat-list", context)
-            .styles("width", context === "sidebar" ? "100%" : "max(30%, 200px)")
+            .styles("width", context === "sidebar" ? initialWidth : "100%")
             .children(
                 when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
                 create("div")
