@@ -17,6 +17,7 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -494,6 +495,17 @@ export class GenericTemplates {
                     .classes("monospace")
                     .text(compute(u => u?.externalId.split("|")[0], currentUser))
                     .build(),
+                create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        create("span")
+                            .text("Account created:")
+                            .build(),
+                        create("span")
+                            .classes("text-small")
+                            .text(compute(u => toHumanizedTime(new Date(u?.createdAt ?? Date.now()).getTime()).value, currentUser))
+                            .build(),
+                    ).build()
             ).build();
     }
 
