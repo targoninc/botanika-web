@@ -6,7 +6,7 @@ import {AnyNode, compute, create, Signal, when} from "@targoninc/jess";
 export class LayoutTemplates {
     static app(activePage: Signal<string>) {
         return create("div")
-            .classes("app", "no-wrap", "flex-v")
+            .classes("app", "no-wrap", "flex-v", "restrict-to-parent")
             .children(
                 when(compute(p => p === "chat", activePage), ChatTemplates.chat()),
                 when(compute(p => p === "settings", activePage), SettingsTemplates.settings()),

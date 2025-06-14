@@ -630,8 +630,10 @@ kbd {
     box-shadow: 0 0 30px -10px rgba(125, 125, 125, 0.2);
 }
 
-.chat-box {
-    width: 100%;
+@media only screen and (max-width: 1200px) {
+    .chat-list {
+        display: none;
+    }
 }
 
 .chat-list {
@@ -790,7 +792,15 @@ pre {
 .bot-name {
     justify-content: center;
     width: max-content;
-    align-self: center;
+    position: absolute;
+    top: var(--gap-v);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    background: var(--gradient-1);
+    padding: var(--gap-h) var(--gap-v) var(--gap-h) var(--gap-h);
+    border-radius: 999px;
+    border: 1px solid var(--tint-main);
 }
 
 .bot-icon {
@@ -849,13 +859,18 @@ pre {
 }
 
 .restrict-width, .restrict-width-small {
-    max-width: 1200px;
+    max-width: min(1200px, 100%);
     width: 100%;
     align-self: center;
 }
 
 .restrict-width-small {
-    max-width: 800px;
+    max-width: min(800px, 100%);
+}
+
+.chat-box {
+    width: 1px;
+    flex-grow: 1;
 }
 
 .user-image {

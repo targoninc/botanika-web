@@ -54,7 +54,7 @@ function parseMarkdown(text: string) {
 export class ChatTemplates {
     static chat() {
         return create("div")
-            .classes("flex", "flex-grow", "no-wrap", "relative")
+            .classes("flex", "no-wrap", "relative", "restrict-to-parent")
             .children(
                 ChatTemplates.chatList(),
                 ChatTemplates.chatBox(),
@@ -63,7 +63,7 @@ export class ChatTemplates {
 
     static chatBox() {
         return create("div")
-            .classes("flex-v", "flex-grow", "container", "relative", "chat-box", "no-gap")
+            .classes("flex-v", "container", "relative", "no-gap", "chat-box")
             .children(
                 ChatTemplates.botName(),
                 ChatTemplates.chatHistory(),
@@ -628,7 +628,7 @@ export class ChatTemplates {
 
     private static toolCalls(message: ChatMessage) {
         const expanded = signal(false);
-        const sources = message.toolInvocations?.flatMap(ti => ti.result.references) ?? [];
+        const sources = message.toolInvocations?.flatMap(ti => ti.result?.references ?? []) ?? [];
         const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
         return create("div")
