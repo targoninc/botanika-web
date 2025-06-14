@@ -53,18 +53,22 @@ function parseMarkdown(text: string) {
 
 export class ChatTemplates {
     static chat() {
+        const menuShown = signal(false);
+
         return create("div")
             .classes("flex", "no-wrap", "relative", "restrict-to-parent")
             .children(
-                ChatTemplates.chatList(),
-                ChatTemplates.chatBox(),
+                ChatTemplates.chatList("sidebar", menuShown),
+                ChatTemplates.chatBox(menuShown),
+                when(menuShown, ChatTemplates.chatList("burger-menu", menuShown))
             ).build();
     }
 
-    static chatBox() {
+    static chatBox(shown: Signal<boolean>) {
         return create("div")
             .classes("flex-v", "container", "relative", "no-gap", "chat-box")
             .children(
+                ChatTemplates.burgerButton(shown),
                 ChatTemplates.botName(),
                 ChatTemplates.chatHistory(),
                 ChatTemplates.chatInput(),
@@ -468,13 +472,14 @@ export class ChatTemplates {
         });
     }
 
-    private static chatList() {
+    private static chatList(context: string, shown: Signal<boolean>) {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
         const userPopupVisible = signal(false);
 
         return create("div")
-            .classes("flex-v", "container", "chat-list")
+            .classes("flex-v", "container", "chat-list", context)
             .children(
+                when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
                 create("div")
                     .classes("flex", "space-between", "align-children")
                     .children(
@@ -499,11 +504,11 @@ export class ChatTemplates {
                                 when(userPopupVisible, GenericTemplates.userPopup()),
                             ).build(),
                     ).build(),
-                compute(c => ChatTemplates.chatListItems(c), chats),
+                compute(c => ChatTemplates.chatListItems(c, shown), chats),
             ).build();
     }
 
-    static chatListItems(chat: ChatContext[]) {
+    static chatListItems(chat: ChatContext[], menuShown: Signal<boolean>) {
         return create("div")
             .classes("flex-v", "flex-grow")
             .children(
@@ -511,11 +516,11 @@ export class ChatTemplates {
                     .text("No chats yet")
                     .build()
                 ),
-                ...chat.map(chatId => ChatTemplates.chatListItem(chatId))
+                ...chat.map(chatId => ChatTemplates.chatListItem(chatId, menuShown))
             ).build();
     }
 
-    static chatListItem(chat: ChatContext) {
+    static chatListItem(chat: ChatContext, menuShown: Signal<boolean>) {
         const active = compute(c => c && c.id === chat.id, chatContext);
         const activeClass = compute((c): string => c ? "active" : "_", active);
         const editing = signal(false);
@@ -523,7 +528,10 @@ export class ChatTemplates {
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
-            .onclick(() => currentChatId.value = chat.id)
+            .onclick(() => {
+                currentChatId.value = chat.id;
+                menuShown.value = false;
+            })
             .children(
                 create("div")
                     .classes("flex", "align-center", "no-wrap", "space-between")
@@ -668,6 +676,17 @@ export class ChatTemplates {
                             }, "")))
                             .build(),
                     ).build())
+            ).build();
+    }
+
+    private static burgerButton(shown: Signal<boolean>) {
+        return create("div")
+            .classes("burger-button")
+            .children(
+                button({
+                    icon: { icon: compute(s => s ? "close" : "menu", shown) },
+                    onclick: () => shown.value = !shown.value,
+                })
             ).build();
     }
 }
