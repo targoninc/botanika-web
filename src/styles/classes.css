@@ -513,7 +513,8 @@ kbd {
     margin: 0 auto;
     outline: 1px solid var(--bg-4);
     border-radius: var(--input-border-radius);
-    background: var(--gradient-1);
+    background: color-mix(in oklab, rgba(16, 16, 16, .7), var(--tint) calc(var(--tint-strength) * .5));
+    backdrop-filter: blur(20px);
     transition: outline-color var(--animation-duration) ease,
     box-shadow var(--animation-duration) ease,
     width var(--animation-duration) ease,
@@ -524,6 +525,7 @@ kbd {
     left: 50%;
     transform: translateX(-50%);
     max-width: calc(100% - 2 * var(--gap-v));
+    box-shadow: var(--flyout-shadow);
 }
 
 .chat-input:focus-within {
