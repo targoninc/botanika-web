@@ -578,6 +578,7 @@ kbd {
 .time {
     font-size: 0.8em;
     color: var(--text-4);
+    font-family: monospace;
 }
 
 .text-small {
@@ -719,8 +720,7 @@ kbd {
 
 .chat-list-item {
     cursor: pointer;
-    border-radius: var(--input-border-radius);
-    border: 1px solid var(--tint-muted);
+    border-radius: var(--attachment-border-radius);
     padding: var(--gap-v);
     width: 100%;
 }
@@ -742,7 +742,6 @@ kbd {
 }
 
 .chat-list-item.active {
-    border-color: var(--tint-present);
     background: var(--bg);
 }
 
