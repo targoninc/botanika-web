@@ -6,7 +6,7 @@
     --black-3: color-mix(in oklab, #303030, var(--tint) var(--tint-strength));;
     --black-4: color-mix(in oklab, #353535, var(--tint) var(--tint-strength));
     --black-trans: rgba(10, 10, 13, 0.9);
-    --white: #e5dfdd;
+    --white: #efe9e7ff;
     --white-2: #ded5d2;
     --white-3: #d4c8c4;
     --white-4: #c7bbb7;
@@ -46,6 +46,7 @@
     --tab-padding: .3em .8em;
 
     --jessc-border-radius-small: var(--input-border-radius);
+    --jessc-interactive-background: var(--gradient-1);
     --jessc-interactive-border-focused: var(--tint-present);
     --jessc-interactive-border-active: var(--tint-present);
 
