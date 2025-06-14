@@ -277,6 +277,41 @@ iframe {
     border-color: var(--blue);
 }
 
+.selector-pane {
+    height: 100%;
+    width: max-content;
+    max-height: 20dvh;
+    background: var(--gradient-2);
+    border-left: 1px solid var(--tint-main);
+    overflow: auto;
+}
+
+.selector-pane:first-child {
+    border-radius: var(--input-border-radius) 0 0 var(--input-border-radius);
+    border-left: none;
+}
+
+.selector-pane:last-child {
+    border-radius: 0 var(--input-border-radius) var(--input-border-radius) 0;
+    flex-grow: 1;
+}
+
+.selector-row {
+    padding: var(--gap-h) var(--gap-v);
+    padding-right: calc(var(--gap-v) * 2);
+    cursor: pointer;
+}
+
+.selector-row.selected {
+    font-weight: bold;
+    border-right: 5px solid var(--tint-main);
+    background: var(--bg);
+}
+
+.selector-row:hover {
+    background: var(--bg-3);
+}
+
 .modal {
     position: fixed;
     top: 0;
@@ -469,8 +504,12 @@ kbd {
     white-space: nowrap;
 }
 
+.no-padding {
+    padding: 0 !important;
+}
+
 .chat-input {
-    width: max(30%, 500px);
+    width: min(100%, 800px);
     margin: 0 auto;
     outline: 1px solid var(--bg-4);
     border-radius: var(--input-border-radius);
@@ -490,10 +529,6 @@ kbd {
 .chat-input:focus-within {
     outline-color: var(--tint-present);
     outline-width: 2px;
-}
-
-.chat-input:hover, .chat-input:focus-within, .chat-input.no-history {
-    width: min(100%, 800px);
 }
 
 .chat-input.no-history {
@@ -808,8 +843,8 @@ pre {
 }
 
 .chat-history {
-    padding-top: var(--gap-h);
-    padding-right: var(--gap-h);
+    padding: var(--gap-v);
+    padding-top: 3em;
     width: 100%;
 }
 
@@ -850,11 +885,6 @@ pre {
 
 .status-indicator.off {
     background: var(--red);
-}
-
-.select-container * {
-    color: var(--grey-light) !important;
-    font-size: calc(var(--font-size-base) - 2px) !important;
 }
 
 .message-time {
@@ -927,11 +957,10 @@ pre {
     border: 1px solid var(--tint-muted);
     padding: var(--gap-v);
     z-index: 999;
-    min-width: 100%;
+    min-width: max-content;
     min-height: max-content;
     max-width: max-content;
     max-height: max-content;
-    width: calc(100% - 2 * var(--gap-v));
 }
 
 .flyout.above {

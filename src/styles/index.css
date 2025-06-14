@@ -23,6 +23,7 @@
     --tint-present: color-mix(in oklab, #a9a9a9, var(--tint) calc(var(--tint-strength) * 2));
     --tint-transpresent: color-mix(in oklab, rgba(0, 0, 0, 0), var(--tint) calc(var(--tint-strength) * 2));
     --tint-muted: color-mix(in oklab, #525252, var(--tint) var(--tint-strength));
+    --strong-tint: color-mix(in oklab, rgba(127, 127, 127, 0), var(--tint) calc(var(--tint-strength) * 4));
     --green: color-mix(in oklab, #37ac43, var(--tint) var(--tint-strength));
     --red: color-mix(in oklab, #c43e40, var(--tint) var(--tint-strength));
     --yellow: #f0c929ff;
