@@ -14,8 +14,8 @@ export function searchList<T>(properties: (keyof T)[], array: Array<T>, searchSt
         return str.toLowerCase().includes(token);
     }
 
-    function hasAnyToken(str: string, tokens: string[]) {
-        return tokens.some(t => hasToken(str, t));
+    function hasAllTokens(str: string, tokens: string[]) {
+        return tokens.every(t => hasToken(str, t));
     }
 
     function searchObject(obj: T) {
@@ -28,16 +28,16 @@ export function searchList<T>(properties: (keyof T)[], array: Array<T>, searchSt
                 // @ts-ignore
                 const value = obj[key];
 
-                if (value.constructor === String && hasAnyToken(value as string, tokens)) {
+                if (value.constructor === String && hasAllTokens(value as string, tokens)) {
                     return true;
                 }
 
-                if (value.constructor === Number && hasAnyToken((value as Number).toString(), tokens)) {
+                if (value.constructor === Number && hasAllTokens((value as Number).toString(), tokens)) {
                     return true;
                 }
 
                 if (value.constructor === Object || Array.isArray(value)) {
-                    if (hasAnyToken(JSON.stringify(value), tokens)) {
+                    if (hasAllTokens(JSON.stringify(value), tokens)) {
                         return true;
                     }
                 }

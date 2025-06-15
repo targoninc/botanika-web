@@ -3,7 +3,7 @@ import {GenericTemplates} from "./generic.templates.ts";
 import {activePage, chatContext, chats, currentChatId, deleteChat} from "../classes/state/store.ts";
 import {searchList} from "../classes/search.ts";
 import {ChatTemplates} from "./chat.templates.ts";
-import { button, input } from "@targoninc/jess-components";
+import {button, icon, input} from "@targoninc/jess-components";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
 import { BotanikaClientEvent } from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import { SharedChangedEventData } from "../../models/websocket/clientEvents/sharedChangedEventData.ts";
@@ -53,16 +53,28 @@ export class ChatListTemplates {
                                 when(userPopupVisible, GenericTemplates.userPopup()),
                             ).build(),
                     ).build(),
-                input({
-                    type: InputType.text,
-                    placeholder: "Search chats...",
-                    name: "chatsSearch",
-                    value: search,
-                    classes: ["chat-search"],
-                    onchange: value => {
-                        search.value = value;
-                    }
-                }),
+                create("div")
+                    .classes("relative")
+                    .children(
+                        input({
+                            type: InputType.text,
+                            placeholder: "Search chats...",
+                            name: "chatsSearch",
+                            value: search,
+                            classes: ["full-width"],
+                            onchange: value => {
+                                search.value = value;
+                            }
+                        }),
+                        icon({
+                            icon: "close",
+                            classes: ["search-clear", "clickable"],
+                            onclick: () => {
+                                console.log("clear")
+                                search.value = "";
+                            }
+                        })
+                    ).build(),
                 compute(c => ChatListTemplates.chatListItems(c, shown), filteredChats),
             ).build();
     }
