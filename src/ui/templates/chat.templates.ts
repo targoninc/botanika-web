@@ -106,6 +106,9 @@ export class ChatTemplates {
         dedupHistory.subscribe(() => {
             setTimeout(() => {
                 hljs.highlightAll();
+                document.querySelectorAll("a:not([target='_blank'])").forEach(a => {
+                    (a as HTMLAnchorElement).target = "_blank";
+                });
                 attachCodeCopyButtons();
             });
         });
