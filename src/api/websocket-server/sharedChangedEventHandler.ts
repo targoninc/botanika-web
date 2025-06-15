@@ -21,11 +21,4 @@ export async function sharedChangedEventHandler(ws: WebsocketConnection, message
         chatId: chat.id,
         shared: chat.shared,
     });
-    await ChatStorage.writeChatContext(ws.userId, chat);
-
-    sendChatUpdate(ws, {
-        chatId: request.chatId,
-        timestamp: Date.now(),
-        shared: chat.shared
-    });
 }
