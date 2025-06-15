@@ -2,9 +2,6 @@
 import { CLI } from "../../CLI.ts";
 import { eventStore, EventHandler } from "./eventStore.ts";
 import { db } from "../db.ts";
-import { ChatContext } from "../../../models/chat/ChatContext.ts";
-import { ChatMessage } from "../../../models/chat/ChatMessage.ts";
-import { MessageType } from "@prisma/client";
 
 /**
  * Projection event handler that stores entities to the database based on events

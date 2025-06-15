@@ -9,7 +9,7 @@ import {Signal} from "@targoninc/jess";
 export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, ws: WebsocketConnection, chat: ChatContext) {
     return async (input: TParams, options: ToolExecutionOptions) => {
         const messageId = uuidv4();
-        sendEvent(ws.userId, {
+        eventStore.publish(ws.userId, {
             type: "toolCallStarted",
             chatId: chat.id,
             toolName: toolName,
@@ -26,7 +26,7 @@ export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TP
     const diff = performance.now() - start;
         CLI.success(`Tool ${toolName} took ${diff.toFixed()} ms to execute`);
 
-        sendEvent(ws.userId, {
+        eventStore.publish(ws.userId, {
             type: "toolCallFinished",
             chatId: chat.id,
             messageId,

@@ -15,7 +15,7 @@ declare module "express-serve-static-core" {
 }
 
 export const isAdmin: RequestHandler = (req, res, next) => {
-    if (req.appSession?.user.isAdmin){
+    if (req.appSession?.user!.isAdmin){
         return next();
     }
 
@@ -23,14 +23,10 @@ export const isAdmin: RequestHandler = (req, res, next) => {
 };
 
 async function upsertAndGetUser(externalId: string) {
-    await db.user.upsert({
-        where: { externalId },
+    return db.user.upsert({
+        where: {externalId},
         update: {},
-        create: { externalId }
-    });
-
-    return db.user.findUnique({
-        where: {externalId}
+        create: {externalId}
     });
 }
 
@@ -62,7 +58,7 @@ export function addAuthenticationMiddleware(app: Application) {
 
     app.use(async (req, res, next) => {
         if (req.oidc?.user) {
-            if (!req.appSession.user) {
+            if (!req.appSession.user && req.oidc.idToken) {
                 req.appSession.user = await upsertAndGetUser(extractExternalId(req.oidc.idToken));
             }
             req.user = req.appSession.user;

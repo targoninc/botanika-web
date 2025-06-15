@@ -17,7 +17,7 @@ export async function chatNameChangedEventHandler(ws: WebsocketConnection, messa
     chat.name = request.name;
     await ChatStorage.writeChatContext(ws.userId, chat);
 
-    sendEvent({
+    eventStore.publish({
         userId: ws.userId,
         type: "chatNameSet",
         chatId: request.chatId,

@@ -22,7 +22,7 @@ export async function getAudio(lastMessage: AssistantMessage): Promise<string> {
 export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: AssistantMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
-        sendEvent({
+        eventStore.publish({
             type: "audioGenerated",
             chatId,
             userId: ws.userId,

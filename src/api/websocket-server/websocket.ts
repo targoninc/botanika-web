@@ -18,18 +18,9 @@ export function send(ws: WebsocketConnection, message: BotanikaServerEvent) {
     sendToConnection(ws, message);
 }
 
-/**
- * Publishes an event to the event store
- * @param message The event to publish
- */
-export function sendEvent(message: BotanikaServerEvent) {
-    message.timestamp = message.timestamp ?? Date.now();
-    eventStore.publish(message);
-}
-
 export function sendError(ws: WebsocketConnection, message: string) {
     CLI.error(`Error in realtime: ${message}`);
-    sendEvent({
+    eventStore.publish({
         type: "error",
         userId: ws.userId,
         error: message,
@@ -38,7 +29,7 @@ export function sendError(ws: WebsocketConnection, message: string) {
 
 export function sendWarning(ws: WebsocketConnection, message: string) {
     CLI.warning(`Warning in realtime: ${message}`);
-    sendEvent({
+    eventStore.publish({
         type: "warning",
         userId: ws.userId,
         warning: message,

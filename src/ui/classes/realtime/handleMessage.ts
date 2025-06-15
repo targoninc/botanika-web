@@ -7,7 +7,7 @@ import {ToastType} from "../../enums/ToastType.ts";
 import {ServerWarningEvent} from "../../../models/websocket/serverEvents/serverWarningEvent.ts";
 import {processUpdate} from "../state/store.ts";
 
-export async function handleMessage(event: BotanikaServerEvent<any>) {
+export async function handleMessage(event: BotanikaServerEvent) {
     switch (event.type) {
         case "chatCreated":
             await processUpdate(event.data as ChatUpdate);

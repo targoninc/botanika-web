@@ -1,7 +1,6 @@
 ﻿import { CLI } from "../../CLI.ts";
 import { registerWebsocketEventHandler } from "../../websocket-server/websocketEventHandler.ts";
-import { registerProjectionEventHandler } from "./projectionEventHandler.ts";
-import { registerIncrementProjectorEventHandler } from "./incrementProjectorEventHandler.ts";
+import { registerIncrementProjectorEventHandler } from "./incrementProjector.ts";
 
 /**
  * Initializes all event handlers by registering them with the event store
@@ -13,10 +12,6 @@ export function initializeEventHandlers(): () => void {
     // Register the WebSocket event handler
     const unsubscribeWebsocket = registerWebsocketEventHandler();
     CLI.log("WebSocket event handler registered");
-
-    // Register the projection event handler
-    const unsubscribeProjection = registerProjectionEventHandler();
-    CLI.log("Projection event handler registered");
 
     // Register the increment projector event handler
     const unsubscribeIncrementProjector = registerIncrementProjectorEventHandler();

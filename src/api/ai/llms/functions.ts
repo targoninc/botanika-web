@@ -16,7 +16,7 @@ export async function updateMessageFromStream(
             break;
         }
 
-        sendEvent(userId, {
+        eventStore.publish(userId, {
             type: "messageTextAdded",
             messageChunk: value,
             chatId: chatId,

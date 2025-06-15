@@ -1,9 +1,5 @@
-import {ChatMessage} from "../../chat/ChatMessage.ts";
-import {LanguageModelSourceV1} from "../../../api/ai/llms/models/LanguageModelSourceV1.ts";
+import {AssistantMessage, ChatMessage, ToolMessage, UserMessage} from "../../chat/ChatMessage.ts";
 import {MessageFile} from "../../chat/MessageFile.ts";
-import {ChatToolResult} from "../../chat/ChatToolResult.ts";
-import {ToolResultPart, ToolSet} from "ai";
-import {ErrorToolResult} from "../../chat/ErrorToolResult.ts";
 import {ResourceReference} from "../../chat/ResourceReference.ts";
 
 export type NewMessageEvent = {
@@ -21,7 +17,7 @@ export type MessageTextCompletedEvent = {
 
 export type ChatCreatedEvent = {
     type: "chatCreated";
-    userMessage: ChatMessage;
+    userMessage: UserMessage;
     chatId: string;
 }
 
@@ -97,9 +93,10 @@ export type ToolCallFinishedEvent = {
 export type MessageCreatedEvent = {
     type: "messageCreated";
     chatId: string;
-    message: ChatMessage;
+    message: UserMessage | AssistantMessage | ToolMessage;
 }
 
+export type BotanikaServerEventWithTimestamp = BotanikaServerEvent & { timestamp: number };
 export type BotanikaServerEvent = {
     userId: string,
     timestamp?: number;
@@ -122,36 +119,38 @@ export type BotanikaServerEvent = {
 
 export type BotanikaServerEventType = Extract<BotanikaServerEvent, { type: string }>["type"];
 
-export type ChatEvents = Extract<BotanikaServerEvent, { chatId: string }>;
+export type ChatEvent = Extract<BotanikaServerEvent, { chatId: string }>;
+
+// Hacky way to getting the types as an array of strings. This object will cause a compiler error until all keys are defined
+const chatEventKeys: {
+    [K in ChatEvent["type"]]: true
+} = {
+    chatCreated: true,
+    messageTextAdded: true,
+    messageCompleted: true,
+    audioGenerated: true,
+    chatNameSet: true,
+    updateReferences: true,
+    messageTextCompleted: true,
+    updateFiles: true,
+    toolCallStarted: true,
+    toolCallFinished: true,
+    messageCreated: true
+}
+
 export type MessageEvents = Extract<BotanikaServerEvent, { messageId: string }>;
+// Hacky way to getting the types as an array of strings. This object will cause a compiler error until all keys are defined
+const messageEventKeys: {
+    [K in MessageEvents["type"]]: true
+} = {
+    audioGenerated: true,
+    updateReferences: true,
+    messageTextCompleted: true,
+    updateFiles: true,
+    toolCallStarted: true,
+    toolCallFinished: true,
+    messageTextAdded: true
+}
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-        k: infer I
-    ) => void
-    ? I
-    : never;
-
-// Converts union to overloaded function
-type UnionToOvlds<U> = UnionToIntersection<
-    U extends any ? (f: U) => void : never
->;
-
-type PopUnion<U> = UnionToOvlds<U> extends (a: infer A) => void ? A : never;
-
-type IsUnion<T> = [T] extends [UnionToIntersection<T>] ? false : true;
-
-// Finally me)
-type UnionToArray<T, A extends unknown[] = []> = IsUnion<T> extends true
-    ? UnionToArray<Exclude<T, PopUnion<T>>, [PopUnion<T>, ...A]>
-    : [T, ...A];
-
-type Join<Texts extends string[], SplitCharacter extends string> = Texts extends [string]
-    ? Texts[0]
-    : Texts extends [infer Item]
-        ? Item
-    : Texts extends [infer Head extends string, ...infer Tail extends string[]]
-        ? `${Head}${SplitCharacter}${Join<Tail, SplitCharacter>}`
-        : never
-
-type ChatEventTypes = UnionToArray<ChatEvents["type"]>;
-export type ChatEventsString = Join<ChatEventTypes, ",">;
+export const ChatEventTypes = Object.keys(chatEventKeys) as ChatEvent["type"][];
+export const MessageEventTypes = Object.keys(messageEventKeys) as MessageEvents["type"][];

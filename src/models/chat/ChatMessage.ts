@@ -16,7 +16,7 @@ export type ToolMessage = BaseMessage & {
 export type UserMessage = BaseMessage & {
     type: "user";
     text: string;
-    files?: Omit<MessageFile, "id">[];
+    files: Omit<MessageFile, "id">[];
 }
 
 export type SystemMessage = BaseMessage & {
@@ -30,10 +30,10 @@ export type AssistantMessage = BaseMessage & {
     model: string;
     finished: boolean;
     provider: string;
-    hasAudio?: boolean;
+    hasAudio: boolean;
     references: ResourceReference[];
     files: Omit<MessageFile, "id">[];
-    resoning?: ReasoningDetail[];
+    reasoning?: ReasoningDetail[];
 }
 
 export type ChatMessage = (ToolMessage | UserMessage | SystemMessage | AssistantMessage);

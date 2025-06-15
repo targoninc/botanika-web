@@ -30,7 +30,7 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
     const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
-    sendEvent({
+    eventStore.publish({
         userId: ws.userId,
         type: "chatCreated",
         chatId: chatId,
@@ -43,7 +43,7 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
-            sendEvent({
+            eventStore.publish({
                 userId: ws.userId,
                 type: "chatNameSet",
                 chatId: chat.id,
@@ -106,7 +106,7 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
         message.time = Date.now();
         message.finished = true;
 
-        sendEvent({
+        eventStore.publish({
             userId: ws.userId,
             type: "messageCreated",
             chatId: chat.id,

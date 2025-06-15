@@ -1,12 +1,16 @@
-﻿import { BotanikaServerEvent, BotanikaServerEventType } from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
+﻿import {
+    BotanikaServerEvent,
+    BotanikaServerEventType,
+    BotanikaServerEventWithTimestamp
+} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
 import { CLI } from "../../CLI.ts";
 
 // Type for event handlers
-export type EventHandler<T extends BotanikaServerEvent = BotanikaServerEvent> = (event: T) => Promise<void> | void;
+export type EventHandler<T extends BotanikaServerEventWithTimestamp = BotanikaServerEventWithTimestamp> = (event: T) => Promise<void> | void;
 
 // Type mapping from event type strings to their corresponding event types
 export type EventTypeMap = {
-    [K in BotanikaServerEventType]: Extract<BotanikaServerEvent, { type: K }>;
+    [K in BotanikaServerEventType]: Extract<BotanikaServerEventWithTimestamp, { type: K }>;
 };
 
 // Interface for event subscription
@@ -16,18 +20,10 @@ interface EventSubscription {
     userId?: string; // Optional: only handle events for a specific user
 }
 
-/**
- * Event Store class for managing events in the system
- * Provides functionality for:
- * - Publishing events
- * - Subscribing to events
- * - Storing events (in-memory for now, could be extended to persistent storage)
- */
 export class EventStore {
     private static instance: EventStore;
     private subscriptions: EventSubscription[] = [];
     private eventHistory: BotanikaServerEvent[] = [];
-    private readonly historyLimit: number = 1000; // Limit the number of events stored in memory
 
     private constructor() {}
 
@@ -50,28 +46,17 @@ export class EventStore {
      * @param event The event to publish
      */
     public async publish(event: BotanikaServerEvent): Promise<void> {
-        // Ensure timestamp is set
-        if (!event.timestamp) {
-            event.timestamp = Date.now();
-        }
+        event.timestamp ??= Date.now();
+        const eventWithTimestamp = event as BotanikaServerEventWithTimestamp;
 
-        // Add to history
-        this.eventHistory.push(event);
+        this.eventHistory.push(eventWithTimestamp);
 
-        // Trim history if it exceeds the limit
-        if (this.eventHistory.length > this.historyLimit) {
-            this.eventHistory = this.eventHistory.slice(-this.historyLimit);
-        }
-
-        // Notify subscribers
         const matchingSubscriptions = this.subscriptions.filter(sub => {
-            // Check if subscription matches the event type
-            const typeMatches = 
+            const typeMatches =
                 sub.eventType === '*' || 
                 sub.eventType === event.type || 
                 (Array.isArray(sub.eventType) && sub.eventType.includes(event.type as BotanikaServerEventType));
 
-            // Check if subscription matches the user ID (if specified)
             const userMatches = !sub.userId || sub.userId === event.userId;
 
             return typeMatches && userMatches;
@@ -79,7 +64,7 @@ export class EventStore {
 
         for (const subscription of matchingSubscriptions) {
             try {
-                await subscription.handler(event);
+                await subscription.handler(eventWithTimestamp);
             } catch (error) {
                 CLI.error(`Error in event handler for event type ${event.type}: ${error}`);
             }
@@ -149,37 +134,6 @@ export class EventStore {
     }
 
     /**
-     * Get events from the history that match the specified criteria
-     * 
-     * @param eventType Optional: filter by event type
-     * @param userId Optional: filter by user ID
-     * @param limit Optional: limit the number of events returned
-     * @returns An array of events that match the criteria
-     */
-    public getEvents(
-        eventType?: BotanikaServerEventType,
-        userId?: string,
-        limit?: number
-    ): BotanikaServerEvent[] {
-        let filteredEvents = this.eventHistory;
-
-        if (eventType) {
-            filteredEvents = filteredEvents.filter(event => event.type === eventType);
-        }
-
-        if (userId) {
-            filteredEvents = filteredEvents.filter(event => event.userId === userId);
-        }
-
-        // Return the most recent events up to the limit
-        if (limit && limit > 0) {
-            return filteredEvents.slice(-limit);
-        }
-
-        return filteredEvents;
-    }
-
-    /**
      * Clear all events from the history
      */
     public clearEvents(): void {
@@ -206,16 +160,16 @@ export class EventStore {
      */
     public async consume<
         F extends Record<string, unknown>,
-        T extends BotanikaServerEvent = Extract<
-            BotanikaServerEvent,
+        T extends BotanikaServerEventWithTimestamp = Extract<
+            BotanikaServerEventWithTimestamp,
             { [K in keyof F]: F[K] }
         >
     >(filter: F, handler: EventHandler<T>): Promise<number>;
 
     public async consume<
         F extends Record<string, unknown> = Record<string, never>,
-        T extends BotanikaServerEvent = Extract<
-            BotanikaServerEvent,
+        T extends BotanikaServerEventWithTimestamp = Extract<
+            BotanikaServerEventWithTimestamp,
             { [K in keyof F]: F[K] }
         >
     >(filterOrHandler: F | EventHandler, handlerOrNothing?: EventHandler<T>): Promise<number> {
@@ -230,7 +184,7 @@ export class EventStore {
         // Filter events if a filter is provided
         const events = hasFilter 
             ? allEvents.filter(event => {
-                // Check if event matches all filter criteria
+                // Check if the event matches all filter criteria
                 return Object.entries(filter).every(([key, value]) => 
                     event[key] === value
                 );
