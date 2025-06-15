@@ -139,7 +139,7 @@ export class ChatListTemplates {
                                     editing.value = false;
                                 }, ["no-wrap"])),
                                 GenericTemplates.iconButton(compute(e => e ? "close" : "edit", editing), compute(e => e ? "Cancel editing" : "Edit chat name", editing), () => editing.value = !editing.value),
-                                GenericTemplates.iconButton(compute(e => e ? "lock_open" : "lock", shared), compute(e => e ? "Make private" : "Make public", shared), () => shared.value = !shared.value),
+                                GenericTemplates.iconButton(compute(e => e ? "public" : "lock", shared), compute(e => e ? "Make private" : "Make public", shared), () => shared.value = !shared.value),
                                 GenericTemplates.iconButton("delete", "Edit chat name", (e) => {
                                     e.stopPropagation();
                                     createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
