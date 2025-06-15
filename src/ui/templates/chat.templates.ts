@@ -307,7 +307,7 @@ export class ChatTemplates {
         const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
         const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
-        const entirelyDisabled = compute((c, u) => c && u && c.userId !== u.id, chatContext, currentUser);
+        const entirelyDisabled = compute((c, u) => c && c.userId && u && c.userId !== u.id, chatContext, currentUser);
         const entirelyDisabledClass = compute((d): string => d ? "disabled" : "_", entirelyDisabled);
 
         return create("div")
