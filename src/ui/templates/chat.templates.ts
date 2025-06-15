@@ -132,7 +132,7 @@ export class ChatTemplates {
                         ChatTemplates.date(message.time),
                     ).build(),
                 create("div")
-                    .classes("flex-v", "card", "message-content")
+                    .classes("flex-v", "message-content")
                     .children(
                         ChatTemplates.toolCalls(message),
                         ChatTemplates.reasoning(message),
