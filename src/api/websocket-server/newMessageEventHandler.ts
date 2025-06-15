@@ -5,7 +5,7 @@ import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
 import {CLI} from "../CLI.ts";
 import {
-    createChat, getChatName,
+    getChatName,
     getPromptMessages,
     getWorldContext,
     newAssistantMessage,
@@ -38,7 +38,15 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
 
     let chat: ChatContext;
     try {
-        chat = await createChat(ws.userId, chatMsg, chatId);
+        chat = {
+            createdAt: Date.now(),
+            shared: false,
+            updatedAt: Date.now(),
+            id: chatId,
+            userId: ws.userId,
+            history: [chatMsg],
+            name: ""
+        }
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
@@ -61,7 +69,7 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
 }
 
 async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
-    let chat: ChatContext;
+    let chat: ChatContext | null;
     if (!request.chatId) {
         chat = await createNewChat(ws, request, model);
     } else {
@@ -94,17 +102,14 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
 async function requestSimpleIfOnlyToolCalls(
     ws: WebsocketConnection,
     userConfig: Configuration,
-    streamResponse: {
-        steps: Promise<Array<StepResult<ToolSet>>>
-    },
+    steps: Promise<Array<StepResult<ToolSet>>>,
     maxSteps: number,
     model: LanguageModelV1,
     chat: ChatContext,
     worldContext: Record<string, any>,
     request: NewMessageEventData
 ) {
-    const steps = await streamResponse.steps;
-    const toolResults = steps.flatMap(s => s.toolResults);
+    const toolResults = (await steps).flatMap(s => s.toolResults)
     if (toolResults.length === maxSteps) {
         const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
         const message = newAssistantMessage(response.text, request.provider, request.model);
@@ -152,29 +157,16 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
 
     if (request.chatId) {
         CLI.debug(`${chat.history.length} existing messages`);
-        chat.history.push(newUserMessage(request.provider, request.model, request.message, request.files));
+        chat.history.push(newUserMessage(request.message, request.files));
     }
-
-    /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
-        sendWarning(ws, `Model ${request.model} might not support tool calls`);
-        toolInfo.tools = {};
-    }*/
 
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws.userId, maxSteps, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = streamResponseAsMessage(ws, maxSteps, model, toolInfo.tools, promptMessages, chat.id);
 
-    await requestSimpleIfOnlyToolCalls(ws, userConfig, maxSteps, model, chat, worldContext, request);
-    await waitForMessageFinished;
+    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse.steps, maxSteps, model, chat, worldContext, request);
     toolInfo.mcpInfo.onClose();
 
-    chat.history.map(m => {
-        if (m.id === assMessage.value.id) {
-            return assMessage.value;
-        }
-        return m;
-    });
-
-    await ChatStorage.writeChatContext(ws.userId, chat);
+    await streamResponse.all();
 }

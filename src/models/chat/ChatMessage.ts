@@ -36,7 +36,7 @@ export type AssistantMessage = BaseMessage & {
     references: ResourceReference[];
     files: Omit<MessageFile, "id">[];
     reasoning?: ReasoningDetail[];
-    usage: LanguageModelUsage;
+    // usage: LanguageModelUsage;
 }
 
 export type ChatMessage = (ToolMessage | UserMessage | SystemMessage | AssistantMessage);

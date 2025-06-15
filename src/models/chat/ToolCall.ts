@@ -1,20 +1,22 @@
 import {ChatToolResult} from "./ChatToolResult.ts";
 
-export type ToolCall = {
+export type BaseToolCall = {
     toolCallId: string;
     toolName: string;
     args: any;
 }
 
-export type PartialToolCall = ToolCall & {
+export type PartialToolCall = BaseToolCall & {
     state: "partial-call";
 }
 
-export type ToolCallResult = ToolCall & {
+export type ToolCallResult = BaseToolCall & {
     state: "result";
     result: ChatToolResult;
 }
 
-export type ToolCallCall = ToolCall & {
+export type ToolCallCall = BaseToolCall & {
     state: "call";
 }
+
+export type ToolCall = PartialToolCall | ToolCallResult | ToolCallCall;

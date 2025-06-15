@@ -4,14 +4,10 @@ import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {
-    sendEvent,
-    removeOngoingConversation,
-    sendChatUpdate,
-    WebsocketConnection
-} from "../websocket-server/websocket.ts";
+import {WebsocketConnection} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
+import {eventStore} from "../database/events/eventStore.ts";
 
 export async function getAudio(lastMessage: AssistantMessage): Promise<string> {
     const blob = await getTtsAudio(lastMessage.text);
@@ -39,7 +35,7 @@ export async function getChatsEndpoint(req: Request, res: Response) {
     res.send(chats);
 }
 
-export function getChatEndpoint(req: Request, res: Response) {
+export async function getChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
         res.status(400).send('Missing chatId parameter');
@@ -47,37 +43,39 @@ export function getChatEndpoint(req: Request, res: Response) {
     }
 
     if (req.query.shared === "true") {
-        ChatStorage.readPublicChatContext(chatId).then(chatContext => {
-            if (!chatContext) {
-                res.status(404).send('Chat not found');
-                return;
-            }
-            res.send(chatContext);
-        });
+        const chatContext = await ChatStorage.readPublicChatContext(chatId);
+        if (!chatContext) {
+            res.status(404).send('Chat not found');
+            return;
+        }
+        res.send(chatContext);
     } else {
-        ChatStorage.readChatContext(req.user!.id, chatId).then(chatContext => {
-            if (!chatContext) {
-                res.status(404).send('Chat not found');
-                return;
-            }
-            res.send(chatContext);
-        });
+        const chatContext = await ChatStorage.readChatContext(req.user!.id, chatId);
+
+        if (!chatContext) {
+            res.status(404).send('Chat not found');
+            return;
+        }
+        res.send(chatContext);
     }
     return;
 }
 
-export function deleteChatEndpoint(req: Request, res: Response) {
+export async function deleteChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
         res.status(400).send('Missing chatId parameter');
         return;
     }
 
-    removeOngoingConversation(chatId, req.user.id);
-
-    ChatStorage.deleteChatContext(req.user.id, chatId).then(() => {
-        res.status(200).send('Chat deleted');
+    eventStore.publish({
+        userId: req.user!.id,
+        type: "chatDeleted",
+        chatId
     });
+
+    await ChatStorage.deleteChatContext(req.user!.id, chatId);
+    res.status(200).send('Chat deleted');
 }
 
 let models = {};
@@ -92,21 +90,23 @@ export async function getModelsEndpoint(req: Request, res: Response) {
 export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
     const chatId = req.body.chatId;
     const messageId = req.body.messageId;
-    if (!chatId || !messageId) {
-        res.status(400).send('Missing chatId or messageId parameter');
+    const exclusive = req.body.exclusive;
+    if (!chatId || !messageId || exclusive === undefined) {
+        const parameters = [
+            !chatId ? 'chatId' : '',
+            !messageId ? 'messageId' : '',
+            exclusive === undefined ? 'exclusive' : ''
+        ];
+
+        res.status(400).send(`Missing ${parameters.filter(Boolean).join(', ')} parameter`);
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
-        const message = c.history.find(m => m.id === messageId);
-
-        if (req.body.exclusive) {
-            c.history = c.history.filter(m => m.time < message.time);
-        } else {
-            c.history = c.history.filter(m => m.time <= message.time);
-        }
-
-        await ChatStorage.writeChatContext(req.user.id, c);
-        res.status(200).send();
+    eventStore.publish({
+        userId: req.user!.id,
+        type: "chatDeletedAfterMessage",
+        chatId,
+        afterMessageId: messageId,
+        exclusive: req.body.exclusive
     });
 }
 
