@@ -1,7 +1,8 @@
 import {MessageFile} from "./MessageFile.ts";
-import {ToolResultPart} from "ai";
 import {ResourceReference} from "./ResourceReference.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
+import {ToolCall} from "./ToolCall.ts";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 type BaseMessage = {
     id: string;
@@ -10,7 +11,7 @@ type BaseMessage = {
 
 export type ToolMessage = BaseMessage & {
     type: "tool";
-    toolResult: ToolResultPart;
+    toolInvocations: ToolCall[];
 }
 
 export type UserMessage = BaseMessage & {
