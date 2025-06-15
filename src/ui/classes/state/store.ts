@@ -52,6 +52,16 @@ export function initializeStore() {
         focusChatInput();
     });
 
+    const chatId = getUrlParameter("chatId", null);
+    const shared = getUrlParameter("shared", null);
+    if (chatId && shared === "true") {
+        Api.getChat(chatId, true).then(c => {
+            if (c.success) {
+                chatContext.value = c.data as ChatContext;
+            }
+        });
+    }
+
     activePage.subscribe(c => {
         const url = new URL(window.location.href);
         url.pathname = c;
@@ -98,12 +108,8 @@ export async function loadAllChats(newChats: ChatContext[]) {
 
             if (chatContext.success) {
                 updateChats([
-                    ...chats.value.map(c => {
-                        if (c.id === chat.id) {
-                            return chatContext.data as ChatContext;
-                        }
-                        return c;
-                    }),
+                    ...chats.value.filter(c => c.id !== chat.id),
+                    chatContext.data as ChatContext
                 ]);
 
                 return chatContext.data as ChatContext;

@@ -11,6 +11,7 @@ export interface Configuration extends Record<string, any> {
     provider: string;
     model: string;
     enableTts: boolean;
+    enableStt: boolean;
     maxSteps: number;
     transcriptionModel: string;
     featureOptions: {

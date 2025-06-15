@@ -5,7 +5,7 @@ import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
 
-function featureOption(config: Configuration, option: BotanikaFeature): any {
+export function featureOption(config: Configuration, option: BotanikaFeature): any {
     return (config.featureOptions ?? {})[option] ?? {};
 }
 

@@ -582,6 +582,7 @@ kbd {
 
 .text-small {
     font-size: 0.8em;
+    line-height: 1.2;
 }
 
 .reference img {
@@ -740,7 +741,7 @@ kbd {
 .chat-list-item {
     cursor: pointer;
     border-radius: var(--attachment-border-radius);
-    padding: var(--gap-v);
+    padding: var(--gap-h) var(--gap-v);
     width: 100%;
 }
 

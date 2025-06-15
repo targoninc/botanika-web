@@ -51,7 +51,8 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         files,
         steps,
         text,
-        reasoningDetails
+        reasoningDetails,
+        usage
     } = streamText({
         model,
         messages,
@@ -63,6 +64,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         providerOptions: {
             openai: {
                 store: true,
+                reasoningSummary: 'detailed',
                 reasoning: {
                     effort: "medium"
                 }
@@ -90,6 +92,13 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         message.value = {
             ...message.value,
             reasoning: r
+        };
+    });
+
+    usage.then(u => {
+        message.value = {
+            ...message.value,
+            usage: u
         };
     })
 

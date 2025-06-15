@@ -16,6 +16,7 @@ import {v4} from "uuid";
 
 export class SettingsTemplates {
     static settings() {
+        const ttsModelOptions = ["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper"];
         const settings: SettingConfiguration[] = [
             {
                 key: "display_hotkeys",
@@ -25,11 +26,28 @@ export class SettingsTemplates {
                 type: "boolean",
             },
             {
+                key: "enableStt",
+                icon: "mic",
+                label: "Enable transcription",
+                description: "Whether transcription of what you say should be enabled",
+                type: "boolean",
+            },
+            {
                 key: "enableTts",
                 icon: "text_to_speech",
-                label: "Enable TTS",
+                label: "Enable text to speech",
                 description: "Whether assistant messages should be spoken aloud",
                 type: "boolean",
+            },
+            {
+                key: "transcriptionModel",
+                icon: "transcribe",
+                label: "Transcription Model",
+                description: `Which OpenAI transcription model to use. One of ${ttsModelOptions.join(", ")}.`,
+                type: "string",
+                validator: value => {
+                    return ttsModelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${ttsModelOptions.join(",")}`];
+                }
             },
             {
                 key: "botname",
@@ -69,17 +87,6 @@ export class SettingsTemplates {
                 label: "Maximum steps per call",
                 description: "Maximum amount of iterations each message you send will trigger",
                 type: "number",
-            },
-            {
-                key: "transcriptionModel",
-                icon: "transcribe",
-                label: "Transcription Model",
-                description: "Which OpenAI transcription model to use.",
-                type: "string",
-                validator: value => {
-                    const modelOptions = ["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper"];
-                    return modelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${modelOptions.join(",")}`];
-                }
             },
             {
                 key: "tintColor",
@@ -188,6 +195,10 @@ export class SettingsTemplates {
                             onclick: () => updateKey(sc.key, value.value)
                         })),
                     ).build(),
+                when(sc.description, create("span")
+                    .classes("text-small")
+                    .text(sc.description)
+                    .build()),
                 signalMap(errors, create("div").classes("flex-v"), e => create("span")
                     .classes("error")
                     .text(e)
