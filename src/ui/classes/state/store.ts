@@ -40,7 +40,7 @@ export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
 
 const getNewestChatDate = (chts: ChatContext[]) => {
-    const res = Math.max(...chts.map(c => c.updatedAt));
+    const res = Math.max(...chts.filter(c => !!c.updatedAt).map(c => c.updatedAt));
     if (Math.abs(res) === Infinity) {
         return null;
     }
@@ -98,7 +98,7 @@ export function initializeStore() {
     });
 
     tryLoadFromCache<Configuration>("config", configuration, () => Api.getConfig());
-    tryLoadFromCache<ChatContext[]>("chats", chats, (cachedChats) => Api.getNewestChats(cachedChats ? new Date(getNewestChatDate(cachedChats)) : undefined)
+    tryLoadFromCache<ChatContext[]>("chats", chats, (cachedChats) => Api.getNewestChats((cachedChats && cachedChats.length > 0) ? new Date(getNewestChatDate(cachedChats)) : undefined)
         .then(async result => {
             if (result.success && result.data) {
                 return await loadAllChats(result.data as ChatContext[]);
