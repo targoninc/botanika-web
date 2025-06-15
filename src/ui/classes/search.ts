@@ -7,6 +7,17 @@
  * @returns Filtered array of objects that contain the search string in one of the provided property names.
  */
 export function searchList<T>(properties: (keyof T)[], array: Array<T>, searchString: string): Array<T> {
+    searchString = searchString.toLowerCase();
+    const tokens = searchString.split(/\s+/);
+
+    function hasToken(str: string, token: string) {
+        return str.toLowerCase().includes(token);
+    }
+
+    function hasAnyToken(str: string, tokens: string[]) {
+        return tokens.some(t => hasToken(str, t));
+    }
+
     function searchObject(obj: T) {
         if (obj.constructor !== Object) {
             return false;
@@ -17,22 +28,16 @@ export function searchList<T>(properties: (keyof T)[], array: Array<T>, searchSt
                 // @ts-ignore
                 const value = obj[key];
 
-                if (value.constructor === String && (value as string).toLowerCase().includes(searchString)) {
+                if (value.constructor === String && hasAnyToken(value as string, tokens)) {
                     return true;
                 }
 
-                if (value.constructor === Number && (value as any).toString().toLowerCase().includes(searchString)) {
+                if (value.constructor === Number && hasAnyToken((value as Number).toString(), tokens)) {
                     return true;
                 }
 
-                if (value.constructor === Object) {
-                    if (JSON.stringify(value).toLowerCase().includes(searchString)) {
-                        return true;
-                    }
-                }
-
-                if (Array.isArray(value)) {
-                    if (JSON.stringify(value).toLowerCase().includes(searchString)) {
+                if (value.constructor === Object || Array.isArray(value)) {
+                    if (hasAnyToken(JSON.stringify(value), tokens)) {
                         return true;
                     }
                 }
