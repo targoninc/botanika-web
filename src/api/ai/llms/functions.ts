@@ -1,6 +1,5 @@
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {Signal} from "@targoninc/jess";
-import {sendEvent} from "../../websocket-server/websocket.ts";
 import {eventStore} from "../../database/events/eventStore.ts";
 
 export async function updateMessageFromStream(

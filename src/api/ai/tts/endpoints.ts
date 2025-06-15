@@ -77,6 +77,14 @@ export function addAudioEndpoints(app: Application) {
     app.get(ApiEndpoint.AUDIO, getAudioEndpoint);
 }
 
+// Wrapper function to ensure proper return type
+function transcribeEndpointWrapper(req: Request, res: Response) {
+    transcribeEndpoint(req, res).catch(err => {
+        console.error('Error in transcribe endpoint:', err);
+        res.status(500).send('Internal server error');
+    });
+}
+
 export function addTranscribeEndpoints(app: Application) {
-    app.post(ApiEndpoint.TRANSCRIBE, upload.single('file'), transcribeEndpoint);
+    app.post(ApiEndpoint.TRANSCRIBE, upload.single('file'), transcribeEndpointWrapper);
 }
