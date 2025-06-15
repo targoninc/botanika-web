@@ -34,6 +34,20 @@ export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TP
             toolResult: result
         });
 
+        let result = await getToolResult(id, execute, input);
+
+        assMsg = structuredClone(message.value);
+        assMsg.toolInvocations = assMsg.toolInvocations.map(ti => {
+            if (ti.toolCallId === callId) {
+                return {
+                    ...ti,
+                    state: "result",
+                    result: result ?? null
+                };
+            }
+            return ti;
+        });
+
         chat.history.push({
             toolResult: {
                 type: "tool-result",

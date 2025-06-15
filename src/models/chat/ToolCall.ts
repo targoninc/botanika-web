@@ -5,5 +5,5 @@ export interface ToolCall {
     toolName: string;
     args: any;
     state: "result" | "call" | "partial-call";
-    result?: ChatToolResult;
+    result?: ChatToolResult | null;
 }
