@@ -1,67 +1,244 @@
 import {ChatContext} from "../../models/chat/ChatContext";
 import {db} from "../database/db.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {ResourceReference} from "../../models/chat/ResourceReference.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import { MessageType } from "@prisma/client";
+import {Chat, MessageType, Prisma} from "@prisma/client";
 import {ToolInvocation} from "@ai-sdk/ui-utils";
+import {MessageIncrement, UserIncrement} from "../database/events/incrementProjector.ts";
+import {CLI} from "../CLI.ts";
 
 export class ChatStorage {
-    static async writeChatContext(userId: string, chat: ChatContext) {
-        await db.chat.upsert({
-            where: { id: chat.id },
-            update: {
-                name: chat.name,
-                updatedAt: new Date()
-            },
-            create: {
-                id: chat.id,
-                name: chat.name,
-                createdAt: new Date(chat.createdAt),
-                updatedAt: new Date(),
-                user: {
-                    connect: { id: userId }
+    static async applyIncrements(userId: string, increment: UserIncrement) {
+        const chatCreations: Chat[] = [];
+        const messageCreations: Map<string, Prisma.MessageCreateManyChatInput[]> = new Map();
+        const chatUpdates: Prisma.ChatUpdateArgs[] = [];
+        const messageTextAppend: { messageId: string, additionalText: string }[] = [];
+
+        for (const [chatId, chatIncrement] of increment.chatIncrements.entries()){
+            switch (chatIncrement.type) {
+                case "newChat":
+                    chatCreations.push({
+                        id: chatId,
+                        name: chatIncrement.chat.name,
+                        createdAt: new Date(chatIncrement.chat.createdAt),
+                        updatedAt: new Date(chatIncrement.chat.updatedAt),
+                        branchedFromChatId: chatIncrement.chat.branched_from_chat_id ?? null,
+                        userId: userId,
+                    });
+
+                    for (const message of chatIncrement.chat.history) {
+                        const newMessage = createMessageFromNewMessage(message.id, message);
+
+                        let newMessages = messageCreations.get(chatId);
+                        if (!newMessages) {
+                            newMessages = [];
+                            messageCreations.set(chatId, newMessages);
+                        }
+
+                        newMessages.push(newMessage);
+                    }
+
+                    break;
+                case "addToChat": {
+                    const chatUpdate: Prisma.ChatUpdateArgs["data"] = {
+                        updatedAt: new Date(chatIncrement.latestUpdateTimestamp)
+                    };
+
+                    if (chatIncrement.name) {
+                        chatUpdate.name = chatIncrement.name;
+                    }
+
+                    const newMessages: Prisma.MessageCreateManyChatInput[] = [];
+                    const updatedMessages: Prisma.MessageUpdateArgs[] = [];
+                    for (const [messageId, messageIncrement] of chatIncrement.messageIncrements.entries()) {
+                        switch (messageIncrement.type) {
+                            case "newMessage": {
+                                const message = createMessageFromNewMessage(messageId, messageIncrement.message);
+
+                                newMessages.push(message);
+
+                                break;
+                            }
+                            case "addToMessage": {
+                                const updateMessage = createMessageFromAddToMessage(messageId, chatId, messageIncrement);
+
+                                updatedMessages.push(updateMessage);
+
+                                break;
+                            }
+                        }
+                    }
+
+                    chatUpdate.messages = {
+                        createMany: {
+                            data: newMessages,
+                        },
+                        updateMany: updatedMessages
+                    }
+
+                    chatUpdates.push({
+                        where: {id: chatId},
+                        data: chatUpdate,
+                        include: {
+                            messages: true
+                        }
+                    });
+                    break;
                 }
             }
-        });
-
-        // Get existing messages
-        const existingMsgs = await db.message.findMany({
-            where: { chatId: chat.id }
-        });
-
-        const toAddMsgs = chat.history.filter(hm => existingMsgs.every(m => m.id !== hm.id));
-        const toDeleteMsgs = existingMsgs.filter(hm => chat.history.every(m => m.id !== hm.id));
-
-        // Delete messages that are no longer in the chat history
-        for (const message of toDeleteMsgs) {
-            await db.message.delete({
-                where: { id: message.id }
-            });
         }
 
-        // Add new messages
-        for (const message of toAddMsgs) {
-            const date = new Date(message.time);
+        db.$transaction(async transactionClient => {
+            const createChats = transactionClient.chat.createMany({
+                data: chatCreations
+            }).then(async chats => {
+                CLI.debug(`Created ${chats.count} new chats`);
+            });
 
-            await db.message.create({
-                data: {
-                    id: message.id,
-                    chat: {
-                        connect: { id: chat.id }
-                    },
-                    provider: message.provider,
-                    model: message.model,
-                    createdAt: date,
-                    finished: message.finished,
-                    text: message.text,
-                    type: message.type as MessageType,
-                    hasAudio: message.hasAudio,
-                    reasoning: message.reasoning,
-                    toolInvocations: message.toolInvocations as any,
-                    files: message.files as any
+            const updateChats = transactionClient.chat.updateMany({
+                data: chatUpdates
+            }).then(async chats => {
+                CLI.debug(`Updated ${chats.count} chats`);
+            });
+
+            const updateMessages = await transactionClient.message.findMany({
+                where: {
+                    id: {
+                        in: messageTextAppend.map(message => message.messageId)
+                    }
                 }
             });
+
+            await transactionClient.message.updateMany({
+                data: updateMessages.map(message => {
+                    const append = messageTextAppend.find(m => m.messageId === message.id);
+                    if (append) {
+                        return {
+                            id: message.id,
+                            text: message.text + append.additionalText
+                        };
+                    }
+                    return { id: message.id };
+                })
+            }).then(async messages => {
+                CLI.debug(`Updated ${messages.count} messages with appended text`);
+            });
+
+            await createChats;
+            await db.chat.updateMany({
+                data: [...messageCreations.entries()].map(([chatId, messages]) => ({
+                    chatId,
+                    messages: {
+                        createMany: {
+                            data: messages
+                        }
+                    }
+                }))
+            }).then(async messages => {
+                CLI.debug(`Created ${messages.count} new messages`);
+            });
+
+            await updateChats;
+        });
+
+
+        function createMessageFromNewMessage(
+            messageId: string,
+            message: ChatMessage
+        ) : Prisma.MessageCreateManyChatInput {
+            let text: Prisma.MessageCreateManyChatInput["text"] | null = null;
+            let model: Prisma.MessageCreateManyChatInput["model"] | null = null;
+            let finished: Prisma.MessageCreateManyChatInput["finished"] | null = false;
+            let provider: Prisma.MessageCreateManyChatInput["provider"] | null = null;
+            let hasAudio: Prisma.MessageCreateManyChatInput["hasAudio"] = false;
+            let reasoning: Prisma.MessageCreateManyChatInput["reasoning"] | null = null;
+            let files: Prisma.MessageCreateManyChatInput["files"] | null = null;
+
+            const createdAt: Date = new Date(message.time);
+            let toolInvocations: ToolInvocation[] | null = null;
+
+            switch (message.type) {
+                case "tool": {
+                    toolInvocations = [{
+                        state: "result",
+                        toolName: message.toolResult.toolName,
+                        result: message.toolResult.result,
+                        toolCallId: message.toolResult.toolCallId,
+                        step: 0, // TODO: Where do we get step from?
+                        args: null // TODO: Where do we get args from?
+                    }];
+
+                    break;
+                }
+                case "user":
+                    text = message.text;
+                    files = message.files as any;
+
+                    break;
+                case "system":
+                    text = message.text;
+
+                    break;
+                case "assistant":
+                    text = message.text;
+                    model = message.model;
+                    finished = message.finished;
+                    provider = message.provider;
+                    hasAudio = message.hasAudio;
+                    reasoning = message.reasoning as any;
+                    files = message.files as any;
+
+                    break;
+            }
+
+            return {
+                id: messageId,
+                createdAt: createdAt,
+                type: message.type as MessageType,
+                text: text,
+                finished: finished,
+                provider: provider,
+                model: model,
+                hasAudio: hasAudio,
+                reasoning: reasoning as any,
+                toolInvocations: toolInvocations as any,
+                files: files as any
+            };
+        }
+
+        function createMessageFromAddToMessage(
+            messageId: string,
+            chatId: string,
+            messageIncrement: MessageIncrement & { type: "addToMessage" }
+        ): Prisma.MessageUpdateArgs {
+            const updateMessage: Prisma.MessageUpdateArgs["data"] = {
+                id: messageId,
+                chatId,
+            };
+
+            if (messageIncrement.audio !== undefined) {
+                updateMessage.hasAudio = messageIncrement.audio;
+            }
+
+            if (messageIncrement.text !== undefined) {
+                messageTextAppend.push({
+                    messageId,
+                    additionalText: messageIncrement.text
+                });
+            }
+
+            if (messageIncrement.finished !== undefined) {
+                updateMessage.finished = messageIncrement.finished;
+            }
+
+            if (messageIncrement.files !== undefined) {
+                updateMessage.files = messageIncrement.files as any;
+            }
+
+            return {
+                where: { id: messageId },
+                data: updateMessage
+            };
         }
     }
 

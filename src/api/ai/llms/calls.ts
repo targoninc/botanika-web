@@ -84,7 +84,7 @@ export async function streamResponseAsMessage(
 
     const messageId = uuidv4();
 
-    sendEvent({
+    eventStore.publish({
         userId: ws.userId,
         type: "messageCreated",
         chatId: chatId,
@@ -112,7 +112,7 @@ export async function streamResponseAsMessage(
             mimeType: file.mimeType,
         }));
 
-        sendEvent({
+        eventStore.publish({
             type: "updateFiles",
             userId: ws.userId,
             chatId,
@@ -135,7 +135,7 @@ export async function streamResponseAsMessage(
             snippet: source.id
         } as const));
 
-        sendEvent({
+        eventStore.publish({
             type: "updateReferences",
             userId: ws.userId,
             chatId: chatId,
@@ -150,7 +150,7 @@ export async function streamResponseAsMessage(
     });
 
     const updateText = text.then((text: string) => {
-        sendEvent(ws.userId, {
+        eventStore.publish(ws.userId, {
             type: "messageTextCompleted",
             chatId: chatId,
             messageId,

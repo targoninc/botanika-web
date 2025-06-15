@@ -31,10 +31,10 @@ async function searchToolCall(input: SpotifySearchOptions, userConfig: Configura
     const refs = Object.keys(result).flatMap(key => {
         return result[key].items
             .filter(i => !!i)
-            .map((i: any) => {
+            .map<ResourceReference>((i: any) => {
                 const artists = i.artists ? i.artists.map(a => a.name).join(", ") : undefined;
 
-                return <ResourceReference>{
+                return {
                     type: "resource-reference",
                     name: artists ? artists + " - " + i.name : i.name,
                     link: i.external_urls?.spotify,

@@ -1,6 +1,6 @@
 // Re-export the Prisma client as db for backward compatibility
 import {prisma, getPrismaClient} from './prisma';
-import {User} from "@prisma/client";
+import {Prisma} from "@prisma/client";
 
 // Export the Prisma client directly for backward compatibility
 export const db = prisma;
@@ -16,7 +16,7 @@ export const db = prisma;
     }
 })();
 
-export async function updateUser(id: string, update: Partial<User>) {
+export async function updateUser(id: string, update: Prisma.UserUpdateArgs["data"]) {
     const user = await db.user.findUnique({ where: { id: id } });
     if (!user) {
         return;
