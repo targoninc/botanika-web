@@ -1,6 +1,5 @@
 import {
     activateNextUpdate,
-    activePage,
     availableModels,
     chatContext,
     chats,
@@ -8,8 +7,7 @@ import {
     connected,
     currentChatId,
     currentlyPlayingAudio,
-    currentText,
-    deleteChat,
+    currentText, currentUser,
     shortCutConfig,
     target,
     updateChats,
@@ -25,8 +23,8 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button, input} from "@targoninc/jess-components";
+import {compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {button} from "@targoninc/jess-components";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
 import {focusChatInput, realtime} from "../index.ts";
@@ -37,12 +35,10 @@ import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 import {getHost} from "../classes/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
-import {searchList} from "../classes/search.ts";
+import {ChatListTemplates} from "./chat-list.templates.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -58,10 +54,10 @@ export class ChatTemplates {
         return create("div")
             .classes("flex", "no-wrap", "no-gap", "relative", "restrict-to-parent")
             .children(
-                ChatTemplates.chatList("sidebar", menuShown),
+                ChatListTemplates.chatList("sidebar", menuShown),
                 GenericTemplates.movableDivider(".chat-list.sidebar"),
                 ChatTemplates.chatBox(menuShown),
-                when(menuShown, ChatTemplates.chatList("burger-menu", menuShown))
+                when(menuShown, ChatListTemplates.chatList("burger-menu", menuShown))
             ).build();
     }
 
@@ -69,7 +65,7 @@ export class ChatTemplates {
         return create("div")
             .classes("flex-v", "container", "relative", "no-gap", "no-padding", "chat-box")
             .children(
-                ChatTemplates.burgerButton(shown),
+                ChatListTemplates.burgerButton(shown),
                 ChatTemplates.botName(),
                 ChatTemplates.chatHistory(),
                 ChatTemplates.chatInput(),
@@ -160,6 +156,7 @@ export class ChatTemplates {
 
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
+        const isOwnChat = compute((c, u) => u && c.userId === u.id, chatContext, currentUser);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
@@ -181,7 +178,7 @@ export class ChatTemplates {
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
-                when(message.type === "user", GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
+                when(compute(i => message.type === "user" && i, isOwnChat), GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Retry message", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id, true);
@@ -207,7 +204,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
+                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
@@ -223,7 +220,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", GenericTemplates.iconButton("graph_1", "Branch to new chat", async (e) => {
+                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("graph_1", "Branch to new chat", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {
@@ -242,7 +239,7 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static date(time: number, extended: boolean = false) {
+    public static date(time: number, extended: boolean = false) {
         let formatted = toHumanizedTime(time);
         if (extended) {
             formatted = signal(new Date(time).toLocaleString("default", {
@@ -310,9 +307,11 @@ export class ChatTemplates {
         const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
         const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
+        const entirelyDisabled = compute((c, u) => c && c.userId && u && c.userId !== u.id, chatContext, currentUser);
+        const entirelyDisabledClass = compute((d): string => d ? "disabled" : "_", entirelyDisabled);
 
         return create("div")
-            .classes("chat-input", noHistoryClass)
+            .classes("chat-input", noHistoryClass, entirelyDisabledClass)
             .children(
                 create("div")
                     .classes("dropzone", "relative", "flex-v", "small-gap")
@@ -495,133 +494,6 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static chatList(context: string, shown: Signal<boolean>) {
-        const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
-        const userPopupVisible = signal(false);
-        const search = signal("");
-        const filteredChats = compute((c, s) => searchList(["history", "name"], c, s), chats, search);
-        const cachedWidth = localStorage.getItem(`divider-width-.chat-list.sidebar`);
-        let initialWidth = "max(30%, 200px)";
-        if (cachedWidth) {
-            initialWidth = cachedWidth + "px";
-        }
-
-        return create("div")
-            .classes("flex-v", "container", "small-gap", "chat-list", context)
-            .styles("width", context === "sidebar" ? initialWidth : "100%")
-            .children(
-                when(context === "burger-menu", ChatTemplates.burgerButton(shown)),
-                create("div")
-                    .classes("flex", "space-between", "align-children")
-                    .children(
-                        button({
-                            disabled: newDisabled,
-                            icon: {
-                                icon: "create"
-                            },
-                            text: "New chat",
-                            classes: ["flex", "align-center", "positive"],
-                            onclick: () => {
-                                currentChatId.value = null;
-                            }
-                        }),
-                        create("div")
-                            .classes("flex", "relative", "align-children")
-                            .children(
-                                GenericTemplates.buttonWithIcon("settings", "Settings", async () => {
-                                    activePage.value = "settings";
-                                }),
-                                GenericTemplates.userIcon(userPopupVisible),
-                                when(userPopupVisible, GenericTemplates.userPopup()),
-                            ).build(),
-                    ).build(),
-                input({
-                    type: InputType.text,
-                    placeholder: "Search chats...",
-                    name: "chatsSearch",
-                    value: search,
-                    classes: ["chat-search"],
-                    onchange: value => {
-                        search.value = value;
-                    }
-                }),
-                compute(c => ChatTemplates.chatListItems(c, shown), filteredChats),
-            ).build();
-    }
-
-    static chatListItems(chat: ChatContext[], menuShown: Signal<boolean>) {
-        return create("div")
-            .classes("flex-v", "flex-grow", "small-gap", "chat-list-items")
-            .children(
-                when(chat.length === 0, create("span")
-                    .text("No chats yet")
-                    .build()
-                ),
-                ...chat.map(chatId => ChatTemplates.chatListItem(chatId, menuShown))
-            ).build();
-    }
-
-    static chatListItem(chat: ChatContext, menuShown: Signal<boolean>) {
-        const active = compute(c => c && c.id === chat.id, chatContext);
-        const activeClass = compute((c): string => c ? "active" : "_", active);
-        const editing = signal(false);
-        const chatName = signal(chat.name);
-
-        return create("div")
-            .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)
-            .onclick(() => {
-                if (!editing.value) {
-                    currentChatId.value = chat.id;
-                    menuShown.value = false;
-                }
-            })
-            .children(
-                create("div")
-                    .classes("flex", "align-center", "no-wrap", "space-between")
-                    .children(
-                        when(editing, create("span")
-                            .classes("text-small")
-                            .text(chatName)
-                            .build(), true),
-                        when(editing, input({
-                            type: InputType.text,
-                            placeholder: "Chat name",
-                            value: chatName,
-                            name: "chatName",
-                            onchange: value => chatName.value = value
-                        })),
-                        create("div")
-                            .classes("flex", "align-children", "no-wrap", "chat-actions")
-                            .children(
-                                when(compute(cn => cn !== chat.name, chatName), GenericTemplates.buttonWithIcon("check", "", () => {
-                                    realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
-                                        type: BotanikaClientEventType.chatNameChanged,
-                                        data: {
-                                            chatId: chat.id,
-                                            name: chatName.value
-                                        }
-                                    });
-                                    editing.value = false;
-                                }, ["no-wrap"])),
-                                GenericTemplates.iconButton(compute(e => e ? "close" : "edit", editing), compute(e => e ? "Cancel editing" : "Edit chat name", editing), () => editing.value = !editing.value),
-                                GenericTemplates.iconButton("delete", "Edit chat name", (e) => {
-                                    e.stopPropagation();
-                                    createModal(GenericTemplates.confirmModalWithContent("Delete chat", create("div")
-                                        .classes("flex-v")
-                                        .children(
-                                            create("p")
-                                                .text(`Are you sure you want to delete this chat?`)
-                                                .build(),
-                                        ).build(), "Yes", "No", () => {
-                                        deleteChat(chat.id);
-                                    }));
-                                }),
-                            ).build()
-                    ).build(),
-                ChatTemplates.date(chat.createdAt),
-            ).build();
-    }
-
     private static reference(r: ResourceReference) {
         return create("div")
             .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_")
@@ -712,13 +584,5 @@ export class ChatTemplates {
                             .build(),
                     ).build())
             ).build());
-    }
-
-    private static burgerButton(shown: Signal<boolean>) {
-        return create("div")
-            .classes("burger-button", compute(s => s ? "inline" : "absolute", shown))
-            .children(
-                GenericTemplates.iconButton(compute(s => s ? "close" : "menu", shown), "Close chat list", () => shown.value = !shown.value),
-            ).build();
     }
 }

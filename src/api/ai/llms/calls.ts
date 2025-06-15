@@ -58,7 +58,8 @@ export async function streamResponseAsMessage(
         files,
         steps,
         text,
-        reasoningDetails
+        reasoningDetails,
+        usage
     } = streamText({
         model,
         messages,
@@ -70,6 +71,7 @@ export async function streamResponseAsMessage(
         providerOptions: {
             openai: {
                 store: true,
+                reasoningSummary: 'detailed',
                 reasoning: {
                     effort: "medium"
                 }
@@ -130,9 +132,24 @@ export async function streamResponseAsMessage(
             messageId,
             text
         });
+    reasoningDetails.then(r => {
+        message.value = {
+            ...message.value,
+            reasoning: r
+        };
+    });
+
+    usage.then(u => {
+        message.value = {
+            ...message.value,
+            usage: u
+        };
+    })
 
         return text;
     });
+
+    const reasoningData
 
     await steps.then((steps: Array<StepResult<ToolSet>>) => {
         /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.

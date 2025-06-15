@@ -75,7 +75,8 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                     content: m.text,
                 experimental_attachments: addAttachments ? (m.files ?? []).map(f => ({
                         contentType: f.mimeType,
-                        url: `data:${f.mimeType};base64,${f.base64}`
+                        url: `data:${f.mimeType};base64,${f.base64}`,
+                        name: f.name
                     })) : []
                 };
             }

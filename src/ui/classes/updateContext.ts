@@ -16,6 +16,10 @@ export function updateContext(c: ChatContext, update: ChatUpdate) {
         c.createdAt = Date.now();
     }
 
+    if (c.shared !== update.shared && update.shared !== undefined) {
+        c.shared = update.shared;
+    }
+
     if (!c.history) {
         c.history = [];
     }
