@@ -2,16 +2,16 @@ import {Api} from "./api";
 import {compute, signal} from "@targoninc/jess";
 import {ApiResponse} from "./api.base.ts";
 import {tryLoadFromCache} from "./tryLoadFromCache.ts";
-import { Configuration } from "../../../models/Configuration";
+import {Configuration} from "../../../models/Configuration";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
 import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
 import {Language} from "../i8n/language.ts";
-import { language } from "../i8n/translation.ts";
+import {language} from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
-import { asyncSemaphore } from "../asyncSemaphore.ts";
+import {asyncSemaphore} from "../asyncSemaphore.ts";
 import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
 import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
@@ -32,12 +32,20 @@ export const chatContext = compute((id, chatsList) => {
     return chat || INITIAL_CONTEXT;
 }, currentChatId, chats);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
-export const mcpConfig = signal<McpServerConfig[]|null>(null);
-export const currentlyPlayingAudio = signal<string>(null);
+export const mcpConfig = signal<McpServerConfig[] | null>(null);
+export const currentlyPlayingAudio = signal<string|null>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
-export const currentUser = signal<User & UserinfoResponse>(null);
+export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
+
+const getNewestChatDate = (chts: ChatContext[]) => {
+    const res = Math.max(...chts.map(c => c.updatedAt));
+    if (Math.abs(res) === Infinity) {
+        return null;
+    }
+    return res;
+}
 
 export function initializeStore() {
     configuration.subscribe(c => {
@@ -46,6 +54,9 @@ export function initializeStore() {
     });
 
     currentChatId.subscribe(c => {
+        if (!c) {
+            return;
+        }
         const url = new URL(window.location.href);
         url.searchParams.set("chatId", c);
         history.pushState({}, "", url);
@@ -86,27 +97,35 @@ export function initializeStore() {
         await Api.setShortcutConfig(sc);
     });
 
-    tryLoadFromCache<Configuration>("config", configuration, Api.getConfig());
-    tryLoadFromCache<ChatContext[]>("chats", chats, Api.getNewestChats().then(async result => {
-        if (result.success && result.data) {
-            return await loadAllChats(result.data as ChatContext[]);
-        }
+    tryLoadFromCache<Configuration>("config", configuration, () => Api.getConfig());
+    tryLoadFromCache<ChatContext[]>("chats", chats, (cachedChats) => Api.getNewestChats(cachedChats ? new Date(getNewestChatDate(cachedChats)) : undefined)
+        .then(async result => {
+            if (result.success && result.data) {
+                return await loadAllChats(result.data as ChatContext[]);
+            }
 
-        const response: ApiResponse<ChatContext[] | string> = {
-            success: false,
-            data: "Failed to load chats",
-            status: 500
-        };
+            const response: ApiResponse<ChatContext[] | string> = {
+                success: false,
+                data: "Failed to load chats",
+                status: 500
+            };
 
-        return response;
-    }), data => {
-        // TODO: Once getNewestChats actually return only the newest chats we need to combine the old chats and the new ones.
-        return data;
+            return response;
+        }), () => {
+        Api.getDeletedChats(chats.value.map(c => c.id)).then(res => {
+            if (res.success && res.data) {
+                chats.value = chats.value.filter(c => !res.data.includes(c.id));
+                if (res.data.includes(currentChatId.value)) {
+                    currentChatId.value = null;
+                }
+            }
+        });
+        return chats.value;
     });
-    tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
-    tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, Api.getMcpConfig());
-    tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
-    tryLoadFromCache<User & UserinfoResponse>("currentUser", currentUser, Api.getUser());
+    tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, () => Api.getShortcutConfig());
+    tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, () => Api.getMcpConfig());
+    tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, () => Api.getModels());
+    tryLoadFromCache<User & UserinfoResponse>("currentUser", currentUser, () => Api.getUser());
 }
 
 export async function loadAllChats(newChats: ChatContext[]) {
@@ -127,7 +146,7 @@ export async function loadAllChats(newChats: ChatContext[]) {
             }
 
             return null;
-        } finally{
+        } finally {
             releaseSemaphore();
         }
     });
@@ -136,7 +155,7 @@ export async function loadAllChats(newChats: ChatContext[]) {
 
     return {
         success: true,
-        data: null,
+        data: [],
         status: 200
     }
 }

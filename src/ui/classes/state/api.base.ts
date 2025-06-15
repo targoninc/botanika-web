@@ -31,7 +31,7 @@ export class ApiBase {
         return res.body;
     }
 
-    static async post(url: string, data = {}, sendCredentials = true) {
+    static async post<T>(url: string, data = {}, sendCredentials = true) {
         const res = await fetch(ApiBase.baseUrl + url, {
             method: 'POST',
             headers: {
@@ -40,7 +40,7 @@ export class ApiBase {
             body: JSON.stringify(data),
             credentials: sendCredentials ? 'include' : 'omit'
         });
-        return await this.basicResponseHandling(res);
+        return await this.basicResponseHandling<T>(res);
     }
 
     static async get<T>(url: string, sendCredentials = true) {

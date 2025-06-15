@@ -41,6 +41,20 @@ export async function getChatsEndpoint(req: Request, res: Response) {
     res.send(chats);
 }
 
+export async function getDeletedChatsEndpoint(req: Request, res: Response) {
+    const ids = req.body.ids as string[];
+    if (!ids) {
+        res.status(400).send("Missing ids parameter");
+        return;
+    }
+
+    const chats = await ChatStorage.getUserChats(req.user.id);
+    const chatIds = chats.map((chat) => chat.id);
+    const deleted = ids.filter(id => !chatIds.includes(id));
+
+    res.send(deleted);
+}
+
 export function getChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
@@ -144,4 +158,5 @@ export function addChatEndpoints(app: Application) {
     app.post(ApiEndpoint.DELETE_AFTER_MESSAGE, deleteAfterMessageEndpoint);
     app.get(ApiEndpoint.MODELS, getModelsEndpoint);
     app.post(ApiEndpoint.BRANCH_CHAT, branchChatEndpoint);
+    app.post(ApiEndpoint.GET_DELETED_CHATS, getDeletedChatsEndpoint);
 }
