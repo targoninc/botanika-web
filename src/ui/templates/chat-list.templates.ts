@@ -69,10 +69,7 @@ export class ChatListTemplates {
                         icon({
                             icon: "close",
                             classes: ["search-clear", "clickable"],
-                            onclick: () => {
-                                console.log("clear")
-                                search.value = "";
-                            }
+                            onclick: () => search.value = ""
                         })
                     ).build(),
                 compute(c => ChatListTemplates.chatListItems(c, shown), filteredChats),
