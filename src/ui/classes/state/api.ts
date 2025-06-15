@@ -5,8 +5,8 @@ import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
-import {Tables} from "../../../models/supabaseDefinitions.ts";
 import {UserinfoResponse} from "openid-client";
+import {User} from "@prisma/client";
 
 export class Api extends ApiBase {
     static getConfig() {
@@ -38,8 +38,8 @@ export class Api extends ApiBase {
         return this.get<ChatContext[]>(`${ApiEndpoint.CHATS}?from=${from?.toISOString() ?? ""}`);
     }
 
-    static getChat(chatId: string) {
-        return this.get<ChatContext>(`${ApiEndpoint.CHAT_BY_ID}${chatId}`);
+    static getChat(chatId: string, shared?: boolean) {
+        return this.get<ChatContext>(`${ApiEndpoint.CHAT_BY_ID}${chatId}?shared=${shared}`);
     }
 
     static deleteChat(chatId: string) {
@@ -94,6 +94,6 @@ export class Api extends ApiBase {
     }
 
     static getUser() {
-        return this.get<Tables<"users"> & UserinfoResponse>(ApiEndpoint.GET_USER);
+        return this.get<User & UserinfoResponse>(ApiEndpoint.GET_USER);
     }
 }

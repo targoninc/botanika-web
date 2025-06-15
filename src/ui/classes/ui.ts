@@ -54,23 +54,6 @@ export function toast(message: string, coordinates: null | {
     }, timeout * 1000);
 }
 
-export function guessType(value: any) {
-    if (value === "true" || value === "false") {
-        return "boolean";
-    }
-    if (value === "null") {
-        return "null";
-    }
-    if (!isNaN(value)) {
-        return "number";
-    }
-    return "string";
-}
-
-export function newId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
 export function createModal(content: AnyNode) {
     const modal = LayoutTemplates.modal(content);
     document.body.appendChild(modal);

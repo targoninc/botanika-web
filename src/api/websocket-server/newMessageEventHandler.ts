@@ -177,7 +177,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
 
     // Wait for the steps to complete
-    const steps = await streamResponse.steps;
+    await streamResponse.steps;
 
     // Wait for the message to be finished
     const waitForMessageFinished = new Promise<void>((resolve) => {

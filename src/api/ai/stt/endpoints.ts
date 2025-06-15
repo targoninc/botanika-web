@@ -1,8 +1,11 @@
-import { Request, Response } from "express";
+import {Request, Response} from "express";
 import fs from "fs";
 import {appDataPath} from "../../appData";
 import {transcribeLocal} from "./localWhisper";
 import {transcribeOpenAI} from "./openaiWhisper";
+import {getConfig} from "../../configuration.ts";
+import {BotanikaFeature} from "../../../models/features/BotanikaFeature.ts";
+import {featureOption} from "../tools/servers/allTools.ts";
 
 export async function transcribeEndpoint(req: Request, res: Response) {
     if (!req.file) {
@@ -16,13 +19,21 @@ export async function transcribeEndpoint(req: Request, res: Response) {
         fs.mkdirSync(`${appDataPath}/tmp`, { recursive: true });
     }
     fs.writeFileSync(tmpFileName, file.buffer);
+    const userConfig = await getConfig(req.user.id);
+    if (!userConfig.enableStt) {
+        return;
+    }
+
+    let provider = "local";
+    if (!featureOption(userConfig, BotanikaFeature.OpenAI).apiKey) {
+        return res.status(400).send("OpenAI API key missing");
+    }
 
     const startTime = performance.now();
     try {
-        // TODO: depend on user config
-        switch ("openai") {
+        switch (provider) {
             case "openai":
-                await transcribeOpenAI(req, tmpFileName, res);
+                await transcribeOpenAI(tmpFileName, userConfig, res);
                 break;
             case "local":
                 await transcribeLocal(tmpFileName, res);

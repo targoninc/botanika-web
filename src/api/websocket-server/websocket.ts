@@ -12,6 +12,7 @@ import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 import {ServerWarningEvent} from "../../models/websocket/serverEvents/serverWarningEvent.ts";
 import {signingKey} from "../../index.ts";
 import {chatNameChangedEventHandler} from "./chatNameChangedEventHandler.ts";
+import {sharedChangedEventHandler} from "./sharedChangedEventHandler.ts";
 
 // Map to store active connections for each user
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
@@ -220,6 +221,9 @@ async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketCon
             break;
         case BotanikaClientEventType.chatNameChanged:
             await chatNameChangedEventHandler(ws, message);
+            break;
+        case BotanikaClientEventType.sharedChanged:
+            await sharedChangedEventHandler(ws, message);
             break;
     }
 }

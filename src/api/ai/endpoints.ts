@@ -48,13 +48,24 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
-        if (!chatContext) {
-            res.status(404).send('Chat not found');
-            return;
-        }
-        res.send(chatContext);
-    });
+    if (req.query.shared === "true") {
+        ChatStorage.readPublicChatContext(chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    } else {
+        ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    }
+    return;
 }
 
 export function deleteChatEndpoint(req: Request, res: Response) {
