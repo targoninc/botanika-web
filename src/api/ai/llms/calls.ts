@@ -79,7 +79,7 @@ export async function streamResponseAsMessage(
                 }
             }
         },
-        onError: event => sendError(ws, event?.error?.toString() ?? event.toString()),
+        onError: event => sendError(ws, JSON.stringify(event.error)),
     });
 
     const messageId = uuidv4();

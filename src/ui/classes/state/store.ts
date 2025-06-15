@@ -8,7 +8,6 @@ import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
 import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
-import {Tables} from "../../../models/supabaseDefinitions.ts";
 import {Language} from "../i8n/language.ts";
 import { language } from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
@@ -20,6 +19,7 @@ import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
 import {getPathname, getUrlParameter} from "./urlHelpers.ts";
+import {User} from "@prisma/client";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -36,13 +36,13 @@ export const mcpConfig = signal<McpServerConfig[]|null>(null);
 export const currentlyPlayingAudio = signal<string>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
-export const currentUser = signal<Tables<"users"> & UserinfoResponse>(null);
+export const currentUser = signal<User & UserinfoResponse>(null);
 export const connected = signal(false);
 
 export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
-        setRootCssVar("--tint", c.tintColor ?? "#00ff00");
+        setRootCssVar("--tint", c.tintColor ?? "#5367ac");
     });
 
     currentChatId.subscribe(c => {
@@ -85,7 +85,7 @@ export function initializeStore() {
     tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
     tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, Api.getMcpConfig());
     tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
-    tryLoadFromCache<Tables<"users"> & UserinfoResponse>("currentUser", currentUser, Api.getUser());
+    tryLoadFromCache<User & UserinfoResponse>("currentUser", currentUser, Api.getUser());
 }
 
 export async function loadAllChats(newChats: ChatContext[]) {
@@ -115,18 +115,13 @@ export async function loadAllChats(newChats: ChatContext[]) {
         }
     });
 
-    return await Promise.allSettled(chatUpdates)
-        .then(results => {
-            const response: ApiResponse<ChatContext[] | string> = {
-                success: true,
-                status: 200,
-                data: results
-                    .filter(result => result.status === "fulfilled" && result.value !== null)
-                    .map(result => (result as PromiseFulfilledResult<ChatContext>).value)
-            };
+    await Promise.allSettled(chatUpdates);
 
-            return response;
-        })
+    return {
+        success: true,
+        data: null,
+        status: 200
+    }
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -170,7 +165,7 @@ export async function processUpdate(update: ChatUpdate) {
 }
 
 export function deleteChat(chatId: string) {
-    chats.value = chats.value.filter(c => c.id !== chatId);
+    updateChats(chats.value.filter(c => c.id !== chatId));
     Api.deleteChat(chatId).then(() => {
         if (currentChatId.value === chatId) {
             currentChatId.value = null;

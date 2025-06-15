@@ -143,7 +143,6 @@
     box-sizing: border-box;
     width: 20vw;
     min-width: max-content;
-    transition: width var(--animation-duration) ease;
 }
 
 .container {
@@ -472,6 +471,7 @@ input.invisible-input {
 .warning {
     color: var(--orange);
     cursor: help;
+    padding: var(--gap-h) var(--gap-v);
 }
 
 .error-indicator {
@@ -534,7 +534,7 @@ kbd {
 }
 
 .chat-input.no-history {
-    transform: translateX(-50%) translateY(-50dvh);
+    transform: translateX(-50%) translateY(-20dvh);
 }
 
 .dropzone {
@@ -576,7 +576,7 @@ kbd {
 }
 
 .time {
-    font-size: 0.8em;
+    font-size: 0.7em;
     color: var(--text-4);
 }
 
@@ -598,6 +598,11 @@ kbd {
     width: min(100%, 800px);
     position: relative;
     max-height: max-content;
+    margin-bottom: -1.5em;
+}
+
+.chat-search {
+    width: calc(100% - var(--gap-v));
 }
 
 .send-button, .voice-button {
@@ -676,6 +681,7 @@ kbd {
     position: absolute;
     top: var(--gap-v);
     left: var(--gap-v);
+    z-index: 1000;
 }
 
 @media only screen and (max-width: 1200px) {
@@ -688,6 +694,10 @@ kbd {
     }
 
     .onlyIconOnSmall span:not(.material-symbols-outlined) {
+        display: none;
+    }
+
+    .movable-divider {
         display: none;
     }
 }
@@ -705,17 +715,31 @@ kbd {
 
 .chat-list {
     height: 100%;
-    max-height: 100%;
-    width: max(30%, 200px);
-    max-width: min(30%, 500px);
-    overflow-y: auto;
+    max-width: 500px;
     min-width: 200px;
+}
+
+.chat-list.sidebar {
+    width: max(30%, 200px);
+}
+
+.movable-divider {
+    cursor: ew-resize;
+}
+
+.rotate90 {
+    transform: rotate(90deg);
+}
+
+.chat-list-items {
+    overflow: auto;
+    padding-bottom: 20dvh;
+    padding-right: var(--gap-v);
 }
 
 .chat-list-item {
     cursor: pointer;
-    border-radius: var(--input-border-radius);
-    border: 1px solid var(--tint-muted);
+    border-radius: var(--attachment-border-radius);
     padding: var(--gap-v);
     width: 100%;
 }
@@ -737,7 +761,6 @@ kbd {
 }
 
 .chat-list-item.active {
-    border-color: var(--tint-present);
     background: var(--bg);
 }
 
@@ -868,13 +891,21 @@ pre {
     padding: var(--gap-h) var(--gap-v) var(--gap-h) var(--gap-h);
     border-radius: 999px;
     border: 1px solid var(--tint-main);
+    box-shadow: var(--flyout-shadow);
 }
 
-.bot-icon {
+.bot-icon, .bot-name-text {
     background: var(--bg-2);
     border: 1px solid var(--tint-muted);
-    border-radius: 50%;
+    border-radius: 999px;
     padding: var(--gap-h);
+}
+
+.bot-name-text {
+    border-radius: 0 999px 999px 0;
+    padding-right: .65em;
+    padding-left: 1.5em;
+    margin-left: -1.5em;
 }
 
 .status-indicator {
