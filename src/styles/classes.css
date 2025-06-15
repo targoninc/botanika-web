@@ -945,10 +945,6 @@ pre {
     background: var(--red);
 }
 
-.message-time {
-    padding: 0 var(--gap-v);
-}
-
 .chat-message-references {
     max-height: 300px;
     overflow-y: auto;
