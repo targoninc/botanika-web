@@ -1,8 +1,8 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {WebsocketConnection} from "./websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {SharedChangedEventData} from "../../models/websocket/clientEvents/sharedChangedEventData.ts";
+import {eventStore} from "../database/events/eventStore.ts";
 
 export async function sharedChangedEventHandler(ws: WebsocketConnection, message: BotanikaClientEvent<SharedChangedEventData>) {
     const request = message.data;
@@ -14,12 +14,11 @@ export async function sharedChangedEventHandler(ws: WebsocketConnection, message
     if (!chat) {
         throw new Error("Chat not found");
     }
-    chat.shared = request.newValue === true;
-    await ChatStorage.writeChatContext(ws.userId, chat);
-
-    sendChatUpdate(ws, {
-        chatId: request.chatId,
-        timestamp: Date.now(),
-        shared: chat.shared
+    chat.shared = request.newValue;
+    eventStore.publish({
+        type: "chatSharedSet",
+        userId: ws.userId,
+        chatId: chat.id,
+        shared: chat.shared,
     });
 }

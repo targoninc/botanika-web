@@ -1,6 +1,9 @@
 import {ResourceReference} from "./ResourceReference";
+import {ErrorToolResult} from "./ErrorToolResult.ts";
 
-export interface ChatToolResult {
+export type ChatToolResult = {
     references: ResourceReference[];
     text: string;
-}
+    metadata?: any;
+} | ErrorToolResult;
+

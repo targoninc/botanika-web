@@ -1,15 +1,17 @@
 import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {CLI} from "../../CLI";
+import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
+import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
-import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
+import {eventStore} from "../../database/events/eventStore.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{
-    thoughts: string;
+    thoughts: string | null;
     text: string;
     steps: Array<StepResult<ToolSet>>
 }> {
@@ -28,7 +30,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     if (res.text.length === 0) {
         CLI.warning("Got empty response");
         return {
-            thoughts: undefined,
+            thoughts: null,
             text: "",
             steps: []
         };
@@ -36,23 +38,29 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
 
     const thoughts = res.text.match(/<think>(.*?)<\/think>/gms);
     return {
-        thoughts: thoughts ? thoughts[0].trim() : undefined,
+        thoughts: thoughts ? thoughts[0].trim() : null,
         text: res.text.replace(/<think>(.*?)<\/think>/gms, "").trim(),
         steps: res.steps
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
-    steps: Promise<Array<StepResult<ToolSet>>>
-}> {
+export function streamResponseAsMessage(
+    ws: WebsocketConnection,
+    maxSteps: number,
+    model: LanguageModelV1,
+    tools: ToolSet,
+    messages: AiMessage[],
+    chatId: string
+) {
     CLI.debug("Streaming response...");
+
     const {
         textStream,
         files,
-        steps,
+        steps: stepsStream,
         text,
         reasoningDetails,
-        usage
+        usage: usageStream
     } = streamText({
         model,
         messages,
@@ -73,36 +81,136 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         onError: event => sendError(ws, JSON.stringify(event.error)),
     });
 
-    updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
+    const messageId = uuidv4();
 
-    files.then((f: GeneratedFile[]) => {
+    eventStore.publish({
+        userId: ws.userId,
+        type: "messageCreated",
+        chatId: chatId,
+        message: {
+            id: messageId,
+            text: "",
+            time: Date.now(),
+            type: "assistant",
+            model: model.modelId,
+            provider: model.provider,
+            hasAudio: false,
+            files: [],
+            references: [],
+            finished: false
+        }
+    }).then();
+
+    const updateMessage = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
+
+    const updateFiles = files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
-        message.value = {
-            ...message.value,
-            files: f.map(file => <MessageFile>{
-                base64: file.base64,
-                mimeType: file.mimeType,
-            })
-        };
+
+        const files = f.map(file => ({
+            base64: file.base64,
+            mimeType: file.mimeType,
+        }));
+
+        eventStore.publish({
+            type: "updateFiles",
+            userId: ws.userId,
+            chatId,
+            messageId,
+            files
+        });
+
+        return files;
     }).catch((err) => {
         console.error(err);
+        return [];
     });
 
-    reasoningDetails.then(r => {
-        message.value = {
-            ...message.value,
-            reasoning: r
-        };
+    const updateText = text.then((text: string) => {
+        eventStore.publish({
+            userId: ws.userId,
+            type: "messageTextCompleted",
+            chatId: chatId,
+            messageId,
+            text
+        });
+    }).catch((err) => {
+        console.error(err);
+        return "";
     });
 
-    usage.then(u => {
-        message.value = {
-            ...message.value,
-            usage: u
-        };
-    })
+    const updateReasoning = reasoningDetails.then(r => {
+        if (r.length > 0) {
+            eventStore.publish({
+                userId: ws.userId,
+                type: "reasoningFinished",
+                chatId: chatId,
+                messageId: messageId,
+                reasoningDetails: r
+            });
+        }
+        return r;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
+
+    const usage = usageStream.then(usage => {
+        eventStore.publish({
+            userId: ws.userId,
+            type: "usageCreated",
+            chatId: chatId,
+            messageId: messageId,
+            usage
+        });
+
+        return usage
+    }).catch((err) => {
+        console.error(err);
+        return null;
+    });
+
+    const reasoningData = updateReasoning.then(reasoning => {
+        if (reasoning.length > 0) {
+            eventStore.publish({
+                userId: ws.userId,
+                type: "reasoningFinished",
+                chatId: chatId,
+                messageId: messageId,
+                reasoningDetails: reasoning
+            });
+        }
+
+        return reasoning;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
+
+    const steps = stepsStream.then((steps: Array<StepResult<ToolSet>>) => {
+        /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.
+        broadcastToUser(ws.userId, {
+            type: "updateSteps",
+            chatId: chatId,
+            messageId: message.value.id,
+            steps: steps
+        });
+        */
+
+        return steps;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
 
     return {
-        steps
+        reasoningData,
+        steps,
+        updateMessage,
+        usage,
+        updateFiles,
+        updateText,
+        all() {
+            return Promise.allSettled(Object.values(this).filter(x => x instanceof Promise))
+        }
     };
 }

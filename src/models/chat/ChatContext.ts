@@ -1,7 +1,7 @@
 import {ChatMessage} from "./ChatMessage";
 
 export interface ChatContext {
-    name: string;
+    name: string | null;
     createdAt: number;
     updatedAt: number;
     id: string;

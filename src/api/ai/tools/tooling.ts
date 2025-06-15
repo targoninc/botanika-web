@@ -1,59 +1,41 @@
 import {CLI} from "../../CLI";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {v4 as uuidv4} from "uuid";
-import {ToolResultUnion, ToolSet} from "ai";
-import {ChatToolResult} from "../../../models/chat/ChatToolResult";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
-import {Signal} from "@targoninc/jess";
+import {ToolExecutionOptions} from "ai";
+import {eventStore} from "../../database/events/eventStore.ts";
 
-async function getToolResult(id: string, execute: (input: any) => Promise<any>, input: any) {
-    const start = performance.now();
-    CLI.debug(`Calling tool ${id}`);
-    let result: ChatToolResult;
-    try {
-        result = await execute(input);
-    } catch (e) {
-        result = <ChatToolResult>{
-            text: `Tool ${id} failed: ${e.toString()}`,
-        };
-    }
-    const diff = performance.now() - start;
-    CLI.success(`Tool ${id} took ${diff.toFixed()} ms to execute`);
-    return result;
-}
+export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, userId: string, chat: ChatContext) {
+    return async (input: TParams, options: ToolExecutionOptions) => {
+        const messageId = uuidv4();
+        eventStore.publish({
+            userId,
+            type: "toolCallStarted",
+            chatId: chat.id,
+            toolName: toolName,
+            messageId,
+            toolCallId: options.toolCallId,
+        }).then();
+        const start = performance.now();
+        CLI.debug(`Calling tool ${toolName}`);
 
-export function wrapTool(id: string, execute: (input: any) => Promise<any>, message: Signal<ChatMessage>) {
-    return async (input: any, ...args: any[]) => {
-        let assMsg = structuredClone(message.value);
-        const callId = uuidv4();
+        const result = await execute(input)
+            .catch(e => ({
+                error: `Tool ${toolName} failed: ${e.toString()}`,
+            }));
 
-        if (!assMsg.toolInvocations) {
-            assMsg.toolInvocations = [];
-        }
+        const diff = performance.now() - start;
+        CLI.success(`Tool ${toolName} took ${diff.toFixed()} ms to execute`);
 
-        assMsg.toolInvocations.push({
-            toolCallId: callId,
-            args: input,
-            toolName: id,
-            state: "call"
-        });
-        message.value = assMsg;
+        eventStore.publish({
+            userId,
+            type: "toolCallFinished",
+            chatId: chat.id,
+            messageId,
+            toolName: toolName,
+            toolCallId: options.toolCallId,
+            toolResult: result
+        }).then();
 
-        let result = await getToolResult(id, execute, input);
-
-        assMsg = structuredClone(message.value);
-        assMsg.toolInvocations = assMsg.toolInvocations.map(ti => {
-            if (ti.toolCallId === callId) {
-                return {
-                    ...ti,
-                    state: "result",
-                    result: result ?? null
-                };
-            }
-            return ti;
-        });
-        message.value = assMsg;
         return result;
     }
 }

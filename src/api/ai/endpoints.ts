@@ -1,47 +1,41 @@
 import {Application, Request, Response} from "express";
-import {ChatMessage} from "../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
 import {ApiEndpoint} from "../../models/ApiEndpoints";
 import {getTtsAudio} from "./tts/tts";
 import {AudioStorage} from "../storage/AudioStorage";
-import {removeOngoingConversation, sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
+import {WebsocketConnection} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
+import {eventStore} from "../database/events/eventStore.ts";
 
-export async function getAudio(lastMessage: ChatMessage): Promise<string> {
-    if (lastMessage.type === "assistant") {
-        const blob = await getTtsAudio(lastMessage.text);
-        await AudioStorage.writeAudio(lastMessage.id, blob);
-        return AudioStorage.getLocalFileUrl(lastMessage.id);
-    }
-
-    return null;
+export async function getAudio(lastMessage: AssistantMessage): Promise<string> {
+    const blob = await getTtsAudio(lastMessage.text);
+    await AudioStorage.writeAudio(lastMessage.id, blob);
+    return AudioStorage.getLocalFileUrl(lastMessage.id);
 }
 
-export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
+export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: AssistantMessage) {
     const audioUrl = await getAudio(lastMessage);
     if (audioUrl) {
-        sendChatUpdate(ws, {
+        eventStore.publish({
+            type: "audioGenerated",
             chatId,
-            timestamp: Date.now(),
-            messages: [
-                {
-                    ...lastMessage,
-                    hasAudio: true
-                }
-            ]
-        })
+            userId: ws.userId,
+            messageId: lastMessage.id,
+            audioUrl
+        });
     }
 }
 
 export async function getChatsEndpoint(req: Request, res: Response) {
     const from = req.query.from ? new Date(req.query.from as string) : null;
 
-    const chats = await ChatStorage.getUserChats(req.user.id, from);
+    const chats = await ChatStorage.getUserChats(req.user!.id, from);
     res.send(chats);
 }
 
-export function getChatEndpoint(req: Request, res: Response) {
+export async function getChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
         res.status(400).send('Missing chatId parameter');
@@ -49,37 +43,39 @@ export function getChatEndpoint(req: Request, res: Response) {
     }
 
     if (req.query.shared === "true") {
-        ChatStorage.readPublicChatContext(chatId).then(chatContext => {
-            if (!chatContext) {
-                res.status(404).send('Chat not found');
-                return;
-            }
-            res.send(chatContext);
-        });
+        const chatContext = await ChatStorage.readPublicChatContext(chatId);
+        if (!chatContext) {
+            res.status(404).send('Chat not found');
+            return;
+        }
+        res.send(chatContext);
     } else {
-        ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
-            if (!chatContext) {
-                res.status(404).send('Chat not found');
-                return;
-            }
-            res.send(chatContext);
-        });
+        const chatContext = await ChatStorage.readChatContext(req.user!.id, chatId);
+
+        if (!chatContext) {
+            res.status(404).send('Chat not found');
+            return;
+        }
+        res.send(chatContext);
     }
     return;
 }
 
-export function deleteChatEndpoint(req: Request, res: Response) {
+export async function deleteChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
         res.status(400).send('Missing chatId parameter');
         return;
     }
 
-    removeOngoingConversation(chatId, req.user.id);
-
-    ChatStorage.deleteChatContext(req.user.id, chatId).then(() => {
-        res.status(200).send('Chat deleted');
+    await eventStore.publish({
+        userId: req.user!.id,
+        type: "chatDeleted",
+        chatId
     });
+
+    // The chat deletion will be handled by the event handler
+    res.status(200).send('Chat deletion in progress');
 }
 
 let models = {};
@@ -94,46 +90,69 @@ export async function getModelsEndpoint(req: Request, res: Response) {
 export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
     const chatId = req.body.chatId;
     const messageId = req.body.messageId;
-    if (!chatId || !messageId) {
-        res.status(400).send('Missing chatId or messageId parameter');
+    const exclusive = req.body.exclusive;
+    if (!chatId || !messageId || exclusive === undefined) {
+        const parameters = [
+            !chatId ? 'chatId' : '',
+            !messageId ? 'messageId' : '',
+            exclusive === undefined ? 'exclusive' : ''
+        ];
+
+        res.status(400).send(`Missing ${parameters.filter(Boolean).join(', ')} parameter`);
+        return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
-        const message = c.history.find(m => m.id === messageId);
-
-        if (req.body.exclusive) {
-            c.history = c.history.filter(m => m.time < message.time);
-        } else {
-            c.history = c.history.filter(m => m.time <= message.time);
-        }
-
-        await ChatStorage.writeChatContext(req.user.id, c);
-        res.status(200).send();
+    await eventStore.publish({
+        userId: req.user!.id,
+        type: "chatDeletedAfterMessage",
+        chatId,
+        afterMessageId: messageId,
+        exclusive: req.body.exclusive
     });
+
+    // The message deletion will be handled by the event handler
+    res.status(200).send('Messages deletion in progress');
 }
 
-function branchChatEndpoint(req: Request, res: Response) {
+async function branchChatEndpoint(req: Request, res: Response) {
     const chatId = req.body.chatId;
     const messageId = req.body.messageId;
     if (!chatId || !messageId) {
         res.status(400).send('Missing chatId or messageId parameter');
+        return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
-        if (!c) {
-            res.status(404).send('Chat not found');
-        }
-        const message = c.history.find(m => m.id === messageId);
-        c.branched_from_chat_id = c.id;
-        c.id = v4();
-        c.createdAt = Date.now();
-        c.history = c.history.filter(m => m.time <= message.time);
-        c.history = c.history.map(msg => {
-            msg.id = v4();
-            return msg;
-        });
-        await ChatStorage.writeChatContext(req.user.id, c);
-        res.status(200).json(c);
+    // First check if the chat exists
+    const chat = await ChatStorage.readChatContext(req.user!.id, chatId);
+    if (!chat) {
+        res.status(404).send('Chat not found');
+        return;
+    }
+
+    // Check if the message exists in the chat
+    const message = chat.history.find(m => m.id === messageId);
+    if (!message) {
+        res.status(404).send('Message not found in chat');
+        return;
+    }
+
+    // Generate a new chat ID
+    const newChatId = v4();
+
+    // Publish the chat branched event
+    await eventStore.publish({
+        userId: req.user!.id,
+        type: "chatBranched",
+        chatId: newChatId,
+        messageId: messageId,
+        branchedFromChatId: chatId
+    });
+
+    // Return the new chat ID
+    res.status(200).json({
+        id: newChatId,
+        branchedFromChatId: chatId,
+        messageId: messageId
     });
 }
 

@@ -1,34 +1,34 @@
 import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
-import {LanguageModelV1,} from "ai";
+import {LanguageModelV1, Message,} from "ai";
 import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage, UserMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
+import {undefined} from "zod";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
     return response.text;
 }
 
-export function newUserMessage(provider: string, model: string, message: string, files: MessageFile[]): ChatMessage {
+export function newUserMessage(message: string, files: MessageFile[]): UserMessage {
     return {
         id: uuidv4(),
         type: "user",
         text: message,
         time: Date.now(),
-        finished: true,
         files,
-        provider,
-        model
     };
 }
 
-export function newAssistantMessage(responseText: string, provider: string, modelName: string) {
-    return <ChatMessage>{
+export function newAssistantMessage(responseText: string, provider: string, modelName: string) : AssistantMessage {
+    return {
+        hasAudio: false,
+        references: [],
         id: uuidv4(),
         type: "assistant",
         text: responseText,
@@ -38,19 +38,6 @@ export function newAssistantMessage(responseText: string, provider: string, mode
         provider,
         model: modelName
     };
-}
-
-export async function createChat(userId: string, newMessage: ChatMessage, chatId: string): Promise<ChatContext> {
-    const chatContext = <ChatContext>{
-        id: chatId,
-        createdAt: Date.now(),
-        name: "New chat",
-        history: [newMessage]
-    };
-
-    ChatStorage.writeChatContext(userId, chatContext).then();
-
-    return chatContext;
 }
 
 export function getPromptMessages(messages: ChatMessage[], worldContext: Record<string, any>, configuration: Configuration, addAttachments: boolean): AiMessage[] {
@@ -76,7 +63,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                 return {
                     role: "user",
                     content: m.text,
-                    experimental_attachments: addAttachments ? m.files.map(f => ({
+                    experimental_attachments: addAttachments ? (m.files ?? []).map(f => ({
                         contentType: f.mimeType,
                         url: `data:${f.mimeType};base64,${f.base64}`,
                         name: f.name
@@ -84,24 +71,68 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
                 };
             }
 
+            const parts: NonNullable<Message["parts"]>[number][] = [];
+
+            let text = "";
+            if ("text" in m && m.text) {
+                parts.push({
+                    type: "text",
+                    text: m.text,
+                });
+                text = m.text;
+            }
+
+            if ("toolInvocations" in m && m.toolInvocations) {
+                parts.push(...m.toolInvocations.map(ti => {
+                    switch(ti.state){
+                        case "partial-call":
+                            return ({
+                                type: "tool-invocation",
+                                toolInvocation: {
+                                    toolName: ti.toolName,
+                                    toolCallId: ti.toolCallId,
+                                    args: ti.args,
+                                    state: ti.state,
+                                    result: null,
+                                }
+                            } as const);
+                        case "call":
+                            return ({
+                                type: "tool-invocation",
+                                toolInvocation: {
+                                    toolName: ti.toolName,
+                                    toolCallId: ti.toolCallId,
+                                    args: ti.args,
+                                    state: ti.state,
+                                }
+                            } as const);
+                        case "result":
+                            return ({
+                                type: "tool-invocation",
+                                toolInvocation: {
+                                    toolName: ti.toolName,
+                                    toolCallId: ti.toolCallId,
+                                    args: ti.args,
+                                    state: ti.state,
+                                    result: ti.result,
+                                }
+                            } as const);
+                    }
+                }));
+            }
+
+            if ("files" in m && m.files) {
+                parts.push(...m.files.map(f => ({
+                    type: "file",
+                    data: f.base64,
+                    mimeType: f.mimeType,
+                } as const)));
+            }
+
             return {
                 role: "assistant",
-                content: m.text,
-                parts: [
-                    {
-                        type: "text",
-                        text: m.text,
-                    },
-                    ...(m.toolInvocations ?? []).map(ti => (<ToolInvocationUIPart>{
-                        type: "tool-invocation",
-                        toolInvocation: ti,
-                    })),
-                    ...m.files.map(f => (<FileUIPart>{
-                        type: "file",
-                        data: f.base64,
-                        mimeType: f.mimeType,
-                    }))
-                ],
+                content: text,
+                parts: parts
             };
         })
     ];

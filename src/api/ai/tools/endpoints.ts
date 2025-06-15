@@ -10,12 +10,16 @@ export async function getMcpConfig(id: string) {
         where: { id }
     });
 
+    if (!config || !config.mcpConfiguration) {
+        return [];
+    }
+
     return config.mcpConfiguration as unknown as McpServerConfig[];
 }
 
 export async function setMcpConfigEndpoint(req: Request, res: Response) {
     const config = req.body.config as JsonArray;
-    await updateUser(req.user.id, {
+    await updateUser(req.user!.id, {
         mcpConfiguration: config
     });
     res.send();
@@ -23,7 +27,7 @@ export async function setMcpConfigEndpoint(req: Request, res: Response) {
 
 export function addMcpEndpoints(app: Application) {
     app.get(ApiEndpoint.MCP_CONFIG, async (req: Request, res: Response) => {
-        res.send(await getMcpConfig(req.user.id));
+        res.send(await getMcpConfig(req.user!.id));
     });
     app.post(ApiEndpoint.MCP_CONFIG, setMcpConfigEndpoint);
 }

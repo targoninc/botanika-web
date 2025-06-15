@@ -1,20 +1,33 @@
 import {MessageFile} from "./MessageFile.ts";
+import {ResourceReference} from "./ResourceReference.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 import {ToolCall} from "./ToolCall.ts";
 import {LanguageModelUsage} from "ai";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
-export interface ChatMessage {
-    type: "system" | "user" | "assistant";
-    toolInvocations?: ToolCall[];
-    files: MessageFile[];
-    text: string;
-    time: number;
+type BaseMessage = {
     id: string;
-    finished: boolean;
-    hasAudio?: boolean;
-    provider?: string;
-    model?: string;
-    reasoning?: ReasoningDetail[];
-    usage?: LanguageModelUsage;
+    time: number;
 }
+
+export type UserMessage = BaseMessage & {
+    type: "user";
+    text: string;
+    files: Omit<MessageFile, "id">[];
+}
+
+export type AssistantMessage = BaseMessage & {
+    type: "assistant";
+    text: string;
+    model: string;
+    finished: boolean;
+    provider: string;
+    hasAudio: boolean;
+    toolInvocations: ToolCall[];
+    files: Omit<MessageFile, "id">[];
+    reasoning?: ReasoningDetail[];
+    usage: LanguageModelUsage;
+}
+
+export type ChatMessage = (UserMessage | AssistantMessage);
 

@@ -1,11 +1,11 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
+import {sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
 import {CLI} from "../CLI.ts";
 import {
-    createChat, getChatName,
+    getChatName,
     getPromptMessages,
     getWorldContext,
     newAssistantMessage,
@@ -18,33 +18,42 @@ import {ModelCapability} from "../../models/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../ai/tools/servers/allTools.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
-import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../ai/endpoints.ts";
-import {signal, Signal} from "@targoninc/jess";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";
+import {eventStore} from "../database/events/eventStore.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
-    const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
-    sendChatUpdate(ws, {
+    const chatMsg = newUserMessage(request.message, request.files);
+    eventStore.publish({
+        userId: ws.userId,
+        type: "chatCreated",
         chatId: chatId,
-        timestamp: Date.now(),
-        messages: [chatMsg]
-    });
+        userMessage: chatMsg
+    }).then();
 
     let chat: ChatContext;
     try {
-        chat = await createChat(ws.userId, chatMsg, chatId);
+        chat = {
+            createdAt: Date.now(),
+            shared: false,
+            updatedAt: Date.now(),
+            id: chatId,
+            userId: ws.userId,
+            history: [chatMsg],
+            name: ""
+        }
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
-            sendChatUpdate(ws, {
+            eventStore.publish({
+                userId: ws.userId,
+                type: "chatNameSet",
                 chatId: chat.id,
-                timestamp: Date.now(),
                 name,
             });
             chat.name = name;
@@ -55,18 +64,12 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         });
     }
 
-    sendChatUpdate(ws, {
-        chatId: chatId,
-        timestamp: Date.now(),
-        name: chat.name
-    });
-
     CLI.debug(`Chat created for user ${ws.userId}`);
     return chat;
 }
 
-async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1, modelSupportsFiles: boolean) {
-    let chat: ChatContext;
+async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
+    let chat: ChatContext | null;
     if (!request.chatId) {
         chat = await createNewChat(ws, request, model);
     } else {
@@ -76,59 +79,55 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
             throw new Error("Chat not found");
         }
 
-        CLI.debug(`${chat.history.length} existing messages`);
-        chat.history.push(newUserMessage(request.provider, request.model, request.message, modelSupportsFiles ? request.files : []));
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: chat.history
-        });
+
     }
     return chat;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, message: Signal<ChatMessage>) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
     const mcpInfo = await getMcpTools(ws.userId);
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig, message);
+    const builtInTools = getBuiltInTools(userConfig, ws, chat);
     return {
         mcpInfo,
-        tools: Object.assign(builtInTools, mcpInfo.tools) as ToolSet
+        tools: Object.assign(builtInTools, mcpInfo.tools)
     };
 }
 
 /**
  * Requests another assistant message without tools just to have a summary or description of what happened
  */
-async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig: Configuration,
-                               streamResponse: {
-                                   steps: Promise<Array<StepResult<ToolSet>>>
-                               }, maxSteps: number, model: LanguageModelV1, chat: ChatContext, worldContext: Record<string, any>, request: NewMessageEventData) {
-    const steps = await streamResponse.steps;
-    const toolResults = steps.flatMap(s => s.toolResults);
+async function requestSimpleIfOnlyToolCalls(
+    ws: WebsocketConnection,
+    userConfig: Configuration,
+    steps: Promise<Array<StepResult<ToolSet>>>,
+    maxSteps: number,
+    model: LanguageModelV1,
+    chat: ChatContext,
+    worldContext: Record<string, any>,
+    request: NewMessageEventData
+) {
+    const toolResults = (await steps).flatMap(s => s.toolResults)
     if (toolResults.length === maxSteps) {
         const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
-        const m = newAssistantMessage(response.text, request.provider, request.model);
+        const message = newAssistantMessage(response.text, request.provider, request.model);
 
         // Set the message as finished
-        m.time = Date.now();
-        m.finished = true;
+        message.time = Date.now();
+        message.finished = true;
 
-        // Send the message to the client
-        sendChatUpdate(ws, {
+        eventStore.publish({
+            userId: ws.userId,
+            type: "messageCreated",
             chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [m]
-        });
-
-        // Add the message to the chat history
-        chat.history.push(m);
+            message: message
+        }).then();
 
         // Send audio if enabled
-        if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStop(ws, chat.id, m);
+        if (userConfig.enableTts && message.text.length > 0) {
+            await sendAudioAndStop(ws, chat.id, message);
         }
     }
 }
@@ -152,60 +151,22 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
 
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
-    const chat = await getOrCreateChat(ws, request, model, modelSupportsFiles);
-    const messageId = uuidv4();
-    const assMessage = signal<ChatMessage>({
-        id: messageId,
-        type: "assistant",
-        text: "",
-        time: Date.now(),
-        files: [],
-        finished: false,
-        provider: request.provider,
-        model: request.model
-    });
-    const toolInfo = await getTools(modelDefinition, userConfig, ws, assMessage);
 
-    /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
-        sendWarning(ws, `Model ${request.model} might not support tool calls`);
-        toolInfo.tools = {};
-    }*/
+    const chat = await getOrCreateChatWithMessage(ws, request, model);
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
+
+    if (request.chatId) {
+        CLI.debug(`${chat.history.length} existing messages`);
+        chat.history.push(newUserMessage(request.message, request.files));
+    }
 
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = streamResponseAsMessage(ws, maxSteps, model, toolInfo.tools, promptMessages, chat.id);
 
-    // Wait for the steps to complete
-    await streamResponse.steps;
-
-    // Wait for the message to be finished
-    const waitForMessageFinished = new Promise<void>((resolve) => {
-        const checkInterval = setInterval(() => {
-            if (assMessage.value.finished) {
-                clearInterval(checkInterval);
-                chat.history.push(assMessage.value);
-                if (userConfig.enableTts && assMessage.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, assMessage.value).then(() => {
-                        resolve();
-                    });
-                } else {
-                    resolve();
-                }
-            }
-        }, 100);
-    });
-
-    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
-    await waitForMessageFinished;
+    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse.steps, maxSteps, model, chat, worldContext, request);
     toolInfo.mcpInfo.onClose();
 
-    chat.history.map(m => {
-        if (m.id === assMessage.value.id) {
-            return assMessage.value;
-        }
-        return m;
-    });
-
-    await ChatStorage.writeChatContext(ws.userId, chat);
+    await streamResponse.all();
 }
