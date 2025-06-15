@@ -294,11 +294,13 @@ export class ChatTemplates {
                 return;
             }
             field.style.height = "auto";
-            field.style.height = Math.min(field.scrollHeight, 300) + "px";
+            if (input.value.length > 0) {
+                field.style.height = Math.min(field.scrollHeight, 300) + "px";
+            } else {
+                field.style.height = "auto";
+            }
         }
-        input.subscribe(() => {
-            updateInputHeight();
-        });
+        input.subscribe(updateInputHeight);
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
         const flyoutVisible = signal(false);
         const isDraggingOver = signal(false);
@@ -333,7 +335,6 @@ export class ChatTemplates {
                     .onclick((e) => {
                         const preventIn = ["BUTTON", "INPUT", "SELECT"];
                         if (!preventIn.includes(target(e).tagName) && !target(e).classList.contains("clickable")) {
-                            console.log("focusing chat input")
                             focusChatInput();
                         }
                     })

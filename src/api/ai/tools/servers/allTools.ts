@@ -4,36 +4,25 @@ import {Configuration} from "../../../../models/Configuration.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
+import {Tool, ToolSet} from "ai";
 
 export function featureOption(config: Configuration, option: BotanikaFeature): any {
     return (config.featureOptions ?? {})[option] ?? {};
 }
 
+function addTool(toolSet: ToolSet, tool: Tool & { id: string }) {
+    toolSet[tool.id] = tool;
+}
+
 export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatMessage>) {
-    const tools = [];
+    const tools = {};
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
-        tools.push(googleSearchTool(userConfig, message));
+        addTool(tools, googleSearchTool(userConfig, message));
     }
 
-    // Add web browsing tools
-    tools.push(extractImagesFromWebpageTool(message));
-    tools.push(extractContentFromWebpageTool(message));
-
-    /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
-        tools = tools.concat(
-            spotifyAddToSavedAlbumsTool(userConfig, message),
-            spotifySearchTool(userConfig, message),
-            spotifyGetDevicesTool(userConfig, message),
-            spotifyPlayTool(userConfig, message),
-            spotifyPauseTool(userConfig, message),
-            spotifyGetCurrentPlaybackTool(userConfig, message),
-            spotifyGetProfileTool(userConfig, message),
-            spotifyAddToQueueTool(userConfig, message),
-            spotifyAddToSavedTracksTool(userConfig, message),
-            spotifyGetArtistTopTracksTool(userConfig, message),
-        );
-    }*/
+    addTool(tools, extractImagesFromWebpageTool(message));
+    addTool(tools, extractContentFromWebpageTool(message));
 
     return tools;
 }
