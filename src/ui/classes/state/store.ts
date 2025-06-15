@@ -52,6 +52,17 @@ export function initializeStore() {
         focusChatInput();
     });
 
+    chatContext.subscribe(c => {
+        const url = new URL(window.location.href);
+        if (c.shared) {
+            url.searchParams.set("shared", "true");
+        } else {
+            url.searchParams.delete("shared");
+        }
+        history.pushState({}, "", url);
+        focusChatInput();
+    })
+
     const chatId = getUrlParameter("chatId", null);
     const shared = getUrlParameter("shared", null);
     if (chatId && shared === "true") {
