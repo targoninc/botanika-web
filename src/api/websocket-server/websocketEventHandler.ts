@@ -3,7 +3,6 @@ import { CLI } from "../CLI.ts";
 import { eventStore, EventHandler } from "../database/events/eventStore.ts";
 import { WebsocketConnection } from "./websocket.ts";
 
-// Map to store active connections for each user
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
 
 /**
@@ -44,7 +43,7 @@ export function unregisterConnection(userId: string, connection: WebsocketConnec
 
 /**
  * Send a message to a specific WebSocket connection
- * 
+ *
  * @param connection The WebSocket connection
  * @param message The message to send
  */
@@ -75,20 +74,7 @@ export const websocketEventHandler: EventHandler = (event: BotanikaServerEvent):
 
         for (let i = 0; i < connectionsArray.length; i++) {
             const connection = connectionsArray[i];
-            if (connection.readyState === 1) { // OPEN
-                try {
-                    CLI.debug(`Broadcasting to conn ${i + 1} for user ${connection.userId}`);
-                    connection.send(JSON.stringify(event));
-                } catch (e) {
-                    CLI.error(`Error sending message to connection: ${e}`);
-                    connections.delete(connection);
-                    closedConnections = true;
-                }
-            } else {
-                CLI.debug(`Removing closed connection for user ${connection.userId}`);
-                connections.delete(connection);
-                closedConnections = true;
-            }
+            sendToConnection(connection, event);
         }
 
         if (closedConnections && connections.size === 0) {
@@ -98,7 +84,6 @@ export const websocketEventHandler: EventHandler = (event: BotanikaServerEvent):
     }
 };
 
-// Register the WebSocket event handler with the event store
-export function registerWebsocketEventHandler(): () => void {
+export function registerWebsocketEventHandler() {
     return eventStore.subscribe('*', websocketEventHandler);
 }

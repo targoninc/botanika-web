@@ -9,15 +9,12 @@ import { registerIncrementProjectorEventHandler } from "./incrementProjector.ts"
 export function initializeEventHandlers(): () => void {
     CLI.log("Initializing event handlers...");
 
-    // Register the WebSocket event handler
     const unsubscribeWebsocket = registerWebsocketEventHandler();
     CLI.log("WebSocket event handler registered");
 
-    // Register the increment projector event handler
     const unsubscribeIncrementProjector = registerIncrementProjectorEventHandler();
     CLI.log("Increment projector event handler registered");
 
-    // Return a function to unregister all handlers if needed
     return () => {
         unsubscribeWebsocket();
         unsubscribeIncrementProjector();

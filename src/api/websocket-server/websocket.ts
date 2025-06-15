@@ -4,20 +4,13 @@ import {CLI} from "../CLI.ts";
 import {URL} from "url";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
-import {BotanikaServerEvent} from "../../models/websocket/serverEvents/botanikaServerEvent.ts";
 import {newMessageEventHandler} from "./newMessageEventHandler.ts";
 import {signingKey} from "../../index.ts";
 import {base64Decode} from "../authentication/base64Decode.ts";
 import { eventStore } from "../database/events/eventStore.ts";
-import { registerConnection, sendToConnection, unregisterConnection } from "./websocketEventHandler.ts";
+import { registerConnection, unregisterConnection } from "./websocketEventHandler.ts";
 import {chatNameChangedEventHandler} from "./chatNameChangedEventHandler.ts";
 import {sharedChangedEventHandler} from "./sharedChangedEventHandler.ts";
-
-export const UPDATE_LIMIT = 100;
-
-export function send(ws: WebsocketConnection, message: BotanikaServerEvent) {
-    sendToConnection(ws, message);
-}
 
 export function sendError(ws: WebsocketConnection, message: string) {
     CLI.error(`Error in realtime: ${message}`);
@@ -90,7 +83,7 @@ export function addWebsocketServer(server: Server) {
         CLI.log(`Client connected to WebSocket with userId: ${userId}`);
         ws.userId = userId;
 
-        catchupUserChats(userId, req.newestEventTimestamp, ws);
+        // catchupUserChats(userId, req.newestEventTimestamp, ws); // TODO: implement
         registerConnection(userId, ws);
 
         ws.on("message", async (msg: string) => {
