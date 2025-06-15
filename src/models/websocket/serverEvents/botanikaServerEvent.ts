@@ -80,6 +80,7 @@ export type ToolCallStartedEvent = {
     chatId: string;
     toolName: string;
     messageId: string;
+    toolCallId: string;
 }
 
 export type ToolCallFinishedEvent = {
@@ -88,6 +89,7 @@ export type ToolCallFinishedEvent = {
     messageId: string;
     toolName: string;
     toolResult: unknown;
+    toolCallId: string;
 }
 
 export type MessageCreatedEvent = {

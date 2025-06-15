@@ -1,13 +1,14 @@
 import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {CLI} from "../../CLI";
+import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
 import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendEvent, sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
-import {MessageFile} from "../../../models/chat/MessageFile.ts";
-import {browserEmail} from "zod/dist/types/v4/core/regexes";
+import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
+import {AiMessage} from "./aiMessage.ts";
+import {eventStore} from "../../database/events/eventStore.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
     thoughts: string | null;
@@ -43,16 +44,11 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
-    steps: Promise<Array<StepResult<ToolSet>>>
-}> {
 export async function streamResponseAsMessage(
-    ws: WebsocketConnection,
     maxSteps: number,
-    request: NewMessageEventData,
     model: LanguageModelV1,
     tools: ToolSet,
-    messages: CoreMessage[],
+    messages: AiMessage[],
     chatId: string
 ): Promise<Signal<{ type: "assistant" } & ChatMessage>> {
     CLI.debug("Streaming response...");
@@ -100,7 +96,7 @@ export async function streamResponseAsMessage(
             references: [],
             finished: false
         }
-    });
+    }).then();
 
     const updateMessages = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
 
@@ -126,31 +122,9 @@ export async function streamResponseAsMessage(
         return [];
     });
 
-    const updateSources = sources.then((sources: LanguageModelSourceV1[]) => {
-        CLI.debug(`Got ${sources.length} sources`);
-        const references = sources.map(source => ({
-            name: source.title ?? source.id,
-            link: source.url,
-            type: "resource-reference",
-            snippet: source.id
-        } as const));
-
-        eventStore.publish({
-            type: "updateReferences",
-            userId: ws.userId,
-            chatId: chatId,
-            messageId: messageId,
-            references
-        });
-
-        return references;
-    }).catch((err) => {
-        console.error(err);
-        return [];
-    });
-
     const updateText = text.then((text: string) => {
-        eventStore.publish(ws.userId, {
+        eventStore.publish({
+            userId: ws.userId,
             type: "messageTextCompleted",
             chatId: chatId,
             messageId,
@@ -160,7 +134,7 @@ export async function streamResponseAsMessage(
         return text;
     });
 
-    const updateSteps = steps.then((steps: Array<StepResult<ToolSet>>) => {
+    await steps.then((steps: Array<StepResult<ToolSet>>) => {
         /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.
         broadcastToUser(ws.userId, {
             type: "updateSteps",

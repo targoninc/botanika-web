@@ -2,7 +2,7 @@ import {v4 as uuidv4} from "uuid";
 import {ChatContext} from "../../../models/chat/ChatContext";
 import {LanguageModelV1,} from "ai";
 import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
-import {AssistantMessage, ChatMessage} from "../../../models/chat/ChatMessage";
+import {AssistantMessage, ChatMessage, UserMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
@@ -14,16 +14,13 @@ export async function getChatName(model: LanguageModelV1, message: string): Prom
     return response.text;
 }
 
-export function newUserMessage(provider: string, model: string, message: string, files: MessageFile[]): ChatMessage {
+export function newUserMessage(message: string, files: MessageFile[]): UserMessage {
     return {
         id: uuidv4(),
         type: "user",
         text: message,
         time: Date.now(),
-        finished: true,
         files,
-        provider,
-        model
     };
 }
 

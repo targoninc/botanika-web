@@ -66,6 +66,6 @@ export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnect
         type: "function",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
         parameters: searchParameters,
-        execute: wrapTool<z.input<typeof searchParameters>, ChatToolResult>("google-search-engine", input => toolCall(input, userConfig), ws, chat),
+        execute: wrapTool<z.input<typeof searchParameters>, ChatToolResult>("google-search-engine", input => toolCall(input, userConfig), ws.userId, chat),
     };
 }

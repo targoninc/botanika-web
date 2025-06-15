@@ -1,9 +1,20 @@
 import {ChatToolResult} from "./ChatToolResult.ts";
 
-export interface ToolCall {
+export type ToolCall = {
     toolCallId: string;
     toolName: string;
     args: any;
-    state: "result" | "call" | "partial-call";
-    result?: ChatToolResult | null;
+}
+
+export type PartialToolCall = ToolCall & {
+    state: "partial-call";
+}
+
+export type ToolCallResult = ToolCall & {
+    state: "result";
+    result: ChatToolResult;
+}
+
+export type ToolCallCall = ToolCall & {
+    state: "call";
 }

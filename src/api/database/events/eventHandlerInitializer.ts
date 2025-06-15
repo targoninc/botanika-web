@@ -20,7 +20,6 @@ export function initializeEventHandlers(): () => void {
     // Return a function to unregister all handlers if needed
     return () => {
         unsubscribeWebsocket();
-        unsubscribeProjection();
         unsubscribeIncrementProjector();
         CLI.log("Event handlers unregistered");
     };

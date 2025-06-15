@@ -8,6 +8,8 @@ import { wrapTool } from "../../tooling.ts";
 import { Signal } from "@targoninc/jess";
 import { ChatMessage } from "../../../../../models/chat/ChatMessage.ts";
 import {CLI} from "../../../../CLI.ts";
+import {Tool, ToolCall} from "ai";
+import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
 
 /**
  * Fetches the HTML content of a webpage
@@ -95,10 +97,10 @@ async function extractContent(url: string): Promise<string> {
 /**
  * Tool to extract images from a webpage
  */
-async function extractImagesToolCall(input: any): Promise<ChatToolResult> {
+async function extractImagesToolCall(input: { url: string }): Promise<ChatToolResult> {
   const images = await extractImages(input.url);
   
-  return <ChatToolResult>{
+  return {
     text: `Found ${images.length} images on the webpage`,
     references: images.map((image, index) => {
       return <ResourceReference>{
@@ -134,30 +136,27 @@ async function extractContentToolCall(input: any): Promise<ChatToolResult> {
   };
 }
 
-/**
- * Creates a tool to extract images from a webpage
- */
-export function extractImagesFromWebpageTool(message: Signal<ChatMessage>) {
+const webPageParameters = z.object({
+  url: z.string().describe('The URL of the webpage to extract images from'),
+});
+
+export function extractImagesFromWebpageTool(userId: string, chat: ChatContext) : Tool<typeof webPageParameters, ChatToolResult> {
   return {
-    id: "extract-images-from-webpage",
     description: "Extracts images from a webpage. Returns a list of images found on the webpage.",
-    parameters: z.object({
-      url: z.string().describe('The URL of the webpage to extract images from'),
-    }),
-    execute: wrapTool("extract-images-from-webpage", extractImagesToolCall, message),
+    parameters: webPageParameters,
+    execute: wrapTool("extract-images-from-webpage", extractImagesToolCall, userId, chat)
   };
 }
 
-/**
- * Creates a tool to extract content from a webpage
- */
-export function extractContentFromWebpageTool(message: Signal<ChatMessage>) {
+const extractContentParameters = z.object({
+  url: z.string().describe('The URL of the webpage to extract content from'),
+});
+
+export function extractContentFromWebpageTool(userId: string, chat: ChatContext) : Tool<typeof extractContentParameters, ChatToolResult> {
   return {
-    id: "extract-content-from-webpage",
+    type: "function",
     description: "Extracts the most relevant content from a webpage as a single string, without any HTML tags.",
-    parameters: z.object({
-      url: z.string().describe('The URL of the webpage to extract content from'),
-    }),
-    execute: wrapTool("extract-content-from-webpage", extractContentToolCall, message),
+    parameters: extractContentParameters,
+    execute: wrapTool("extract-content-from-webpage", extractContentToolCall, userId, chat),
   };
 }

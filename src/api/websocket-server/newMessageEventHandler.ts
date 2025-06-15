@@ -1,6 +1,6 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {sendEvent, sendWarning, WebsocketConnection} from "./websocket.ts";
+import {sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
 import {CLI} from "../CLI.ts";
@@ -18,24 +18,23 @@ import {ModelCapability} from "../../models/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../ai/tools/servers/allTools.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
-import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../ai/endpoints.ts";
-import {signal, Signal} from "@targoninc/jess";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";
+import {eventStore} from "../database/events/eventStore.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
     const chatId = uuidv4();
-    const chatMsg = newUserMessage(request.provider, request.model, request.message, request.files);
+    const chatMsg = newUserMessage(request.message, request.files);
     eventStore.publish({
         userId: ws.userId,
         type: "chatCreated",
         chatId: chatId,
         userMessage: chatMsg
-    });
+    }).then();
 
     let chat: ChatContext;
     try {
@@ -77,12 +76,12 @@ async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewM
     return chat;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, message: Signal<ChatMessage>) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
     const mcpInfo = await getMcpTools(ws.userId);
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig, message);
+    const builtInTools = getBuiltInTools(userConfig, ws, chat);
     return {
         mcpInfo,
         tools: Object.assign(builtInTools, mcpInfo.tools)
@@ -92,10 +91,18 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
 /**
  * Requests another assistant message without tools just to have a summary or description of what happened
  */
-async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig: Configuration,
-                               streamResponse: {
-                                   steps: Promise<Array<StepResult<ToolSet>>>
-                               }, maxSteps: number, model: LanguageModelV1, chat: ChatContext, worldContext: Record<string, any>, request: NewMessageEventData) {
+async function requestSimpleIfOnlyToolCalls(
+    ws: WebsocketConnection,
+    userConfig: Configuration,
+    streamResponse: {
+        steps: Promise<Array<StepResult<ToolSet>>>
+    },
+    maxSteps: number,
+    model: LanguageModelV1,
+    chat: ChatContext,
+    worldContext: Record<string, any>,
+    request: NewMessageEventData
+) {
     const steps = await streamResponse.steps;
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
@@ -111,7 +118,7 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
             type: "messageCreated",
             chatId: chat.id,
             message: message
-        })
+        }).then();
 
         // Send audio if enabled
         if (userConfig.enableTts && message.text.length > 0) {
@@ -156,28 +163,9 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = await streamResponseAsMessage(ws.userId, maxSteps, model, toolInfo.tools, promptMessages, chat.id);
 
-    // Wait for the message to be finished
-    const waitForMessageFinished = new Promise<void>((resolve) => {
-        const checkInterval = setInterval(() => {
-            if (streamResponse.value.finished) {
-                clearInterval(checkInterval);
-                // Add the finished message to the chat history
-                chat.history.push(streamResponse.value);
-                // Send audio if enabled
-                if (userConfig.enableTts && streamResponse.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, streamResponse.value).then(() => {
-                        resolve();
-                    });
-                } else {
-                    resolve();
-                }
-            }
-        }, 100);
-    });
-
-    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
+    await requestSimpleIfOnlyToolCalls(ws, userConfig, maxSteps, model, chat, worldContext, request);
     await waitForMessageFinished;
     toolInfo.mcpInfo.onClose();
 
