@@ -83,6 +83,8 @@ Depending on the provider and model you select, requests might not work reliably
 
 ### Transcription
 
+Available OpenAI transcription models: `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, `whisper`
+
 If you **don't** want to use OpenAI for transcription, you can use Whisper locally. This requires a bit of setup:
 
 Install [pnpm](https://pnpm.io/installation), then run the following command and wait until the model is downloaded:

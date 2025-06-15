@@ -33,7 +33,8 @@ create table if not exists public.chats
     name                  text,
     created_at            timestamp with time zone default now()             not null,
     branched_from_chat_id uuid,
-    updated_at            timestamp                default now()             not null
+    updated_at            timestamp                default now()             not null,
+    shared                boolean                  default false             not null
 );
 
 alter table public.chats
@@ -55,7 +56,8 @@ create table if not exists public.messages
     created_at        timestamp with time zone default now()             not null,
     "toolInvocations" json                     default '[]'::json        not null,
     files             json                     default '[]'::json        not null,
-    reasoning         json                     default '[]'::json        not null
+    reasoning         json                     default '[]'::json        not null,
+    usage             json                     default '{}'::json        not null
 );
 
 alter table public.messages

@@ -2,6 +2,7 @@ import {MessageFile} from "./MessageFile.ts";
 import {ResourceReference} from "./ResourceReference.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 import {ToolCall} from "./ToolCall.ts";
+import {LanguageModelUsage} from "ai";
 import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 type BaseMessage = {
@@ -35,6 +36,7 @@ export type AssistantMessage = BaseMessage & {
     references: ResourceReference[];
     files: Omit<MessageFile, "id">[];
     reasoning?: ReasoningDetail[];
+    usage: LanguageModelUsage;
 }
 
 export type ChatMessage = (ToolMessage | UserMessage | SystemMessage | AssistantMessage);

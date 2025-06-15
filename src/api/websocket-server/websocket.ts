@@ -11,6 +11,7 @@ import {base64Decode} from "../authentication/base64Decode.ts";
 import { eventStore } from "../database/events/eventStore.ts";
 import { registerConnection, sendToConnection, unregisterConnection } from "./websocketEventHandler.ts";
 import {chatNameChangedEventHandler} from "./chatNameChangedEventHandler.ts";
+import {sharedChangedEventHandler} from "./sharedChangedEventHandler.ts";
 
 export const UPDATE_LIMIT = 100;
 
@@ -43,6 +44,9 @@ async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketCon
             break;
         case BotanikaClientEventType.chatNameChanged:
             await chatNameChangedEventHandler(ws, message);
+            break;
+        case BotanikaClientEventType.sharedChanged:
+            await sharedChangedEventHandler(ws, message);
             break;
     }
 }

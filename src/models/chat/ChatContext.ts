@@ -6,5 +6,7 @@ export interface ChatContext {
     updatedAt: number;
     id: string;
     branched_from_chat_id?: string;
+    shared: boolean;
+    userId: string;
     history: ChatMessage[];
 }

@@ -254,6 +254,25 @@ export class ChatStorage {
             return null;
         }
 
+        return await ChatStorage.addDataToChat(chatId, chat);
+    }
+
+    static async readPublicChatContext(chatId: string): Promise<ChatContext> {
+        const chat = await db.chat.findFirst({
+            where: {
+                id: chatId,
+                shared: true
+            }
+        });
+
+        if (!chat) {
+            return null;
+        }
+
+        return await ChatStorage.addDataToChat(chatId, chat);
+    }
+
+    private static async addDataToChat(chatId: string, chat: Chat) {
         const messages = await db.message.findMany({
             where: {
                 chatId: chatId
@@ -265,6 +284,8 @@ export class ChatStorage {
             name: chat.name,
             createdAt: chat.createdAt.getTime(),
             updatedAt: chat.updatedAt.getTime(),
+            shared: chat.shared,
+            userId: chat.userId,
             history: messages.map(m => {
                 return <ChatMessage>{
                     id: m.id,
@@ -307,6 +328,8 @@ export class ChatStorage {
             return {
                 id: c.id,
                 name: c.name,
+                shared: c.shared,
+                userId: c.userId,
                 createdAt: c.createdAt.getTime(),
                 updatedAt: c.updatedAt.getTime(),
             }

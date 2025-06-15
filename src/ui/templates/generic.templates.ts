@@ -521,6 +521,7 @@ export class GenericTemplates {
             .children(
                 GenericTemplates.user(),
                 GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
+                    localStorage.clear();
                     window.location.href = "/logout";
                 }, ["negative"]),
             ).build();

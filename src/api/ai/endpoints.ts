@@ -46,13 +46,24 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(req.user!.id, chatId).then(chatContext => {
-        if (!chatContext) {
-            res.status(404).send('Chat not found');
-            return;
-        }
-        res.send(chatContext);
-    });
+    if (req.query.shared === "true") {
+        ChatStorage.readPublicChatContext(chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    } else {
+        ChatStorage.readChatContext(req.user!.id, chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    }
+    return;
 }
 
 export function deleteChatEndpoint(req: Request, res: Response) {
@@ -107,6 +118,9 @@ function branchChatEndpoint(req: Request, res: Response) {
     }
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
+        if (!c) {
+            res.status(404).send('Chat not found');
+        }
         const message = c.history.find(m => m.id === messageId);
         c.branched_from_chat_id = c.id;
         c.id = v4();
