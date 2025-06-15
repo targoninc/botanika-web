@@ -39,7 +39,7 @@ export type MessageIncrement = Increment & ({
     audio?: boolean;
     finished?: boolean;
 } | {
-    type: "newMessage";
+    type: "userMessageCreatedEvent";
     message: ChatMessage;
 })
 
@@ -132,7 +132,7 @@ export class IncrementProjector {
                                 messageIncrement.text += event.messageChunk;
                                 messageIncrement.latestUpdateTimestamp = timestamp;
                                 break;
-                            case "newMessage":
+                            case "userMessageCreatedEvent":
                                 if ("text" in messageIncrement.message) {
                                     messageIncrement.message.text += event.messageChunk;
                                     messageIncrement.latestUpdateTimestamp = timestamp;
@@ -190,7 +190,9 @@ export class IncrementProjector {
                     name: "",
                     createdAt: timestamp,
                     updatedAt: timestamp,
-                    history: [event.userMessage]
+                    history: [event.userMessage],
+                    userId: userId,
+                    shared: false,
                 },
                 latestUpdateTimestamp: timestamp,
                 earliestUpdateTimestamp: timestamp,
@@ -279,7 +281,7 @@ export class IncrementProjector {
 
         switch(message.type){
             case "tool":
-                size += IncrementProjector.calculateStringSize(JSON.stringify(message.toolResult));
+                size += IncrementProjector.calculateStringSize(JSON.stringify(message.toolInvocations));
                 break;
             case "user":
                 size += IncrementProjector.calculateStringSize(message.text);

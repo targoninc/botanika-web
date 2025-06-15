@@ -62,13 +62,13 @@ export class EventStore {
             return typeMatches && userMatches;
         });
 
-        for (const subscription of matchingSubscriptions) {
+        await Promise.allSettled(matchingSubscriptions.map(async sub => {
             try {
-                await subscription.handler(eventWithTimestamp);
+                await sub.handler(eventWithTimestamp);
             } catch (error) {
                 CLI.error(`Error in event handler for event type ${event.type}: ${error}`);
             }
-        }
+        }));
     }
 
     /**

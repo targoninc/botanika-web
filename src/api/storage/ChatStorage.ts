@@ -52,7 +52,7 @@ export class ChatStorage {
                     const updatedMessages: Prisma.MessageUpdateArgs[] = [];
                     for (const [messageId, messageIncrement] of chatIncrement.messageIncrements.entries()) {
                         switch (messageIncrement.type) {
-                            case "newMessage": {
+                            case "userMessageCreatedEvent": {
                                 const message = createMessageFromNewMessage(messageId, messageIncrement.message);
 
                                 newMessages.push(message);
@@ -257,7 +257,7 @@ export class ChatStorage {
         return await ChatStorage.addDataToChat(chatId, chat);
     }
 
-    static async readPublicChatContext(chatId: string): Promise<ChatContext> {
+    static async readPublicChatContext(chatId: string): Promise<ChatContext | null> {
         const chat = await db.chat.findFirst({
             where: {
                 id: chatId,

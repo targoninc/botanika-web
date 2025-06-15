@@ -1,9 +1,11 @@
 import {AssistantMessage, ChatMessage, ToolMessage, UserMessage} from "../../chat/ChatMessage.ts";
 import {MessageFile} from "../../chat/MessageFile.ts";
 import {ResourceReference} from "../../chat/ResourceReference.ts";
+import {ReasoningDetail} from "../../../api/ai/llms/aiMessage.ts";
+import {LanguageModelUsage} from "ai";
 
-export type NewMessageEvent = {
-    type: "newMessage";
+export type UserMessageCreatedEvent = {
+    type: "userMessageCreatedEvent";
     userMessage: ChatMessage;
     chatId: string;
 }
@@ -19,6 +21,25 @@ export type ChatCreatedEvent = {
     type: "chatCreated";
     userMessage: UserMessage;
     chatId: string;
+}
+
+export type ChatDeletedEvent = {
+    type: "chatDeleted";
+    chatId: string;
+}
+
+export type UsageCreatedEvent = {
+    type: "usageCreated";
+    chatId: string;
+    messageId: string;
+    usage: LanguageModelUsage;
+}
+
+export type ReasoningFinishedEvent = {
+    type: "reasoningFinished";
+    chatId: string;
+    messageId: string;
+    reasoningDetails: ReasoningDetail[];
 }
 
 export type UpdateFilesEvent = {
@@ -104,6 +125,7 @@ export type BotanikaServerEvent = {
     timestamp?: number;
 } & (
     ChatCreatedEvent
+    | UserMessageCreatedEvent
     | MessageTextAddedEvent
     | MessageCompletedEvent
     | ErrorEvent
@@ -117,6 +139,9 @@ export type BotanikaServerEvent = {
     | ToolCallStartedEvent
     | ToolCallFinishedEvent
     | MessageCreatedEvent
+    | ReasoningFinishedEvent
+    | UsageCreatedEvent
+    | ChatDeletedEvent
 );
 
 export type BotanikaServerEventType = Extract<BotanikaServerEvent, { type: string }>["type"];
@@ -137,7 +162,11 @@ const chatEventKeys: {
     updateFiles: true,
     toolCallStarted: true,
     toolCallFinished: true,
-    messageCreated: true
+    messageCreated: true,
+    reasoningFinished: true,
+    userMessageCreatedEvent: true,
+    usageCreated: true,
+    chatDeleted: true
 }
 
 export type MessageEvents = Extract<BotanikaServerEvent, { messageId: string }>;
@@ -151,7 +180,9 @@ const messageEventKeys: {
     updateFiles: true,
     toolCallStarted: true,
     toolCallFinished: true,
-    messageTextAdded: true
+    messageTextAdded: true,
+    reasoningFinished: true,
+    usageCreated: true
 }
 
 export const ChatEventTypes = Object.keys(chatEventKeys) as ChatEvent["type"][];

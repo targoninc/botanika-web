@@ -10,7 +10,7 @@ import {sendError, WebsocketConnection} from "../../websocket-server/websocket.t
 import {AiMessage} from "./aiMessage.ts";
 import {eventStore} from "../../database/events/eventStore.ts";
 
-export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
+export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{
     thoughts: string | null;
     text: string;
     steps: Array<StepResult<ToolSet>>
@@ -44,22 +44,23 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(
+export function streamResponseAsMessage(
+    ws: WebsocketConnection,
     maxSteps: number,
     model: LanguageModelV1,
     tools: ToolSet,
     messages: AiMessage[],
     chatId: string
-): Promise<Signal<{ type: "assistant" } & ChatMessage>> {
+) {
     CLI.debug("Streaming response...");
 
     const {
         textStream,
         files,
-        steps,
+        steps: stepsStream,
         text,
         reasoningDetails,
-        usage
+        usage: usageStream
     } = streamText({
         model,
         messages,
@@ -91,8 +92,8 @@ export async function streamResponseAsMessage(
             text: "",
             time: Date.now(),
             type: "assistant",
-            model: request.model,
-            provider: request.provider,
+            model: model.modelId,
+            provider: model.provider,
             hasAudio: false,
             files: [],
             references: [],
@@ -100,7 +101,7 @@ export async function streamResponseAsMessage(
         }
     }).then();
 
-    const updateMessages = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
+    const updateMessage = updateMessageFromStream(messageId, textStream, chatId, ws.userId);
 
     const updateFiles = files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
@@ -132,26 +133,60 @@ export async function streamResponseAsMessage(
             messageId,
             text
         });
-    reasoningDetails.then(r => {
-        message.value = {
-            ...message.value,
-            reasoning: r
-        };
+    }).catch((err) => {
+        console.error(err);
+        return "";
     });
 
-    usage.then(u => {
-        message.value = {
-            ...message.value,
-            usage: u
-        };
-    })
-
-        return text;
+    const updateReasoning = reasoningDetails.then(r => {
+        if (r.length > 0) {
+            eventStore.publish({
+                userId: ws.userId,
+                type: "reasoningFinished",
+                chatId: chatId,
+                messageId: messageId,
+                reasoningDetails: r
+            });
+        }
+        return r;
+    }).catch((err) => {
+        console.error(err);
+        return [];
     });
 
-    const reasoningData
+    const usage = usageStream.then(usage => {
+        eventStore.publish({
+            userId: ws.userId,
+            type: "usageCreated",
+            chatId: chatId,
+            messageId: messageId,
+            usage
+        });
 
-    await steps.then((steps: Array<StepResult<ToolSet>>) => {
+        return usage
+    }).catch((err) => {
+        console.error(err);
+        return null;
+    });
+
+    const reasoningData = updateReasoning.then(reasoning => {
+        if (reasoning.length > 0) {
+            eventStore.publish({
+                userId: ws.userId,
+                type: "reasoningFinished",
+                chatId: chatId,
+                messageId: messageId,
+                reasoningDetails: reasoning
+            });
+        }
+
+        return reasoning;
+    }).catch((err) => {
+        console.error(err);
+        return [];
+    });
+
+    const steps = stepsStream.then((steps: Array<StepResult<ToolSet>>) => {
         /* TODO: Maybe send out a message to the client, but this might be too much data. We want to keep the traffic low.
         broadcastToUser(ws.userId, {
             type: "updateSteps",
@@ -167,15 +202,15 @@ export async function streamResponseAsMessage(
         return [];
     });
 
-    return signal<ChatMessage>({
-        id: messageId,
-        type: "assistant",
-        text: await updateText,
-        time: Date.now(),
-        finished: false,
-        provider: request.provider,
-        model: request.model,
-        files: await updateFiles,
-        references: await updateSources
-    });
+    return {
+        reasoningData,
+        steps,
+        updateMessage,
+        usage,
+        updateFiles,
+        updateText,
+        all() {
+            return Promise.allSettled(Object.values(this).filter(x => x instanceof Promise))
+        }
+    };
 }
