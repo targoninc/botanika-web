@@ -1,8 +1,9 @@
-import {AssistantMessage, ChatMessage, ToolMessage, UserMessage} from "../../chat/ChatMessage.ts";
+import {AssistantMessage, ChatMessage, UserMessage} from "../../chat/ChatMessage.ts";
 import {MessageFile} from "../../chat/MessageFile.ts";
 import {ResourceReference} from "../../chat/ResourceReference.ts";
 import {ReasoningDetail} from "../../../api/ai/llms/aiMessage.ts";
 import {LanguageModelUsage} from "ai";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 export type UserMessageCreatedEvent = {
     type: "userMessageCreatedEvent";
@@ -46,20 +47,26 @@ export type UpdateFilesEvent = {
     type: "updateFiles";
     chatId: string;
     messageId: string;
-    files: Omit<MessageFile, "id">[];
+    files: MessageFile[];
 }
 
-export type UpdateReferencesEvent = {
-    type: "updateReferences";
+export type UpdateToolInvocationsEvent = {
+    type: "updateToolInvocations";
     chatId: string;
     messageId: string;
-    references: ResourceReference[];
+    toolInvocations: ToolInvocation[];
 }
 
 export type ChatNameSetEvent = {
     type: "chatNameSet";
     chatId: string;
     name: string;
+}
+
+export type ChatSharedSetEvent = {
+    type: "chatSharedSet";
+    chatId: string;
+    shared: boolean;
 }
 
 export type MessageTextAddedEvent = {
@@ -116,7 +123,7 @@ export type ToolCallFinishedEvent = {
 export type MessageCreatedEvent = {
     type: "messageCreated";
     chatId: string;
-    message: UserMessage | AssistantMessage | ToolMessage;
+    message: UserMessage | AssistantMessage;
 }
 
 export type BotanikaServerEventWithTimestamp = BotanikaServerEvent & { timestamp: number };
@@ -147,7 +154,8 @@ export type BotanikaServerEvent = {
     | WarningEvent
     | AudioGeneratedEvent
     | ChatNameSetEvent
-    | UpdateReferencesEvent
+    | ChatSharedSetEvent
+    | UpdateToolInvocationsEvent
     | MessageTextCompletedEvent
     | UpdateFilesEvent
     | ToolCallStartedEvent
@@ -173,7 +181,8 @@ const chatEventKeys: {
     messageCompleted: true,
     audioGenerated: true,
     chatNameSet: true,
-    updateReferences: true,
+    chatSharedSet: true,
+    updateToolInvocations: true,
     messageTextCompleted: true,
     updateFiles: true,
     toolCallStarted: true,
@@ -193,7 +202,7 @@ const messageEventKeys: {
     [K in MessageEvents["type"]]: true
 } = {
     audioGenerated: true,
-    updateReferences: true,
+    updateToolInvocations: true,
     messageTextCompleted: true,
     updateFiles: true,
     toolCallStarted: true,
