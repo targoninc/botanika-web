@@ -120,6 +120,20 @@ export type MessageCreatedEvent = {
 }
 
 export type BotanikaServerEventWithTimestamp = BotanikaServerEvent & { timestamp: number };
+export type ChatBranchedEvent = {
+    type: "chatBranched";
+    chatId: string;
+    messageId: string;
+    branchedFromChatId: string;
+}
+
+export type ChatDeletedAfterMessageEvent = {
+    type: "chatDeletedAfterMessage";
+    chatId: string;
+    afterMessageId: string;
+    exclusive: boolean;
+}
+
 export type BotanikaServerEvent = {
     userId: string,
     timestamp?: number;
@@ -142,6 +156,8 @@ export type BotanikaServerEvent = {
     | ReasoningFinishedEvent
     | UsageCreatedEvent
     | ChatDeletedEvent
+    | ChatBranchedEvent
+    | ChatDeletedAfterMessageEvent
 );
 
 export type BotanikaServerEventType = Extract<BotanikaServerEvent, { type: string }>["type"];
@@ -166,7 +182,9 @@ const chatEventKeys: {
     reasoningFinished: true,
     userMessageCreatedEvent: true,
     usageCreated: true,
-    chatDeleted: true
+    chatDeleted: true,
+    chatBranched: true,
+    chatDeletedAfterMessage: true
 }
 
 export type MessageEvents = Extract<BotanikaServerEvent, { messageId: string }>;
@@ -182,7 +200,8 @@ const messageEventKeys: {
     toolCallFinished: true,
     messageTextAdded: true,
     reasoningFinished: true,
-    usageCreated: true
+    usageCreated: true,
+    chatBranched: true
 }
 
 export const ChatEventTypes = Object.keys(chatEventKeys) as ChatEvent["type"][];

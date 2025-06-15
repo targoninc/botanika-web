@@ -68,14 +68,14 @@ export async function deleteChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    eventStore.publish({
+    await eventStore.publish({
         userId: req.user!.id,
         type: "chatDeleted",
         chatId
     });
 
-    await ChatStorage.deleteChatContext(req.user!.id, chatId);
-    res.status(200).send('Chat deleted');
+    // The chat deletion will be handled by the event handler
+    res.status(200).send('Chat deletion in progress');
 }
 
 let models = {};
@@ -99,39 +99,60 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
         ];
 
         res.status(400).send(`Missing ${parameters.filter(Boolean).join(', ')} parameter`);
+        return;
     }
 
-    eventStore.publish({
+    await eventStore.publish({
         userId: req.user!.id,
         type: "chatDeletedAfterMessage",
         chatId,
         afterMessageId: messageId,
         exclusive: req.body.exclusive
     });
+
+    // The message deletion will be handled by the event handler
+    res.status(200).send('Messages deletion in progress');
 }
 
-function branchChatEndpoint(req: Request, res: Response) {
+async function branchChatEndpoint(req: Request, res: Response) {
     const chatId = req.body.chatId;
     const messageId = req.body.messageId;
     if (!chatId || !messageId) {
         res.status(400).send('Missing chatId or messageId parameter');
+        return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
-        if (!c) {
-            res.status(404).send('Chat not found');
-        }
-        const message = c.history.find(m => m.id === messageId);
-        c.branched_from_chat_id = c.id;
-        c.id = v4();
-        c.createdAt = Date.now();
-        c.history = c.history.filter(m => m.time <= message.time);
-        c.history = c.history.map(msg => {
-            msg.id = v4();
-            return msg;
-        });
-        await ChatStorage.writeChatContext(req.user.id, c);
-        res.status(200).json(c);
+    // First check if the chat exists
+    const chat = await ChatStorage.readChatContext(req.user!.id, chatId);
+    if (!chat) {
+        res.status(404).send('Chat not found');
+        return;
+    }
+
+    // Check if the message exists in the chat
+    const message = chat.history.find(m => m.id === messageId);
+    if (!message) {
+        res.status(404).send('Message not found in chat');
+        return;
+    }
+
+    // Generate a new chat ID
+    const newChatId = v4();
+
+    // Publish the chat branched event
+    await eventStore.publish({
+        userId: req.user!.id,
+        type: "chatBranched",
+        chatId: newChatId,
+        messageId: messageId,
+        branchedFromChatId: chatId
+    });
+
+    // Return the new chat ID
+    res.status(200).json({
+        id: newChatId,
+        branchedFromChatId: chatId,
+        messageId: messageId
     });
 }
 

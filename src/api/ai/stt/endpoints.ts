@@ -19,12 +19,12 @@ export async function transcribeEndpoint(req: Request, res: Response) {
         fs.mkdirSync(`${appDataPath}/tmp`, { recursive: true });
     }
     fs.writeFileSync(tmpFileName, file.buffer);
-    const userConfig = await getConfig(req.user.id);
+    const userConfig = await getConfig(req.user!.id);
     if (!userConfig.enableStt) {
         return;
     }
 
-    let provider = "local";
+    const provider = "local";
     if (!featureOption(userConfig, BotanikaFeature.OpenAI).apiKey) {
         return res.status(400).send("OpenAI API key missing");
     }
