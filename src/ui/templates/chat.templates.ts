@@ -7,7 +7,7 @@ import {
     connected,
     currentChatId,
     currentlyPlayingAudio,
-    currentText,
+    currentText, currentUser,
     shortCutConfig,
     target,
     updateChats,
@@ -156,6 +156,7 @@ export class ChatTemplates {
 
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
+        const isOwnChat = compute((c, u) => u && c.userId === u.id, chatContext, currentUser);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
@@ -177,7 +178,7 @@ export class ChatTemplates {
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
-                when(message.type === "user", GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
+                when(compute(i => message.type === "user" && i, isOwnChat), GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Retry message", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id, true);
@@ -203,7 +204,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
+                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);
@@ -219,7 +220,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(message.type === "assistant", GenericTemplates.iconButton("graph_1", "Branch to new chat", async (e) => {
+                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("graph_1", "Branch to new chat", async (e) => {
                     e.stopPropagation();
                     const r = await Api.branchFromMessage(chatContext.value.id, message.id);
                     if (r.success) {
@@ -306,9 +307,11 @@ export class ChatTemplates {
         const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
         const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
+        const entirelyDisabled = compute((c, u) => c && u && c.userId !== u.id, chatContext, currentUser);
+        const entirelyDisabledClass = compute((d): string => d ? "disabled" : "_", entirelyDisabled);
 
         return create("div")
-            .classes("chat-input", noHistoryClass)
+            .classes("chat-input", noHistoryClass, entirelyDisabledClass)
             .children(
                 create("div")
                     .classes("dropzone", "relative", "flex-v", "small-gap")

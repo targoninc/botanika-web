@@ -120,6 +120,9 @@ function branchChatEndpoint(req: Request, res: Response) {
     }
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
+        if (!c) {
+            res.status(404).send('Chat not found');
+        }
         const message = c.history.find(m => m.id === messageId);
         c.branched_from_chat_id = c.id;
         c.id = v4();
