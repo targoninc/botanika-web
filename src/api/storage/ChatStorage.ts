@@ -20,6 +20,7 @@ export class ChatStorage {
                     chatCreations.push({
                         id: chatId,
                         name: chatIncrement.chat.name,
+                        shared: chatIncrement.chat.shared,
                         createdAt: new Date(chatIncrement.chat.createdAt),
                         updatedAt: new Date(chatIncrement.chat.updatedAt),
                         branchedFromChatId: chatIncrement.chat.branched_from_chat_id ?? null,
@@ -153,23 +154,12 @@ export class ChatStorage {
             let hasAudio: Prisma.MessageCreateManyChatInput["hasAudio"] = false;
             let reasoning: Prisma.MessageCreateManyChatInput["reasoning"] | null = null;
             let files: Prisma.MessageCreateManyChatInput["files"] | null = null;
+            let usage: Prisma.MessageCreateManyChatInput["usage"] | null = null;
 
             const createdAt: Date = new Date(message.time);
             let toolInvocations: ToolInvocation[] | null = null;
 
             switch (message.type) {
-                case "tool": {
-                    toolInvocations = [{
-                        state: "result",
-                        toolName: message.toolResult.toolName,
-                        result: message.toolResult.result,
-                        toolCallId: message.toolResult.toolCallId,
-                        step: 0, // TODO: Where do we get step from?
-                        args: null // TODO: Where do we get args from?
-                    }];
-
-                    break;
-                }
                 case "user":
                     text = message.text;
                     files = message.files as any;
@@ -185,8 +175,10 @@ export class ChatStorage {
                     finished = message.finished;
                     provider = message.provider;
                     hasAudio = message.hasAudio;
-                    reasoning = message.reasoning as any;
-                    files = message.files as any;
+                    reasoning = message.reasoning;
+                    files = message.files;
+                    toolInvocations = message.toolInvocations;
+                    usage = message.usage;
 
                     break;
             }
@@ -202,6 +194,7 @@ export class ChatStorage {
                 hasAudio: hasAudio,
                 reasoning: reasoning as any,
                 toolInvocations: toolInvocations as any,
+                usage: usage as any,
                 files: files as any
             };
         }

@@ -7,9 +7,9 @@ import { CLI } from "../../CLI.ts";
 import { eventStore } from "./eventStore.ts";
 import {ChatMessage} from "../../../models/chat/ChatMessage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
-import {ResourceReference} from "../../../models/chat/ResourceReference.ts";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
+import {ToolCall} from "../../../models/chat/ToolCall.ts";
 
 export type Increment = {
     latestUpdateTimestamp: number;
@@ -26,6 +26,7 @@ export type ChatIncrement = Increment & ({
     type: "addToChat";
     messageIncrements: Map<string, MessageIncrement>;
     name?: string;
+    shared?: boolean;
 } | {
     type: "newChat";
     chat: ChatContext;
@@ -35,7 +36,7 @@ export type MessageIncrement = Increment & ({
     type: "addToMessage";
     text: string;
     files: MessageFile[];
-    references: ResourceReference[];
+    toolInvocations: ToolCall[];
     audio?: boolean;
     finished?: boolean;
 } | {
@@ -47,10 +48,6 @@ export class IncrementProjector {
     public userIncrementMap: Map<string, UserIncrement> = new Map();
 
     public size: number = 0;
-
-    private static calculateStringSize(str: string): number {
-        return new TextEncoder().encode(str).length;
-    }
 
     private getOrCreateUserIncrement(userId: string, timestamp: number): UserIncrement {
         let userIncrement = this.userIncrementMap.get(userId);
@@ -120,7 +117,7 @@ export class IncrementProjector {
                             type: "addToMessage",
                             text: event.messageChunk,
                             files: [],
-                            references: [],
+                            toolInvocations: [],
                             earliestUpdateTimestamp: timestamp,
                             latestUpdateTimestamp: timestamp,
                         };
@@ -230,6 +227,28 @@ export class IncrementProjector {
         }
     }
 
+    private handleChatSharedSet(event: BotanikaServerEvent & { type: "chatSharedSet" }) {
+        try {
+            const userId = event.userId;
+            const timestamp = event.timestamp || Date.now();
+
+            const userIncrement = this.getOrCreateUserIncrement(userId, timestamp);
+            const chatIncrement = this.getOrCreateChatIncrement(userIncrement, event.chatId, timestamp);
+
+            switch (chatIncrement.type){
+                case "addToChat":
+                    chatIncrement.shared = event.shared;
+                    break;
+                case "newChat":
+                    chatIncrement.chat.shared = event.shared;
+                    break;
+            }
+
+        } catch (error) {
+            CLI.error(`Error handling chat name set event: ${error}`);
+        }
+    }
+
     /**
      * Calculate the size of an event
      *
@@ -237,117 +256,7 @@ export class IncrementProjector {
      * @returns The size in bytes
      */
     static calculateSize(event: BotanikaServerEvent): number {
-        let size = 0;
-
-        switch(event.type) {
-            case "error":
-            case "log":
-            case "warning":
-            case "messageTextCompleted":
-            case "messageCompleted":
-            case "toolCallStarted":
-            case "toolCallFinished":
-                break;
-            case "chatCreated":
-                size += IncrementProjector.calculateStringSize(event.userMessage.text);
-                break;
-            case "messageTextAdded":
-                size += IncrementProjector.calculateStringSize(event.messageChunk);
-                break;
-            case "audioGenerated":
-                size += IncrementProjector.calculateStringSize(event.audioUrl);
-                break;
-            case "chatNameSet":
-                size += IncrementProjector.calculateStringSize(event.name);
-                break;
-            case "updateReferences":
-                for (const reference of event.references) {
-                    size += IncrementProjector.calculateReferenceSize(reference);
-                }
-                break;
-            case "updateFiles":
-                for (const file of event.files) {
-                    size += IncrementProjector.calculateFileSize(file);
-                }
-                break;
-            case "messageCreated":
-                size += IncrementProjector.calculateMessageSize(event.message);
-
-
-                break;
-        }
-
-        return size;
-    }
-
-    private static calculateMessageSize(message: ChatMessage): number {
-        let size = 0;
-
-        switch(message.type){
-            case "tool":
-                size += IncrementProjector.calculateStringSize(JSON.stringify(message.toolInvocations));
-                break;
-            case "user":
-                size += IncrementProjector.calculateStringSize(message.text);
-                for (const file of message.files) {
-                    size += IncrementProjector.calculateFileSize(file);
-                }
-                break;
-            case "assistant":
-                size += IncrementProjector.calculateStringSize(message.text);
-                size += IncrementProjector.calculateStringSize(message.model);
-                size += IncrementProjector.calculateStringSize(message.provider);
-                for (const file of message.files) {
-                    size += IncrementProjector.calculateFileSize(file);
-                }
-                for (const reference of message.references) {
-                    size += IncrementProjector.calculateReferenceSize(reference);
-                }
-                if (message.reasoning) {
-                    for (const reasoning of message.reasoning) {
-                        switch (reasoning.type) {
-                            case "redacted":
-                                size += IncrementProjector.calculateStringSize(reasoning.data);
-                                break;
-                            case "text":
-                                size += IncrementProjector.calculateStringSize(reasoning.text);
-                                if (reasoning.signature) {
-                                    size += IncrementProjector.calculateStringSize(reasoning.signature);
-                                }
-                                break;
-                        }
-                    }
-                }
-                break;
-        }
-
-        return size;
-    }
-
-    private static calculateReferenceSize(reference: ResourceReference) {
-        let size = 0;
-
-        size += IncrementProjector.calculateStringSize(reference.name);
-        if (reference.link) size += IncrementProjector.calculateStringSize(reference.link);
-        if (reference.imageUrl) size += IncrementProjector.calculateStringSize(reference.imageUrl);
-        if (reference.snippet) size += IncrementProjector.calculateStringSize(reference.snippet);
-
-        if (reference.metadata) {
-            for (const [key, value] of Object.entries(reference.metadata)) {
-                size += IncrementProjector.calculateStringSize(key);
-                size += IncrementProjector.calculateStringSize(String(value));
-            }
-        }
-
-        return size;
-    }
-
-    private static calculateFileSize(file: Omit<MessageFile, "id">) {
-        let size = 0;
-        size += IncrementProjector.calculateStringSize(file.base64);
-        size += IncrementProjector.calculateStringSize(file.name);
-        size += IncrementProjector.calculateStringSize(file.mimeType);
-        return size;
+        return JSON.stringify(event).length;
     }
 
     /**
@@ -372,7 +281,7 @@ export class IncrementProjector {
                             type: "addToMessage",
                             text: "",
                             files: [],
-                            references: [],
+                            toolInvocations: [],
                             audio: true,
                             earliestUpdateTimestamp: timestamp,
                             latestUpdateTimestamp: timestamp,
@@ -405,12 +314,12 @@ export class IncrementProjector {
     }
 
     /**
-     * Handle an update references event
-     * Updates a message increment with references
+     * Handle an update toolInvocations event
+     * Updates a message increment with toolInvocations
      * 
-     * @param event The update references event
+     * @param event The update toolInvocations event
      */
-    private handleUpdateReferences(event: BotanikaServerEvent & { type: "updateReferences" }) {
+    private handleUpdateToolInvocations(event: BotanikaServerEvent & { type: "updateToolInvocations" }) {
         try {
             const userId = event.userId;
             const timestamp = event.timestamp || Date.now();
@@ -426,14 +335,14 @@ export class IncrementProjector {
                             type: "addToMessage",
                             text: "",
                             files: [],
-                            references: event.references,
+                            toolInvocations: event.toolInvocations,
                             earliestUpdateTimestamp: timestamp,
                             latestUpdateTimestamp: timestamp,
                         };
 
                         chatIncrement.messageIncrements.set(event.messageId, messageIncrement);
                     } else if (messageIncrement.type === "addToMessage") {
-                        messageIncrement.references = event.references;
+                        messageIncrement.toolInvocations = event.toolInvocations;
                         messageIncrement.latestUpdateTimestamp = timestamp;
                     }
                     break;
@@ -442,7 +351,7 @@ export class IncrementProjector {
                     for (let index = chatIncrement.chat.history.length - 1; index >= 0; index--) {
                         const message = chatIncrement.chat.history[index];
                         if (message.id === event.messageId && message.type === "assistant") {
-                            message.references = event.references;
+                            message.toolInvocations = event.toolInvocations;
                             break;
                         }
                     }
@@ -453,7 +362,7 @@ export class IncrementProjector {
             chatIncrement.latestUpdateTimestamp = timestamp;
             userIncrement.latestUpdateTimestamp = timestamp;
         } catch (error) {
-            CLI.error(`Error handling update references event: ${error}`);
+            CLI.error(`Error handling update toolInvocations event: ${error}`);
         }
     }
 
@@ -472,10 +381,7 @@ export class IncrementProjector {
             const chatIncrement = this.getOrCreateChatIncrement(userIncrement, event.chatId, timestamp);
 
             // Create message files with IDs
-            const files = event.files.map(file => ({
-                ...file,
-                id: crypto.randomUUID()
-            }));
+            const files = event.files;
 
             switch (chatIncrement.type) {
                 case "addToChat": {
@@ -485,7 +391,7 @@ export class IncrementProjector {
                             type: "addToMessage",
                             text: "",
                             files,
-                            references: [],
+                            toolInvocations: [],
                             earliestUpdateTimestamp: timestamp,
                             latestUpdateTimestamp: timestamp,
                         };
@@ -577,7 +483,7 @@ export class IncrementProjector {
                             type: "addToMessage",
                             text: event.text,
                             files: [],
-                            references: [],
+                            toolInvocations: [],
                             earliestUpdateTimestamp: timestamp,
                             latestUpdateTimestamp: timestamp,
                         };
@@ -932,11 +838,14 @@ export class IncrementProjector {
             case "chatNameSet":
                 this.handleChatNameSet(event);
                 break;
+            case "chatSharedSet":
+                this.handleChatSharedSet(event);
+                break;
             case "audioGenerated":
                 this.handleAudioGenerated(event);
                 break;
-            case "updateReferences":
-                this.handleUpdateReferences(event);
+            case "updateToolInvocations":
+                this.handleUpdateToolInvocations(event);
                 break;
             case "updateFiles":
                 this.handleUpdateFiles(event);

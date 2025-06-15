@@ -150,7 +150,7 @@ function setChatName(chatId: string, name: string) {
  * @param messageId The ID of the message
  * @param references The new references
  */
-function updateReferences(chatId: string, messageId: string, references: any[]) {
+function updateToolInvocations(chatId: string, messageId: string, references: any[]) {
     updateMessage(chatId, messageId, message => {
         if (message.type === 'assistant') {
             return {
@@ -247,9 +247,9 @@ export async function handleMessage(event: BotanikaServerEvent) {
                 setChatName(chatId, event.name);
                 break;
 
-            case "updateReferences":
+            case "updateToolInvocations":
                 // Update message references
-                updateReferences(chatId, event.messageId, event.references);
+                updateToolInvocations(chatId, event.messageId, event.references);
                 break;
 
             case "updateFiles":
