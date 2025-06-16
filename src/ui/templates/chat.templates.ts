@@ -386,6 +386,17 @@ export class ChatTemplates {
                                     .classes("flex", "align-center")
                                     .children(
                                         when(voiceConfigured, AudioTemplates.voiceButton(sendingDisabled)),
+                                        when(compute((c) => {
+                                            const lastMessage = c?.history?.at(-1);
+                                            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished);
+                                        }, chatContext), GenericTemplates.verticalButtonWithIcon("stop_circle", "", () => {
+                                            realtime.send({
+                                                type: BotanikaClientEventType.generationStopped,
+                                                data: {
+                                                    chatId: chatId.value
+                                                }
+                                            });
+                                        }, ["stop-button"])),
                                         GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
                                     ).build(),
                             ).build(),

@@ -623,7 +623,7 @@ kbd {
     list-style: initial;
 }
 
-.send-button, .voice-button {
+.send-button, .voice-button, .stop-button {
     border-radius: var(--input-border-radius);
     background: var(--gradient-1);
     color: var(--tint-present);
@@ -639,6 +639,11 @@ kbd {
 }
 
 .voice-button {
+    font-size: 1.2em;
+}
+
+.stop-button {
+    color: var(--red);
     font-size: 1.2em;
 }
 
