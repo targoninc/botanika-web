@@ -1,10 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 /**
  * Initializes the database by checking if the required tables exist
@@ -15,7 +11,7 @@ export async function initializeDatabase(prisma: PrismaClient): Promise<void> {
     // Try to query the users table to check if the database is initialized
     await prisma.$queryRaw`SELECT 1 FROM public.users LIMIT 1`;
     console.log('Database already initialized');
-  } catch (error) {
+  } catch (error: any) {
     console.log('Database not initialized, running initialization script...');
 
     try {
