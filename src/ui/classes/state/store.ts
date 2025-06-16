@@ -2,36 +2,27 @@ import {Api} from "./api";
 import {compute, signal} from "@targoninc/jess";
 import {ApiResponse} from "./api.base.ts";
 import {tryLoadFromCache} from "./tryLoadFromCache.ts";
-import { Configuration } from "../../../models/Configuration";
+import {Configuration} from "../../../models/Configuration";
 import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
 import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
 import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
-import {Tables} from "../../../models/supabaseDefinitions.ts";
 import {Language} from "../i8n/language.ts";
-import { language } from "../i8n/translation.ts";
+import {language} from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
-import { asyncSemaphore } from "../asyncSemaphore.ts";
+import {asyncSemaphore} from "../asyncSemaphore.ts";
 import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
 import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
-
-function getPathname() {
-    const path = new URL(window.location.href).pathname.split("/").at(-1);
-    return path === "" ? null : path;
-}
+import {getPathname, getUrlParameter} from "./urlHelpers.ts";
+import {User} from "@prisma/client";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
-
-function getUrlParameter(param: string, fallback: any) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(param) ?? fallback;
-}
 
 export const currentChatId = signal<string | null>(getUrlParameter("chatId", null));
 export const chats = signal<ChatContext[]>([]);
@@ -41,25 +32,57 @@ export const chatContext = compute((id, chatsList) => {
     return chat || INITIAL_CONTEXT;
 }, currentChatId, chats);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
-export const mcpConfig = signal<McpServerConfig[]|null>(null);
-export const currentlyPlayingAudio = signal<string>(null);
+export const mcpConfig = signal<McpServerConfig[] | null>(null);
+export const currentlyPlayingAudio = signal<string|null>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
-export const currentUser = signal<Tables<"users"> & UserinfoResponse>(null);
+export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
+
+const getNewestChatDate = (chts: ChatContext[]) => {
+    const res = Math.max(...chts.filter(c => !!c.updatedAt).map(c => c.updatedAt));
+    if (Math.abs(res) === Infinity) {
+        return null;
+    }
+    return res;
+}
 
 export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
-        setRootCssVar("--tint", c.tintColor ?? "#00ff00");
+        setRootCssVar("--tint", c.tintColor ?? "#5367ac");
     });
 
     currentChatId.subscribe(c => {
+        if (!c) {
+            return;
+        }
         const url = new URL(window.location.href);
         url.searchParams.set("chatId", c);
         history.pushState({}, "", url);
         focusChatInput();
     });
+
+    chatContext.subscribe(c => {
+        const url = new URL(window.location.href);
+        if (c.shared) {
+            url.searchParams.set("shared", "true");
+        } else {
+            url.searchParams.delete("shared");
+        }
+        history.pushState({}, "", url);
+        focusChatInput();
+    })
+
+    const chatId = getUrlParameter("chatId", null);
+    const shared = getUrlParameter("shared", null);
+    if (chatId && shared === "true") {
+        Api.getChat(chatId, true).then(c => {
+            if (c.success) {
+                chatContext.value = c.data as ChatContext;
+            }
+        });
+    }
 
     activePage.subscribe(c => {
         const url = new URL(window.location.href);
@@ -74,27 +97,35 @@ export function initializeStore() {
         await Api.setShortcutConfig(sc);
     });
 
-    tryLoadFromCache<Configuration>("config", configuration, Api.getConfig());
-    tryLoadFromCache<ChatContext[]>("chats", chats, Api.getNewestChats().then(async result => {
-        if (result.success && result.data) {
-            return await loadAllChats(result.data as ChatContext[]);
-        }
+    tryLoadFromCache<Configuration>("config", configuration, () => Api.getConfig());
+    tryLoadFromCache<ChatContext[]>("chats", chats, (cachedChats) => Api.getNewestChats((cachedChats && cachedChats.length > 0) ? new Date(getNewestChatDate(cachedChats)) : undefined)
+        .then(async result => {
+            if (result.success && result.data) {
+                return await loadAllChats(result.data as ChatContext[]);
+            }
 
-        const response: ApiResponse<ChatContext[] | string> = {
-            success: false,
-            data: "Failed to load chats",
-            status: 500
-        };
+            const response: ApiResponse<ChatContext[] | string> = {
+                success: false,
+                data: "Failed to load chats",
+                status: 500
+            };
 
-        return response;
-    }), data => {
-        // TODO: Once getNewestChats actually return only the newest chats we need to combine the old chats and the new ones.
-        return data;
+            return response;
+        }), () => {
+        Api.getDeletedChats(chats.value.map(c => c.id)).then(res => {
+            if (res.success && res.data) {
+                chats.value = chats.value.filter(c => !res.data.includes(c.id));
+                if (res.data.includes(currentChatId.value)) {
+                    currentChatId.value = null;
+                }
+            }
+        });
+        return chats.value;
     });
-    tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
-    tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, Api.getMcpConfig());
-    tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
-    tryLoadFromCache<Tables<"users"> & UserinfoResponse>("currentUser", currentUser, Api.getUser());
+    tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, () => Api.getShortcutConfig());
+    tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, () => Api.getMcpConfig());
+    tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, () => Api.getModels());
+    tryLoadFromCache<User & UserinfoResponse>("currentUser", currentUser, () => Api.getUser());
 }
 
 export async function loadAllChats(newChats: ChatContext[]) {
@@ -107,35 +138,26 @@ export async function loadAllChats(newChats: ChatContext[]) {
 
             if (chatContext.success) {
                 updateChats([
-                    ...chats.value.map(c => {
-                        if (c.id === chat.id) {
-                            return chatContext.data as ChatContext;
-                        }
-                        return c;
-                    }),
+                    ...chats.value.filter(c => c.id !== chat.id),
+                    chatContext.data as ChatContext
                 ]);
 
                 return chatContext.data as ChatContext;
             }
 
             return null;
-        } finally{
+        } finally {
             releaseSemaphore();
         }
     });
 
-    return await Promise.allSettled(chatUpdates)
-        .then(results => {
-            const response: ApiResponse<ChatContext[] | string> = {
-                success: true,
-                status: 200,
-                data: results
-                    .filter(result => result.status === "fulfilled" && result.value !== null)
-                    .map(result => (result as PromiseFulfilledResult<ChatContext>).value)
-            };
+    await Promise.allSettled(chatUpdates);
 
-            return response;
-        })
+    return {
+        success: true,
+        data: [],
+        status: 200
+    }
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -179,7 +201,7 @@ export async function processUpdate(update: ChatUpdate) {
 }
 
 export function deleteChat(chatId: string) {
-    chats.value = chats.value.filter(c => c.id !== chatId);
+    updateChats(chats.value.filter(c => c.id !== chatId));
     Api.deleteChat(chatId).then(() => {
         if (currentChatId.value === chatId) {
             currentChatId.value = null;

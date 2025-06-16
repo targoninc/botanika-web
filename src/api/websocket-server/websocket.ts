@@ -12,6 +12,7 @@ import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 import {ServerWarningEvent} from "../../models/websocket/serverEvents/serverWarningEvent.ts";
 import {signingKey} from "../../index.ts";
 import {chatNameChangedEventHandler} from "./chatNameChangedEventHandler.ts";
+import {sharedChangedEventHandler} from "./sharedChangedEventHandler.ts";
 
 // Map to store active connections for each user
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
@@ -80,7 +81,6 @@ export function broadcastToUser(userId: string, message: BotanikaServerEvent<any
             const connection = connectionsArray[i];
             if (connection.readyState === 1) {
                 try {
-                    CLI.debug(`Broadcasting to conn ${i + 1} for user ${connection.userId}`);
                     connection.send(JSON.stringify(message));
                 } catch (e) {
                     CLI.error(`Error sending message to connection: ${e}`);
@@ -124,12 +124,10 @@ export function sendChatHistory(ws: WebsocketConnection, chatId: string) {
  * @param ws The WebSocket connection to send updates to
  */
 export function sendAllOngoingConversations(ws: WebsocketConnection) {
-    CLI.debug(`Checking for ongoing conversations for user ${ws.userId}`);
     for (const [chatId, conversation] of ongoingConversations.entries()) {
         if (conversation.userId === ws.userId) {
             sendChatHistory(ws, chatId);
 
-            // If the conversation is still being generated, send a special message
             if (conversation.isGenerating) {
                 CLI.debug(`Chat ${chatId} is still generating, sending status to client`);
                 send(ws, {
@@ -224,6 +222,9 @@ async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketCon
         case BotanikaClientEventType.chatNameChanged:
             await chatNameChangedEventHandler(ws, message);
             break;
+        case BotanikaClientEventType.sharedChanged:
+            await sharedChangedEventHandler(ws, message);
+            break;
     }
 }
 
@@ -278,7 +279,7 @@ export function addWebsocketServer(server: Server) {
             try {
                 await handleMessage(message, ws);
             } catch (e) {
-                CLI.error(e);
+                console.error(e);
                 sendError(ws, e);
             }
         });

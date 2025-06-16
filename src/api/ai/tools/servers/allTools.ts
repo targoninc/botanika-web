@@ -1,34 +1,28 @@
 import {googleSearchTool} from "./google-search/google-search.tool.ts";
+import {extractImagesFromWebpageTool, extractContentFromWebpageTool} from "./web-browser/web-browser.tool.ts";
 import {Configuration} from "../../../../models/Configuration.ts";
-import {WebsocketConnection} from "../../../websocket-server/websocket.ts";
 import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
-import {ChatContext} from "../../../../models/chat/ChatContext.ts";
+import {Signal} from "@targoninc/jess";
+import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
+import {Tool, ToolSet} from "ai";
 
-function featureOption(config: Configuration, option: BotanikaFeature): any {
+export function featureOption(config: Configuration, option: BotanikaFeature): any {
     return (config.featureOptions ?? {})[option] ?? {};
 }
 
-export function getBuiltInTools(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
-    let tools = [];
+function addTool(toolSet: ToolSet, tool: Tool & { id: string }) {
+    toolSet[tool.id] = tool;
+}
+
+export function getBuiltInTools(userConfig: Configuration, message: Signal<ChatMessage>) {
+    const tools = {};
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
-        tools.push(googleSearchTool(userConfig, ws, chat));
+        addTool(tools, googleSearchTool(userConfig, message));
     }
 
-    /*if (userConfig.featureOptions[BotanikaFeature.Spotify].clientSecret && userConfig.featureOptions[BotanikaFeature.Spotify].clientId) {
-        tools = tools.concat(
-            spotifyAddToSavedAlbumsTool(userConfig, ws, chatId),
-            spotifySearchTool(userConfig, ws, chatId),
-            spotifyGetDevicesTool(userConfig, ws, chatId),
-            spotifyPlayTool(userConfig, ws, chatId),
-            spotifyPauseTool(userConfig, ws, chatId),
-            spotifyGetCurrentPlaybackTool(userConfig, ws, chatId),
-            spotifyGetProfileTool(userConfig, ws, chatId),
-            spotifyAddToQueueTool(userConfig, ws, chatId),
-            spotifyAddToSavedTracksTool(userConfig, ws, chatId),
-            spotifyGetArtistTopTracksTool(userConfig, ws, chatId),
-        );
-    }*/
+    addTool(tools, extractImagesFromWebpageTool(message));
+    addTool(tools, extractContentFromWebpageTool(message));
 
     return tools;
 }

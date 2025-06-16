@@ -1,15 +1,14 @@
 import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {CLI} from "../../CLI";
-import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
 import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
 import {signal, Signal} from "@targoninc/jess";
-import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {AiMessage} from "./aiMessage.ts";
 
-export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], maxTokens: number = 1000): Promise<{
+export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{
     thoughts: string;
     text: string;
     steps: Array<StepResult<ToolSet>>
@@ -43,8 +42,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, request: NewMessageEventData, model: LanguageModelV1, tools: ToolSet, messages: CoreMessage[], chatId: string): Promise<{
-    message: Signal<ChatMessage>;
+export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
     CLI.debug("Streaming response...");
@@ -53,7 +51,8 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         files,
         steps,
         text,
-        sources
+        reasoningDetails,
+        usage
     } = streamText({
         model,
         messages,
@@ -64,23 +63,14 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         maxRetries: 0,
         providerOptions: {
             openai: {
-                store: true
+                store: true,
+                reasoningSummary: 'detailed',
+                reasoning: {
+                    effort: "medium"
+                }
             }
         },
-        onError: event => sendError(ws, event.error.toString()),
-    });
-
-    const messageId = uuidv4();
-    const message = signal<ChatMessage>({
-        id: messageId,
-        type: "assistant",
-        text: "",
-        time: Date.now(),
-        references: [],
-        files: [],
-        finished: false,
-        provider: request.provider,
-        model: request.model
+        onError: event => sendError(ws, JSON.stringify(event.error)),
     });
 
     updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
@@ -98,20 +88,21 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         console.error(err);
     });
 
-    sources.then((s: LanguageModelSourceV1[]) => {
-        CLI.debug(`Got ${s.length} sources`);
-        message.value.references = s.map(source => ({
-            name: source.title,
-            link: source.url,
-            type: "resource-reference",
-            snippet: source.id
-        }));
-    }).catch((err) => {
-        console.error(err);
+    reasoningDetails.then(r => {
+        message.value = {
+            ...message.value,
+            reasoning: r
+        };
     });
 
+    usage.then(u => {
+        message.value = {
+            ...message.value,
+            usage: u
+        };
+    })
+
     return {
-        message,
         steps
     };
 }

@@ -20,7 +20,7 @@ import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {sendAudioAndStop} from "../ai/endpoints.ts";
-import {Signal} from "@targoninc/jess";
+import {signal, Signal} from "@targoninc/jess";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
@@ -87,12 +87,12 @@ async function getOrCreateChat(ws: WebsocketConnection, request: NewMessageEvent
     return chat;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, message: Signal<ChatMessage>) {
     const mcpInfo = await getMcpTools(ws.userId);
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig, ws, chat);
+    const builtInTools = getBuiltInTools(userConfig, message);
     return {
         mcpInfo,
         tools: Object.assign(builtInTools, mcpInfo.tools) as ToolSet
@@ -104,7 +104,6 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
  */
 async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig: Configuration,
                                streamResponse: {
-                                   message: Signal<ChatMessage>;
                                    steps: Promise<Array<StepResult<ToolSet>>>
                                }, maxSteps: number, model: LanguageModelV1, chat: ChatContext, worldContext: Record<string, any>, request: NewMessageEventData) {
     const steps = await streamResponse.steps;
@@ -148,12 +147,24 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const modelSupportsFiles = modelDefinition.capabilities.includes(ModelCapability.fileInput);
     if (!modelSupportsFiles && request.files.length > 0) {
         sendWarning(ws, "Model does not support file input, files will be ignored");
+        request.files = [];
     }
 
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
     const chat = await getOrCreateChat(ws, request, model, modelSupportsFiles);
-    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
+    const messageId = uuidv4();
+    const assMessage = signal<ChatMessage>({
+        id: messageId,
+        type: "assistant",
+        text: "",
+        time: Date.now(),
+        files: [],
+        finished: false,
+        provider: request.provider,
+        model: request.model
+    });
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, assMessage);
 
     /*if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         sendWarning(ws, `Model ${request.model} might not support tool calls`);
@@ -163,21 +174,19 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, request, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
 
     // Wait for the steps to complete
-    const steps = await streamResponse.steps;
+    await streamResponse.steps;
 
     // Wait for the message to be finished
     const waitForMessageFinished = new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
-            if (streamResponse.message.value.finished) {
+            if (assMessage.value.finished) {
                 clearInterval(checkInterval);
-                // Add the finished message to the chat history
-                chat.history.push(streamResponse.message.value);
-                // Send audio if enabled
-                if (userConfig.enableTts && streamResponse.message.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, streamResponse.message.value).then(() => {
+                chat.history.push(assMessage.value);
+                if (userConfig.enableTts && assMessage.value.text.length > 0) {
+                    sendAudioAndStop(ws, chat.id, assMessage.value).then(() => {
                         resolve();
                     });
                 } else {
@@ -190,6 +199,13 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
     await waitForMessageFinished;
     toolInfo.mcpInfo.onClose();
+
+    chat.history.map(m => {
+        if (m.id === assMessage.value.id) {
+            return assMessage.value;
+        }
+        return m;
+    });
 
     await ChatStorage.writeChatContext(ws.userId, chat);
 }

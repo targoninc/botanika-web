@@ -17,7 +17,7 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {closeOnClickIfOutsideOfParent} from "../classes/closeOnClickIfOutsideOfParent.ts";
+import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -34,6 +34,15 @@ export class GenericTemplates {
             onchange,
             attributes,
             required
+        });
+    }
+
+    static iconButton(icon: StringOrSignal, text: StringOrSignal, onclick: (e: any) => void) {
+        return button({
+            icon: { icon },
+            classes: ["flex", "align-center", "icon-button"],
+            title: text,
+            onclick
         });
     }
 
@@ -78,8 +87,9 @@ export class GenericTemplates {
             .classes("flex", ...classes)
             .onclick(onclick)
             .children(
-                GenericTemplates.icon(icon, iconClasses),
+                GenericTemplates.icon(icon, iconClasses.concat("no-pointer-events")),
                 when(text, create("span")
+                    .classes("no-pointer-events")
                     .text(text)
                     .build()),
                 GenericTemplates.hotkey(hotkey),
@@ -371,20 +381,11 @@ export class GenericTemplates {
         return create("div")
             .classes("parent-top-left", "flex", "code-copy-button")
             .children(
-                GenericTemplates.iconButton("content_copy", () => {
+                GenericTemplates.iconButton("content_copy", "Copy to clipboard", () => {
                     navigator.clipboard.writeText(content);
                     toast("Copied to clipboard");
                 }),
             ).build();
-    }
-
-    static iconButton(icon: string, onclick = () => {
-    }) {
-        return button({
-            icon: {icon},
-            classes: ["flex"],
-            onclick
-        });
     }
 
     static keyValueInput(headers: Record<string, string> = {}, onChange: (value: Record<string, string>) => void) {
@@ -494,6 +495,17 @@ export class GenericTemplates {
                     .classes("monospace")
                     .text(compute(u => u?.externalId.split("|")[0], currentUser))
                     .build(),
+                create("div")
+                    .classes("flex-v", "small-gap")
+                    .children(
+                        create("span")
+                            .text("Account created:")
+                            .build(),
+                        create("span")
+                            .classes("text-small")
+                            .text(compute(u => toHumanizedTime(new Date(u?.createdAt ?? Date.now()).getTime()).value, currentUser))
+                            .build(),
+                    ).build()
             ).build();
     }
 
@@ -509,6 +521,7 @@ export class GenericTemplates {
             .children(
                 GenericTemplates.user(),
                 GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
+                    localStorage.clear();
                     window.location.href = "/logout";
                 }, ["negative"]),
             ).build();
@@ -521,7 +534,6 @@ export class GenericTemplates {
             .classes("clickable")
             .onclick(() => {
                 userPopupVisible.value = !userPopupVisible.value;
-                closeOnClickIfOutsideOfParent("flyout", userPopupVisible);
             })
             .children(
                 GenericTemplates.icon(image, ["user-image"])
@@ -557,5 +569,50 @@ export class GenericTemplates {
             .classes("status-indicator", compute((s): string => s ? "on" : "off", status))
             .title(compute(s => s ? "Connected to realtime server" : "Offline, trying to reconnect...", status))
             .build();
+    }
+
+    static movableDivider(querySelector: string) {
+        let startX = 0;
+        let startWidth = 0;
+        let toResize: HTMLElement | null = null;
+
+        const handleDragStart = (e: MouseEvent) => {
+            startX = e.clientX;
+            toResize = document.querySelector(querySelector);
+            if (!toResize) {
+                return;
+            }
+            startWidth = toResize.clientWidth;
+
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', handleDragEnd);
+
+            // Prevent text selection while dragging
+            document.body.style.userSelect = 'none';
+        };
+
+        const handleDrag = (e: MouseEvent) => {
+            if (!toResize) return;
+
+            const deltaX = e.clientX - startX;
+            const newWidth = Math.max(200, Math.min(800, startWidth + deltaX));
+            localStorage.setItem(`divider-width-${querySelector}`, newWidth.toString());
+
+            toResize.style.width = `${newWidth}px`;
+        };
+
+        const handleDragEnd = () => {
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.body.style.userSelect = '';
+            toResize = null;
+        };
+
+        return create("div")
+            .classes("full-height", "movable-divider", "flex", "align-children")
+            .onmousedown(handleDragStart)
+            .children(
+                GenericTemplates.icon("drag_handle", ["rotate90"])
+            ).build();
     }
 }

@@ -2,7 +2,6 @@ import {LayoutTemplates} from "../templates/layout.templates";
 import {ToastType} from "../enums/ToastType";
 import {GenericTemplates} from "../templates/generic.templates";
 import {AnyNode, create} from "@targoninc/jess";
-import {closeOnClickIfOutsideOfParent} from "./closeOnClickIfOutsideOfParent.ts";
 
 export const container = document.body;
 
@@ -53,23 +52,6 @@ export function toast(message: string, coordinates: null | {
     setTimeout(() => {
         toast.remove();
     }, timeout * 1000);
-}
-
-export function guessType(value: any) {
-    if (value === "true" || value === "false") {
-        return "boolean";
-    }
-    if (value === "null") {
-        return "null";
-    }
-    if (!isNaN(value)) {
-        return "number";
-    }
-    return "string";
-}
-
-export function newId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 export function createModal(content: AnyNode) {

@@ -1,9 +1,9 @@
 import {ChatContext} from "../../models/chat/ChatContext";
 import {db} from "../database/db.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {ResourceReference} from "../../models/chat/ResourceReference.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import { MessageType } from "@prisma/client";
+import {Chat, MessageType} from "@prisma/client";
+import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 export class ChatStorage {
     static async writeChatContext(userId: string, chat: ChatContext) {
@@ -11,13 +11,15 @@ export class ChatStorage {
             where: { id: chat.id },
             update: {
                 name: chat.name,
-                updatedAt: new Date()
+                shared: chat.shared,
+                updatedAt: new Date(),
             },
             create: {
                 id: chat.id,
                 name: chat.name,
                 createdAt: new Date(chat.createdAt),
                 updatedAt: new Date(),
+                shared: chat.shared,
                 user: {
                     connect: { id: userId }
                 }
@@ -56,7 +58,8 @@ export class ChatStorage {
                     text: message.text,
                     type: message.type as MessageType,
                     hasAudio: message.hasAudio,
-                    references: message.references as any,
+                    reasoning: message.reasoning,
+                    toolInvocations: message.toolInvocations as any,
                     files: message.files as any
                 }
             });
@@ -75,17 +78,38 @@ export class ChatStorage {
             return null;
         }
 
+        return await ChatStorage.addDataToChat(chatId, chat);
+    }
+
+    static async readPublicChatContext(chatId: string): Promise<ChatContext> {
+        const chat = await db.chat.findFirst({
+            where: {
+                id: chatId,
+                shared: true
+            }
+        });
+
+        if (!chat) {
+            return null;
+        }
+
+        return await ChatStorage.addDataToChat(chatId, chat);
+    }
+
+    private static async addDataToChat(chatId: string, chat: Chat) {
         const messages = await db.message.findMany({
             where: {
                 chatId: chatId
             }
         });
 
-        return {
+        return <ChatContext>{
             id: chat.id,
             name: chat.name,
             createdAt: chat.createdAt.getTime(),
             updatedAt: chat.updatedAt.getTime(),
+            shared: chat.shared,
+            userId: chat.userId,
             history: messages.map(m => {
                 return <ChatMessage>{
                     id: m.id,
@@ -96,7 +120,8 @@ export class ChatStorage {
                     type: m.type,
                     provider: m.provider,
                     hasAudio: m.hasAudio,
-                    references: m.references as ResourceReference[],
+                    reasoning: m.reasoning,
+                    toolInvocations: m.toolInvocations as unknown as ToolInvocation[],
                     files: m.files as MessageFile[],
                 };
             }).sort((a, b) => b.time - a.time)
@@ -127,6 +152,8 @@ export class ChatStorage {
             return <ChatContext>{
                 id: c.id,
                 name: c.name,
+                shared: c.shared,
+                userId: c.userId,
                 createdAt: c.createdAt.getTime(),
                 updatedAt: c.updatedAt.getTime(),
             }

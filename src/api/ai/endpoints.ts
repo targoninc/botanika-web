@@ -41,6 +41,20 @@ export async function getChatsEndpoint(req: Request, res: Response) {
     res.send(chats);
 }
 
+export async function getDeletedChatsEndpoint(req: Request, res: Response) {
+    const ids = req.body.ids as string[];
+    if (!ids) {
+        res.status(400).send("Missing ids parameter");
+        return;
+    }
+
+    const chats = await ChatStorage.getUserChats(req.user.id);
+    const chatIds = chats.map((chat) => chat.id);
+    const deleted = ids.filter(id => !chatIds.includes(id));
+
+    res.send(deleted);
+}
+
 export function getChatEndpoint(req: Request, res: Response) {
     const chatId = req.params.chatId;
     if (!chatId) {
@@ -48,13 +62,24 @@ export function getChatEndpoint(req: Request, res: Response) {
         return;
     }
 
-    ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
-        if (!chatContext) {
-            res.status(404).send('Chat not found');
-            return;
-        }
-        res.send(chatContext);
-    });
+    if (req.query.shared === "true") {
+        ChatStorage.readPublicChatContext(chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    } else {
+        ChatStorage.readChatContext(req.user.id, chatId).then(chatContext => {
+            if (!chatContext) {
+                res.status(404).send('Chat not found');
+                return;
+            }
+            res.send(chatContext);
+        });
+    }
+    return;
 }
 
 export function deleteChatEndpoint(req: Request, res: Response) {
@@ -89,7 +114,13 @@ export async function deleteAfterMessageEndpoint(req: Request, res: Response) {
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
         const message = c.history.find(m => m.id === messageId);
-        c.history = c.history.filter(m => m.time <= message.time);
+
+        if (req.body.exclusive) {
+            c.history = c.history.filter(m => m.time < message.time);
+        } else {
+            c.history = c.history.filter(m => m.time <= message.time);
+        }
+
         await ChatStorage.writeChatContext(req.user.id, c);
         res.status(200).send();
     });
@@ -103,6 +134,9 @@ function branchChatEndpoint(req: Request, res: Response) {
     }
 
     ChatStorage.readChatContext(req.user.id, chatId).then(async c => {
+        if (!c) {
+            res.status(404).send('Chat not found');
+        }
         const message = c.history.find(m => m.id === messageId);
         c.branched_from_chat_id = c.id;
         c.id = v4();
@@ -124,4 +158,5 @@ export function addChatEndpoints(app: Application) {
     app.post(ApiEndpoint.DELETE_AFTER_MESSAGE, deleteAfterMessageEndpoint);
     app.get(ApiEndpoint.MODELS, getModelsEndpoint);
     app.post(ApiEndpoint.BRANCH_CHAT, branchChatEndpoint);
+    app.post(ApiEndpoint.GET_DELETED_CHATS, getDeletedChatsEndpoint);
 }

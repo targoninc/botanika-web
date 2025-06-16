@@ -1,12 +1,12 @@
-import {ResourceReference} from "./ResourceReference";
-import {ToolResultUnion, ToolSet} from "ai";
 import {MessageFile} from "./MessageFile.ts";
+import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
+import {ToolCall} from "./ToolCall.ts";
+import {LanguageModelUsage} from "ai";
 
 export interface ChatMessage {
-    type: "system" | "user" | "assistant" | "tool";
-    references: ResourceReference[];
+    type: "system" | "user" | "assistant";
+    toolInvocations?: ToolCall[];
     files: MessageFile[];
-    toolResult?: ToolResultUnion<ToolSet>;
     text: string;
     time: number;
     id: string;
@@ -14,5 +14,7 @@ export interface ChatMessage {
     hasAudio?: boolean;
     provider?: string;
     model?: string;
+    reasoning?: ReasoningDetail[];
+    usage?: LanguageModelUsage;
 }
 

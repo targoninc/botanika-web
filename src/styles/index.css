@@ -7,9 +7,9 @@
     --black-4: color-mix(in oklab, #353535, var(--tint) var(--tint-strength));
     --black-trans: rgba(10, 10, 13, 0.9);
     --white: #efe9e7ff;
-    --white-2: #e7ddda;
-    --white-3: #ded2ce;
-    --white-4: #d6c9c5;
+    --white-2: #ded5d2;
+    --white-3: #d4c8c4;
+    --white-4: #c7bbb7;
     --grey-light: #9f9f9f;
     --grey-dark: #646464;
     --grey-darker: #4c4848;
@@ -23,6 +23,7 @@
     --tint-present: color-mix(in oklab, #a9a9a9, var(--tint) calc(var(--tint-strength) * 2));
     --tint-transpresent: color-mix(in oklab, rgba(0, 0, 0, 0), var(--tint) calc(var(--tint-strength) * 2));
     --tint-muted: color-mix(in oklab, #525252, var(--tint) var(--tint-strength));
+    --strong-tint: color-mix(in oklab, rgba(127, 127, 127, 0), var(--tint) calc(var(--tint-strength) * 4));
     --green: color-mix(in oklab, #37ac43, var(--tint) var(--tint-strength));
     --red: color-mix(in oklab, #c43e40, var(--tint) var(--tint-strength));
     --yellow: #f0c929ff;
@@ -45,6 +46,7 @@
     --tab-padding: .3em .8em;
 
     --jessc-border-radius-small: var(--input-border-radius);
+    --jessc-interactive-background: var(--gradient-1);
     --jessc-interactive-border-focused: var(--tint-present);
     --jessc-interactive-border-active: var(--tint-present);
 
@@ -62,6 +64,7 @@
     --text-4: var(--white-4);
     --neutral-light: var(--grey-light);
     --neutral-dark: var(--grey-dark);
+    --flyout-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     --tint-shadow: 0 0 10px var(--tint-transpresent);
 
     --animation-duration: 0.2s;
@@ -132,6 +135,7 @@ h4 {
 span {
     text-align: start;
     height: max-content;
+    word-break: break-word;
 }
 
 button, input, textarea, select {
@@ -175,13 +179,13 @@ button.positive:hover, button.fjsc.positive:hover {
     background: var(--gradient-2);
 }
 
-button.message-action {
+button.icon-button {
     background: var(--gradient-2);
     border: var(--input-border-width) solid var(--tint-muted);
     color: var(--text-4);
 }
 
-button.message-action:hover {
+button.icon-button:hover {
     background: var(--gradient-1);
     border-color: var(--tint-present);
 }
@@ -214,7 +218,7 @@ div {
 }
 
 a {
-    color: var(--text);
+    color: var(--tint-main);
     text-decoration: none;
 }
 
@@ -392,8 +396,12 @@ nav {
     display: flex;
     flex-wrap: wrap;
     gap: var(--gap-h);
+}
+
+.restrict-to-parent {
     max-height: 100%;
     max-width: 100%;
+    height: 100%;
 }
 
 .flex-v {
