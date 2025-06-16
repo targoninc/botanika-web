@@ -1,43 +1,49 @@
 import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 import {ChatContext} from "../../models/chat/ChatContext.ts";
+import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 
 export function updateContext(c: ChatContext, update: ChatUpdate) {
     if (c.id && c.id !== update.chatId) {
         return c;
     }
 
-    c = structuredClone(c);
-    if (!c.id) {
-        c.id = update.chatId;
+    const updatedContext = structuredClone(c);
+
+    if (!updatedContext.id) {
+        updatedContext.id = update.chatId;
     }
 
-    if (c.name !== update.name && update.name) {
-        c.name = update.name;
-        c.createdAt = Date.now();
+    if (updatedContext.name !== update.name && update.name) {
+        updatedContext.name = update.name;
+        updatedContext.createdAt = Date.now();
     }
 
-    if (c.shared !== update.shared && update.shared !== undefined) {
-        c.shared = update.shared;
+    if (updatedContext.shared !== update.shared && update.shared !== undefined) {
+        updatedContext.shared = update.shared;
     }
 
-    if (!c.history) {
-        c.history = [];
+    if (!updatedContext.history) {
+        updatedContext.history = [];
     }
+
     if (update.messages) {
-        for (const message of update.messages) {
-            const existingMsg = c.history.find(m => m.id === message.id);
-            if (existingMsg) {
-                c.history = c.history.map(m => {
-                    if (m.id === message.id) {
-                        return message;
-                    }
-                    return m;
-                });
-            } else {
-                c.history.push(message);
-            }
-        }
+        updatedContext.history = updateMessageHistory(updatedContext.history, update.messages);
     }
-    c.history = c.history.sort((a, b) => a.time - b.time);
-    return c;
+
+    updatedContext.history.sort((a, b) => a.time - b.time);
+
+    return updatedContext;
+}
+
+function updateMessageHistory(history: ChatMessage[], newMessages: ChatMessage[]) {
+    return newMessages.reduce((updatedHistory, message) => {
+        const messageExists = updatedHistory.some(m => m.id === message.id);
+
+        if (messageExists) {
+            return updatedHistory.map(m => m.id === message.id ? message : m);
+        } else {
+            updatedHistory.push(message);
+            return updatedHistory;
+        }
+    }, history);
 }

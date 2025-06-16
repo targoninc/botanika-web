@@ -12,3 +12,21 @@ export function getHost(input: string) {
     const url = new URL(input);
     return url.origin;
 }
+
+export function updateUrlParameter(param: string, value: string | null) {
+    const url = new URL(window.location.href);
+    if (value) {
+        url.searchParams.set(param, value);
+    } else {
+        url.searchParams.delete(param);
+    }
+    history.pushState({}, "", url);
+    return url;
+}
+
+export function updateUrlPathname(pathname: string) {
+    const url = new URL(window.location.href);
+    url.pathname = pathname;
+    history.pushState({}, "", url);
+    return url;
+}

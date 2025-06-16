@@ -18,7 +18,7 @@ import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
-import {getPathname, getUrlParameter} from "./urlHelpers.ts";
+import {getPathname, getUrlParameter, updateUrlParameter, updateUrlPathname} from "./urlHelpers.ts";
 import {User} from "@prisma/client";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
@@ -40,11 +40,8 @@ export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
 
 const getNewestChatDate = (chts: ChatContext[]) => {
-    const res = Math.max(...chts.filter(c => !!c.updatedAt).map(c => c.updatedAt));
-    if (Math.abs(res) === Infinity) {
-        return null;
-    }
-    return res;
+    const updatedDates = chts.filter(c => !!c.updatedAt).map(c => c.updatedAt);
+    return updatedDates.length > 0 ? Math.max(...updatedDates) : null;
 }
 
 export function initializeStore() {
@@ -54,28 +51,17 @@ export function initializeStore() {
     });
 
     currentChatId.subscribe(c => {
-        const url = new URL(window.location.href);
-        if (c) {
-            url.searchParams.set("chatId", c);
-        } else {
-            url.searchParams.delete("chatId");
-        }
-        history.pushState({}, "", url);
+        updateUrlParameter("chatId", c);
         focusChatInput();
     });
 
     chatContext.subscribe(c => {
         const url = new URL(window.location.href);
         if (c?.shared && c.shared.toString() !== url.searchParams.get("shared")) {
-            if (c.shared) {
-                url.searchParams.set("shared", "true");
-            } else {
-                url.searchParams.delete("shared");
-            }
-            history.pushState({}, "", url);
+            updateUrlParameter("shared", c.shared ? "true" : null);
         }
         focusChatInput();
-    })
+    });
 
     const chatId = getUrlParameter("chatId", null);
     const shared = getUrlParameter("shared", null);
@@ -88,9 +74,7 @@ export function initializeStore() {
     }
 
     activePage.subscribe(c => {
-        const url = new URL(window.location.href);
-        url.pathname = c;
-        history.pushState({}, "", url);
+        updateUrlPathname(c);
     });
 
     shortCutConfig.subscribe(async (sc, changed) => {
@@ -134,33 +118,32 @@ export function initializeStore() {
 export async function loadAllChats(newChats: ChatContext[]) {
     const loadChatsSemaphore = asyncSemaphore(5);
 
-    const chatUpdates = newChats.map(async chat => {
+    const loadSingleChat = async (chat: ChatContext) => {
         const releaseSemaphore = await loadChatsSemaphore.acquire();
         try {
-            const chatContext = await Api.getChat(chat.id);
+            const response = await Api.getChat(chat.id);
 
-            if (chatContext.success) {
+            if (response.success) {
+                const chatData = response.data as ChatContext;
                 updateChats([
                     ...chats.value.filter(c => c.id !== chat.id),
-                    chatContext.data as ChatContext
+                    chatData
                 ]);
-
-                return chatContext.data as ChatContext;
+                return chatData;
             }
-
             return null;
         } finally {
             releaseSemaphore();
         }
-    });
+    };
 
-    await Promise.allSettled(chatUpdates);
+    await Promise.allSettled(newChats.map(loadSingleChat));
 
     return {
         success: true,
         data: [],
         status: 200
-    }
+    };
 }
 
 export type Callback<Args extends unknown[]> = (...args: Args) => void;
@@ -176,24 +159,20 @@ export function updateChats(newChats: ChatContext[]) {
 export const activateNextUpdate = signal(false);
 
 export async function processUpdate(update: ChatUpdate) {
-    const cs = chats.value;
-    if (!cs.find(c => c.id === update.chatId)) {
-        const newChat = updateContext(INITIAL_CONTEXT, update);
-        updateChats([
-            ...chats.value,
-            newChat
-        ]);
+    const chatExists = chats.value.some(c => c.id === update.chatId);
 
-        if (activateNextUpdate.value && update.messages && update.messages.length === 1 && update.messages[0].type === "user") {
+    if (!chatExists) {
+        const newChat = updateContext(INITIAL_CONTEXT, update);
+        updateChats([...chats.value, newChat]);
+
+        const isFirstUserMessage = update.messages?.length === 1 && update.messages[0].type === "user";
+        if (activateNextUpdate.value && isFirstUserMessage) {
             currentChatId.value = update.chatId;
         }
     } else {
-        updateChats(chats.value.map(c => {
-            if (c.id === update.chatId) {
-                return updateContext(c, update);
-            }
-            return c;
-        }));
+        updateChats(chats.value.map(c =>
+            c.id === update.chatId ? updateContext(c, update) : c
+        ));
     }
 
     const playableMessage = update.messages?.find(m => m.hasAudio);
