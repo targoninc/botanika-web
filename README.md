@@ -10,7 +10,7 @@ A chat app. Bring your own API keys.
 
 | Support  | TTS | STT | Open source | MCP Support | Desktop App | Web App | BYOK | File support | Image generation |
 |----------|-----|-----|-------------|-------------|-------------|---------|------|--------------|------------------|
-| Botanika | ✅   | ✅   | ✅           | ✅           | ✅           | ✅       | ✅    | ✅            | ❌                |
+| Botanika | ✅   | ✅   | ✅           | ✅           | 🆗          | ✅       | ✅    | ✅            | ❌                |
 | T3.Chat  | ❌   | ❌   | ❌           | ❌           | ❌           | ✅       | 🆗   | ✅            | ✅                |
 | ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            | ✅                |
 | Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            | ✅                |
@@ -20,7 +20,7 @@ A chat app. Bring your own API keys.
 
 This app uses PostgreSQL as a database. You can run it locally or use Docker Compose for a complete setup.
 
-**You can set your environment variables in the `.env` file. Copy `.env.example` and fill in the values.**
+**You can set your environment variables in the `.env` file. Copy [.env.example](.env.example) and fill in the values.**
 
 ### Local Development
 
