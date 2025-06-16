@@ -133,6 +133,9 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig:
     }
 }
 
+// Map to store active abort controllers for each chat
+export const activeAbortControllers = new Map<string, AbortController>();
+
 export async function newMessageEventHandler(ws: WebsocketConnection, message: BotanikaClientEvent<NewMessageEventData>) {
     const request = message.data;
     if (!request.message || !request.provider || !request.model || !Object.values(LlmProvider).includes(request.provider)) {
@@ -174,7 +177,12 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id, abortSignal);
+
+    // Create a new AbortController for this chat
+    const abortController = new AbortController();
+    activeAbortControllers.set(chat.id, abortController);
+
+    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id, abortController.signal);
 
     // Wait for the steps to complete
     await streamResponse.steps;
@@ -199,6 +207,9 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
     await waitForMessageFinished;
     toolInfo.mcpInfo.onClose();
+
+    // Clean up the AbortController
+    activeAbortControllers.delete(chat.id);
 
     chat.history.map(m => {
         if (m.id === assMessage.value.id) {
