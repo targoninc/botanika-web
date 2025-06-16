@@ -50,15 +50,16 @@ const getNewestChatDate = (chts: ChatContext[]) => {
 export function initializeStore() {
     configuration.subscribe(c => {
         language.value = c.language as Language;
-        setRootCssVar("--tint", c.tintColor ?? "#5367ac");
+        setRootCssVar("--tint", c.tintColor ?? "#00064f");
     });
 
     currentChatId.subscribe(c => {
-        if (!c) {
-            return;
-        }
         const url = new URL(window.location.href);
-        url.searchParams.set("chatId", c);
+        if (c) {
+            url.searchParams.set("chatId", c);
+        } else {
+            url.searchParams.delete("chatId");
+        }
         history.pushState({}, "", url);
         focusChatInput();
     });

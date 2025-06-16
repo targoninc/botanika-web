@@ -25,8 +25,8 @@ export async function transcribeEndpoint(req: Request, res: Response) {
     }
 
     let provider = "local";
-    if (!featureOption(userConfig, BotanikaFeature.OpenAI).apiKey) {
-        return res.status(400).send("OpenAI API key missing");
+    if (featureOption(userConfig, BotanikaFeature.OpenAI).apiKey) {
+        provider = "openai";
     }
 
     const startTime = performance.now();

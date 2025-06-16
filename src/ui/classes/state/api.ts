@@ -75,7 +75,7 @@ export class Api extends ApiBase {
     }
 
     static transcribe(formData: FormData) {
-        return this.streamWithFormData(ApiEndpoint.TRANSCRIBE, formData, false);
+        return this.streamWithFormData(ApiEndpoint.TRANSCRIBE, formData, true);
     }
 
     static deleteAfterMessage(chatId: string, messageId: string, exclusive: boolean = false) {

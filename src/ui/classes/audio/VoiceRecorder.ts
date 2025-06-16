@@ -1,6 +1,6 @@
 import {terminator} from "../../../models/chat/terminator";
 import {toast} from "../ui";
-import {chatContext, configuration, currentText} from "../state/store.ts";
+import {activateNextUpdate, chatContext, configuration, currentText} from "../state/store.ts";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
 import {BotanikaClientEventType} from "../../../models/websocket/clientEvents/botanikaClientEventType.ts";
@@ -152,6 +152,7 @@ export class VoiceRecorder {
                     const config = configuration.value;
                     currentText.value = obj.text;
                     try {
+                        activateNextUpdate.value = true;
                         realtime.send({
                             type: BotanikaClientEventType.message,
                             data: <NewMessageEventData>{

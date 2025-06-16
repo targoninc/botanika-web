@@ -12,7 +12,7 @@ export async function getConfig(userId: string): Promise<Configuration> {
         select: { configuration: true }
     });
     const config = (user?.configuration ?? {}) as Configuration;
-    config.tintColor ??= "#5367ac";
+    config.tintColor ??= "#00064f";
     return config;
 }
 
@@ -20,10 +20,6 @@ export async function setConfig(req: Request, newConfig: Configuration) {
     await updateUser(req.user.id, {
         configuration: newConfig
     });
-}
-
-export async function getFeatureOption(req: Request, feature: BotanikaFeature, optionKey: string) {
-    return (await getConfig(req.user.id)).featureOptions[feature][optionKey] ?? null;
 }
 
 export function addConfigEndpoints(app: Application) {
