@@ -66,12 +66,14 @@ export function initializeStore() {
 
     chatContext.subscribe(c => {
         const url = new URL(window.location.href);
-        if (c.shared) {
-            url.searchParams.set("shared", "true");
-        } else {
-            url.searchParams.delete("shared");
+        if (c?.shared && c.shared.toString() !== url.searchParams.get("shared")) {
+            if (c.shared) {
+                url.searchParams.set("shared", "true");
+            } else {
+                url.searchParams.delete("shared");
+            }
+            history.pushState({}, "", url);
         }
-        history.pushState({}, "", url);
         focusChatInput();
     })
 

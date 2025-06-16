@@ -8,7 +8,7 @@ import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMes
 import {Api} from "../state/api.ts";
 
 export class VoiceRecorder {
-    private readonly threshold = 0.015;
+    private readonly threshold = 0.0175;
     private readonly timeout = 2000;
     private readonly mimeType = 'audio/webm; codecs=opus';
 
