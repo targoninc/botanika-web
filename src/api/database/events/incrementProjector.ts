@@ -40,7 +40,7 @@ export type MessageIncrement = Increment & ({
     audio?: boolean;
     finished?: boolean;
 } | {
-    type: "userMessageCreatedEvent";
+    type: "userMessageCreated";
     message: ChatMessage;
 })
 
@@ -129,7 +129,7 @@ export class IncrementProjector {
                                 messageIncrement.text += event.messageChunk;
                                 messageIncrement.latestUpdateTimestamp = timestamp;
                                 break;
-                            case "userMessageCreatedEvent":
+                            case "userMessageCreated":
                                 if ("text" in messageIncrement.message) {
                                     messageIncrement.message.text += event.messageChunk;
                                     messageIncrement.latestUpdateTimestamp = timestamp;
@@ -163,7 +163,6 @@ export class IncrementProjector {
             }
 
             chatIncrement.latestUpdateTimestamp = timestamp;
-
             userIncrement.latestUpdateTimestamp = timestamp;
         } catch (error) {
             CLI.error(`Error handling chat update event: ${error}`);
@@ -428,7 +427,7 @@ export class IncrementProjector {
      * 
      * @param event The message created event
      */
-    private handleMessageCreated(event: BotanikaServerEvent & { type: "messageCreated" }) {
+    private handleMessageCreated(event: BotanikaServerEvent & { type: "messageCreated" | "userMessageCreated" }) {
         try {
             const userId = event.userId;
             const timestamp = event.timestamp || Date.now();
@@ -439,7 +438,7 @@ export class IncrementProjector {
             switch (chatIncrement.type) {
                 case "addToChat": {
                     const messageIncrement: MessageIncrement = {
-                        type: "userMessageCreatedEvent",
+                        type: "userMessageCreated",
                         message: event.message,
                         earliestUpdateTimestamp: timestamp,
                         latestUpdateTimestamp: timestamp,
@@ -696,7 +695,6 @@ export class IncrementProjector {
     private handleChatDeleted(event: BotanikaServerEvent & { type: "chatDeleted" }) {
         try {
             const userId = event.userId;
-            const timestamp = event.timestamp || Date.now();
 
             // For chat deletion, we don't need to create increments
             // We'll handle this directly in the database
@@ -832,6 +830,9 @@ export class IncrementProjector {
             case "messageTextAdded":
                 this.handleMessagesTextAdded(event);
                 break;
+            case "userMessageCreated":
+                this.handleMessageCreated(event);
+                break;
             case "chatCreated":
                 this.handleChatCreated(event);
                 break;
@@ -956,7 +957,6 @@ export function registerIncrementProjectorEventHandler(): () => void {
     async function executeIncrement(userId: string){
         const userIncrement = userIncrementMap.get(userId);
         if (!userIncrement) {
-            CLI.debug(`No increment found for user ${userId}`);
             return;
         }
 
@@ -964,14 +964,16 @@ export function registerIncrementProjectorEventHandler(): () => void {
         userIncrementMap.delete(userId);
 
         const incrementProjector = new IncrementProjector();
-        const consumedEvents = eventStore.consume({ userId }, event => {
+        const consumedEvents = await eventStore.consume({ userId }, event => {
             if ("chatId" in event){
+                CLI.debug(`Handling event for user ${userId}: ${event.type}`);
                 incrementProjector.handleEvent(event);
             }
         });
 
         CLI.debug(`Consumed ${consumedEvents} events for user ${userId} to handle increment projection.`);
 
+        CLI.debug(JSON.stringify(incrementProjector.userIncrementMap, null, 2));
         return ChatStorage.applyIncrements(userId, incrementProjector.userIncrementMap[userId]);
     }
 }

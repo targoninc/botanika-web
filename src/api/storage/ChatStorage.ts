@@ -53,7 +53,7 @@ export class ChatStorage {
                     const updatedMessages: Prisma.MessageUpdateArgs[] = [];
                     for (const [messageId, messageIncrement] of chatIncrement.messageIncrements.entries()) {
                         switch (messageIncrement.type) {
-                            case "userMessageCreatedEvent": {
+                            case "userMessageCreated": {
                                 const message = createMessageFromNewMessage(messageId, messageIncrement.message);
 
                                 newMessages.push(message);

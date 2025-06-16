@@ -1,13 +1,12 @@
-import {AssistantMessage, ChatMessage, UserMessage} from "../../chat/ChatMessage.ts";
+import {AssistantMessage, UserMessage} from "../../chat/ChatMessage.ts";
 import {MessageFile} from "../../chat/MessageFile.ts";
-import {ResourceReference} from "../../chat/ResourceReference.ts";
 import {ReasoningDetail} from "../../../api/ai/llms/aiMessage.ts";
 import {LanguageModelUsage} from "ai";
 import {ToolInvocation} from "@ai-sdk/ui-utils";
 
 export type UserMessageCreatedEvent = {
-    type: "userMessageCreatedEvent";
-    userMessage: ChatMessage;
+    type: "userMessageCreated";
+    message: UserMessage;
     chatId: string;
 }
 
@@ -189,7 +188,7 @@ const chatEventKeys: {
     toolCallFinished: true,
     messageCreated: true,
     reasoningFinished: true,
-    userMessageCreatedEvent: true,
+    userMessageCreated: true,
     usageCreated: true,
     chatDeleted: true,
     chatBranched: true,
