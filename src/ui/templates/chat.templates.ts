@@ -269,7 +269,42 @@ export class ChatTemplates {
         const modelConfigured = compute(c => !!c.model, configuration);
         const model = compute((c, conf) => conf ? c.model : "No model selected", configuration, modelConfigured);
         const files = signal<MessageFile[]>([]);
+        const focusInput = () => {
+            document.getElementById("chat-input-field")?.focus();
+        }
+        const updateInputHeight = () => {
+            const field = document.getElementById("chat-input-field");
+            if (!field) {
+                return;
+            }
+            field.style.height = "auto";
+            if (input.value.length > 0) {
+                field.style.height = Math.min(field.scrollHeight, 300) + "px";
+            } else {
+                field.style.height = "auto";
+            }
+        }
+        input.subscribe(updateInputHeight);
+        const flyoutVisible = signal(false);
+        const isDraggingOver = signal(false);
+        const hasText = compute(i => i.length > 0, input);
+        const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
+        const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
+        const sendingDisabled = compute((c, h) => {
+            const lastMessage = c?.history?.at(-1);
+            return (lastMessage && (lastMessage.type === "user" || !lastMessage.finished)) || !h;
+        }, chatContext, hasText);
+        const disabledClass = compute((d): string => d ? "disabled" : "_", sendingDisabled);
+        const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
+        const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
+        const entirelyDisabled = compute((c, u) => c && c.userId && u && c.userId !== u.id, chatContext, currentUser);
+        const entirelyDisabledClass = compute((d): string => d ? "disabled" : "_", entirelyDisabled);
+
         const send = () => {
+            if (sendingDisabled.value) {
+                return;
+            }
+
             try {
                 activateNextUpdate.value = true;
                 realtime.send({
@@ -288,32 +323,6 @@ export class ChatTemplates {
             input.value = "";
             files.value = [];
         }
-        const focusInput = () => {
-            document.getElementById("chat-input-field")?.focus();
-        }
-        const updateInputHeight = () => {
-            const field = document.getElementById("chat-input-field");
-            if (!field) {
-                return;
-            }
-            field.style.height = "auto";
-            if (input.value.length > 0) {
-                field.style.height = Math.min(field.scrollHeight, 300) + "px";
-            } else {
-                field.style.height = "auto";
-            }
-        }
-        input.subscribe(updateInputHeight);
-        const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
-        const flyoutVisible = signal(false);
-        const isDraggingOver = signal(false);
-        const hasText = compute(i => i.length > 0, input);
-        const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
-        const disabledClass = compute((h): string => !h ? "disabled" : "_", hasText);
-        const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
-        const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
-        const entirelyDisabled = compute((c, u) => c && c.userId && u && c.userId !== u.id, chatContext, currentUser);
-        const entirelyDisabledClass = compute((d): string => d ? "disabled" : "_", entirelyDisabled);
 
         return create("div")
             .classes("chat-input", noHistoryClass, entirelyDisabledClass)
@@ -376,7 +385,7 @@ export class ChatTemplates {
                                 create("div")
                                     .classes("flex", "align-center")
                                     .children(
-                                        when(voiceConfigured, AudioTemplates.voiceButton()),
+                                        when(voiceConfigured, AudioTemplates.voiceButton(sendingDisabled)),
                                         GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
                                     ).build(),
                             ).build(),

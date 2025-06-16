@@ -1,20 +1,21 @@
 import {GenericTemplates} from "./generic.templates";
 import {VoiceRecorder} from "../classes/audio/VoiceRecorder";
-import {compute, create, signal} from "@targoninc/jess";
+import {compute, create, Signal, signal} from "@targoninc/jess";
 
 const currentLoudness = signal(0);
 let recorder: VoiceRecorder;
 
 export class AudioTemplates {
-    static voiceButton() {
+    static voiceButton(disabled: Signal<boolean>) {
         if (!recorder) {
             recorder = new VoiceRecorder(currentLoudness);
         }
         const onState = signal(false);
         const iconState = compute(o => o ? "mic" : "mic_off", onState);
+        const disabledClass = compute(d => d ? "disabled" : "_", disabled);
 
         return create("div")
-            .classes("flex", "align-children", "no-gap")
+            .classes("flex", "align-children", "no-gap", disabledClass)
             .children(
                 GenericTemplates.redDot(onState, currentLoudness),
                 GenericTemplates.verticalButtonWithIcon(iconState, "", () => {
