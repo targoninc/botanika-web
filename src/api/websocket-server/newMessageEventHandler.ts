@@ -174,7 +174,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id, abortSignal);
 
     // Wait for the steps to complete
     await streamResponse.steps;

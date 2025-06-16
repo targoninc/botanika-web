@@ -42,7 +42,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string): Promise<{
+export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string, abortSignal: AbortSignal): Promise<{
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
     CLI.debug("Streaming response...");
@@ -61,6 +61,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         frequencyPenalty: 0.6,
         maxSteps,
         maxRetries: 0,
+        abortSignal,
         providerOptions: {
             openai: {
                 store: true,
