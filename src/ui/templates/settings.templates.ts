@@ -13,6 +13,7 @@ import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
+import {Tab} from "../../models/uiExtensions/Tab.ts";
 
 export class SettingsTemplates {
     static settings() {
@@ -98,9 +99,27 @@ export class SettingsTemplates {
             }
         ];
         const loading = signal(false);
+        const tabs = signal<Tab[]>([
+            {
+                name: "General",
+                icon: "settings",
+                id: "general",
+            },
+            {
+                name: "Keys",
+                icon: "key",
+                id: "keys",
+            },
+            {
+                name: "MCP",
+                icon: "linked_services",
+                id: "mcp",
+            }
+        ])
+        const activeTab = signal("general");
 
         return create("div")
-            .classes("flex-v", "container", "overflow")
+            .classes("flex-v", "container", "overflow", "restrict-to-parent")
             .children(
                 create("div")
                     .classes("flex-v", "restrict-width")
@@ -108,27 +127,45 @@ export class SettingsTemplates {
                         GenericTemplates.buttonWithIcon("chevron_left", "Back to chat", async () => {
                             activePage.value = "chat";
                         }, ["fixed", "layer-shadow"]),
-                        create("h1")
-                            .classes("flex")
-                            .styles("margin-top", "1.5em")
-                            .children(
-                                create("span")
-                                    .text("Settings")
-                                    .build(),
-                                when(loading, GenericTemplates.spinner()),
-                            ).build(),
-                        GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
-                        GenericTemplates.buttonWithIcon("open_in_new", "GitHub Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
-                        GenericTemplates.heading(2, "General"),
-                        ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
-                            ...c,
-                            [k]: v
-                        }))),
-                        SettingsTemplates.shortcuts(),
-                        SettingsTemplates.configuredFeatures(),
-                        SettingsTemplates.mcpConfig(),
+                        SettingsTemplates.settingsHeader(loading),
+                        GenericTemplates.tabs([
+                            SettingsTemplates.generalSettings(settings, loading),
+                            SettingsTemplates.configuredFeatures(),
+                            SettingsTemplates.mcpConfig(),
+                        ], tabs, activeTab),
                         GenericTemplates.spacer()
                     ).build()
+            ).build();
+    }
+
+    private static generalSettings(settings: SettingConfiguration[], loading: Signal<boolean>) {
+        return create("div")
+            .classes("flex-v")
+            .children(
+                GenericTemplates.heading(2, "General"),
+                ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
+                    ...c,
+                    [k]: v
+                }))),
+                SettingsTemplates.shortcuts()
+            ).build();
+    }
+
+    private static settingsHeader(loading: Signal<boolean>) {
+        return create("div")
+            .classes("flex-v")
+            .children(
+                create("h1")
+                    .classes("flex")
+                    .styles("margin-top", "1.5em")
+                    .children(
+                        create("span")
+                            .text("Settings")
+                            .build(),
+                        when(loading, GenericTemplates.spinner()),
+                    ).build(),
+                GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
+                GenericTemplates.buttonWithIcon("open_in_new", "GitHub Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
             ).build();
     }
 
