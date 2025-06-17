@@ -25,6 +25,7 @@ export class ChatStorage {
                         updatedAt: new Date(chatIncrement.chat.updatedAt),
                         branchedFromChatId: chatIncrement.chat.branched_from_chat_id ?? null,
                         userId: userId,
+                        deleted: false
                     });
 
                     for (const message of chatIncrement.chat.history) {
@@ -90,56 +91,64 @@ export class ChatStorage {
         }
 
         db.$transaction(async transactionClient => {
-            const createChats = transactionClient.chat.createMany({
-                data: chatCreations
-            }).then(async chats => {
-                CLI.debug(`Created ${chats.count} new chats`);
-            });
+            const finishedPromise = new Promise(resolve => resolve(void 0));
+            let createChats = finishedPromise;
+            if (chatCreations.length > 0) {
+                createChats = transactionClient.chat.createMany({
+                    data: chatCreations
+                }).then(async chats => {
+                    CLI.debug(`Created ${chats.count} new chats`);
+                });
+            }
 
-            const updateChats = transactionClient.chat.updateMany({
-                data: chatUpdates
-            }).then(async chats => {
-                CLI.debug(`Updated ${chats.count} chats`);
-            });
+            let updateChats = finishedPromise;
+            if (chatUpdates.length > 0) {
+                updateChats = Promise.allSettled(chatUpdates.map(chats => {
+                    return transactionClient.chat.update(chats);
+                }));
+            }
 
-            const updateMessages = await transactionClient.message.findMany({
-                where: {
-                    id: {
-                        in: messageTextAppend.map(message => message.messageId)
-                    }
-                }
-            });
-
-            await transactionClient.message.updateMany({
-                data: updateMessages.map(message => {
-                    const append = messageTextAppend.find(m => m.messageId === message.id);
-                    if (append) {
-                        return {
-                            id: message.id,
-                            text: message.text + append.additionalText
-                        };
-                    }
-                    return { id: message.id };
-                })
-            }).then(async messages => {
-                CLI.debug(`Updated ${messages.count} messages with appended text`);
-            });
-
-            await createChats;
-            await db.chat.updateMany({
-                data: [...messageCreations.entries()].map(([chatId, messages]) => ({
-                    chatId,
-                    messages: {
-                        createMany: {
-                            data: messages
+            if (messageTextAppend.length > 0) {
+                const updateMessages = await transactionClient.message.findMany({
+                    where: {
+                        id: {
+                            in: messageTextAppend.map(message => message.messageId)
                         }
                     }
-                }))
-            }).then(async messages => {
-                CLI.debug(`Created ${messages.count} new messages`);
-            });
+                });
+
+                await transactionClient.message.updateMany({
+                    data: updateMessages.map(message => {
+                        const append = messageTextAppend.find(m => m.messageId === message.id);
+                        if (append) {
+                            return {
+                                id: message.id,
+                                text: message.text + append.additionalText
+                            };
+                        }
+                        return { id: message.id };
+                    })
+                }).then(async messages => {
+                    CLI.debug(`Updated ${messages.count} messages with appended text`);
+                });
+            }
+
+            await createChats;
+            const messageCreationEntries = [...messageCreations.entries()];
+            if (messageCreationEntries.length > 0) {
+                await transactionClient.message.createMany({
+                    data: messageCreationEntries.flatMap(([chatId, messages]) => messages.map(message => ({
+                        chatId,
+                        ...message
+                    })))
+                }).then(async messages => {
+                    CLI.debug(`Created ${messages.count} new messages`);
+                });
+            }
 
             await updateChats;
+        }, {
+            timeout: 60000
         });
 
 
@@ -163,10 +172,6 @@ export class ChatStorage {
                 case "user":
                     text = message.text;
                     files = message.files as any;
-
-                    break;
-                case "system":
-                    text = message.text;
 
                     break;
                 case "assistant":
@@ -295,15 +300,6 @@ export class ChatStorage {
                 };
             }).sort((a, b) => b.time - a.time)
         }
-    }
-
-    static async deleteChatContext(userId: string, chatId: string) {
-        await db.chat.deleteMany({
-            where: {
-                id: chatId,
-                userId: userId
-            }
-        });
     }
 
     static async getUserChats(userId: string, from: Date | null = null): Promise<Omit<ChatContext, "history">[]> {

@@ -974,6 +974,6 @@ export function registerIncrementProjectorEventHandler(): () => void {
         CLI.debug(`Consumed ${consumedEvents} events for user ${userId} to handle increment projection.`);
 
         CLI.debug(JSON.stringify(incrementProjector.userIncrementMap, null, 2));
-        return ChatStorage.applyIncrements(userId, incrementProjector.userIncrementMap[userId]);
+        return ChatStorage.applyIncrements(userId, incrementProjector.userIncrementMap.get(userId)!);
     }
 }

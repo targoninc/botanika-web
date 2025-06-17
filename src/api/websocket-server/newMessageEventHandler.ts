@@ -19,7 +19,6 @@ import {getBuiltInTools} from "../ai/tools/servers/allTools.ts";
 import {Configuration} from "../../models/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
 import {sendAudioAndStop} from "../ai/endpoints.ts";
-import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";
@@ -36,27 +35,17 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
         userMessage: chatMsg
     }).then();
 
-    let chat: ChatContext;
     try {
-        chat = {
-            createdAt: Date.now(),
-            shared: false,
-            updatedAt: Date.now(),
-            id: chatId,
-            userId: ws.userId,
-            history: [chatMsg],
-            name: ""
-        }
+
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
             name = name.substring(0, newLineIndex === -1 ? 100 : newLineIndex).substring(0, 100);
             eventStore.publish({
                 userId: ws.userId,
                 type: "chatNameSet",
-                chatId: chat.id,
+                chatId: chatId,
                 name,
             });
-            chat.name = name;
         });
     } catch (e) {
         throw new Error("An error occurred while creating the chat", {
@@ -65,23 +54,29 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
     }
 
     CLI.debug(`Chat created for user ${ws.userId}`);
-    return chat;
+
+    return chatId;
 }
 
 async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
-    let chat: ChatContext | null;
     if (!request.chatId) {
-        chat = await createNewChat(ws, request, model);
+        return await createNewChat(ws, request, model);
     } else {
-        CLI.debug(`Getting existing chat`);
-        chat = await ChatStorage.readChatContext(ws.userId, request.chatId);
-        if (!chat) {
-            throw new Error("Chat not found");
-        }
-
-
+        eventStore.publish({
+            userId: ws.userId,
+            type: "userMessageCreated",
+            chatId: request.chatId,
+            message: {
+                id: uuidv4(),
+                text: request.message,
+                time: Date.now(),
+                type: "user",
+                files: [],
+            }
+        });
     }
-    return chat;
+
+    return request.chatId;
 }
 
 async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
@@ -154,11 +149,6 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
 
     const chat = await getOrCreateChatWithMessage(ws, request, model);
     const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
-
-    if (request.chatId) {
-        CLI.debug(`${chat.history.length} existing messages`);
-        chat.history.push(newUserMessage(request.message, request.files));
-    }
 
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
