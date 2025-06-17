@@ -14,6 +14,7 @@ export interface Configuration extends Record<string, any> {
     enableStt: boolean;
     maxSteps: number;
     transcriptionModel: string;
+    transcriptionProvider: string;
     featureOptions: {
         [BotanikaFeature.GoogleSearch]: {
             apiKey: string,

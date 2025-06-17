@@ -4,8 +4,6 @@ import { extname, resolve } from "path";
 import {CLI} from "../../CLI";
 import {appDataPath} from "../../appData";
 import { ApiEndpoint } from "../../../models/ApiEndpoints";
-import multer from "multer";
-import {transcribeEndpoint} from "../stt/endpoints";
 
 export async function getAudioEndpoint(req: Request, res: Response) {
     const id = req.query.file as string;
@@ -70,13 +68,6 @@ export async function getAudioEndpoint(req: Request, res: Response) {
     });
 }
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
 export function addAudioEndpoints(app: Application) {
     app.get(ApiEndpoint.AUDIO, getAudioEndpoint);
-}
-
-export function addTranscribeEndpoints(app: Application) {
-    app.post(ApiEndpoint.TRANSCRIBE, upload.single('file'), transcribeEndpoint);
 }

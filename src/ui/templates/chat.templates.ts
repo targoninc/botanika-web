@@ -340,7 +340,7 @@ export class ChatTemplates {
         const isDraggingOver = signal(false);
         const hasText = compute(i => i.length > 0, input);
         const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
-        const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
+        const voiceConfigured = compute(c => c && !!c.transcriptionModel && !!c.transcriptionProvider, configuration);
         const generating = compute((c) => {
             const lastMessage = c?.history?.at(-1);
             return lastMessage && (lastMessage.type === "user" || !lastMessage.finished);
@@ -438,7 +438,7 @@ export class ChatTemplates {
                                 create("div")
                                     .classes("flex", "align-center")
                                     .children(
-                                        when(voiceConfigured, AudioTemplates.voiceButton(sendingDisabled)),
+                                        when(voiceConfigured, AudioTemplates.voiceButton(generating)),
                                         GenericTemplates.verticalButtonWithIcon("stop_circle", "", () => {
                                             realtime.send({
                                                 type: BotanikaClientEventType.generationStopped,

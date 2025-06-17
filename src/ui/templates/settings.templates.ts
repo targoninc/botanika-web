@@ -14,10 +14,10 @@ import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/s
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
 import {Tab} from "../../models/uiExtensions/Tab.ts";
+import {TranscriptionProvider} from "../../models/transcriptionProvider.ts";
 
 export class SettingsTemplates {
     static settings() {
-        const ttsModelOptions = ["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper"];
         const settings: SettingConfiguration[] = [
             {
                 key: "display_hotkeys",
@@ -34,15 +34,19 @@ export class SettingsTemplates {
                 type: "boolean",
             },
             {
+                key: "transcriptionProvider",
+                icon: "transcribe",
+                label: "Transcription Provider",
+                description: `Which transcription provider to use.`,
+                type: "select",
+                options: [TranscriptionProvider.openai, TranscriptionProvider.groq]
+            },
+            {
                 key: "transcriptionModel",
                 icon: "transcribe",
                 label: "Transcription Model",
-                description: `Which OpenAI transcription model to use.`,
-                type: "select",
-                options: ttsModelOptions,
-                validator: value => {
-                    return ttsModelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${ttsModelOptions.join(",")}`];
-                }
+                description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
+                type: "string",
             },
             {
                 key: "enableTts",

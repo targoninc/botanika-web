@@ -1,6 +1,6 @@
 import express, {Response, Request} from "express";
 import cors from "cors";
-import {addAudioEndpoints, addTranscribeEndpoints} from "./api/ai/tts/endpoints.ts";
+import {addAudioEndpoints} from "./api/ai/tts/endpoints.ts";
 import dotenv from "dotenv";
 import ui from "./ui-server/baseHtml.html" with {type: "text"};
 import rateLimit from "express-rate-limit";
@@ -15,6 +15,7 @@ import {addWebsocketServer} from "./api/websocket-server/websocket.ts";
 import * as http from "node:http";
 import path from "node:path";
 import {ApiEndpoint} from "./models/ApiEndpoints.ts";
+import {addTranscribeEndpoints} from "./api/ai/stt/endpoints.ts";
 
 dotenv.config();
 

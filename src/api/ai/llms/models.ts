@@ -5,7 +5,6 @@ import {createAzure} from "@ai-sdk/azure";
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {createOllama} from 'ollama-ai-provider';
 import {LlmProvider} from "../../../models/llms/llmProvider";
-import {ProviderV1} from "@ai-sdk/provider";
 import {ModelDefinition} from "../../../models/llms/ModelDefinition";
 import {getGroqModels} from "./providers/groq";
 import {getOpenaiModels} from "./providers/openai";
@@ -19,7 +18,7 @@ import {Configuration} from "../../../models/Configuration.ts";
 
 dotenv.config();
 
-export const providerMap: Record<LlmProvider, ProviderV1|any> = {
+export const providerMap: Record<LlmProvider, (modelName: string, config: Configuration) => LanguageModelV1> = {
     [LlmProvider.groq]: (modelName: string, config: Configuration) => {
         return createGroq({
             apiKey: config.featureOptions[BotanikaFeature.Groq].apiKey,
