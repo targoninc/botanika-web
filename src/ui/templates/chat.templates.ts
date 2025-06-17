@@ -7,7 +7,8 @@ import {
     connected,
     currentChatId,
     currentlyPlayingAudio,
-    currentText, currentUser,
+    currentText,
+    currentUser,
     shortCutConfig,
     target,
     updateChats,
@@ -23,8 +24,8 @@ import {LlmProvider} from "../../models/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
 import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
-import {button} from "@targoninc/jess-components";
+import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {button, input} from "@targoninc/jess-components";
 import {featureOptions} from "../../models/features/featureOptions.ts";
 import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
 import {focusChatInput, realtime} from "../index.ts";
@@ -39,6 +40,8 @@ import {getHost} from "../classes/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -73,6 +76,8 @@ export class ChatTemplates {
     }
 
     static botName() {
+        const value = compute(c => c.name ?? "New chat", chatContext);
+
         return create("div")
             .classes("flex", "align-center", "bot-name", "align-children")
             .children(
@@ -86,9 +91,23 @@ export class ChatTemplates {
                     .classes("bot-name-text")
                     .text(compute(c => c.botname ?? "Anika", configuration))
                     .build(),
-                create("span")
-                    .text(compute(c => c.name ?? "New chat", chatContext))
-                    .build(),
+                input({
+                    type: InputType.text,
+                    classes: ["invisible-input"],
+                    value,
+                    name: "chatname-input",
+                    onchange: val => {
+                        if (val.length > 0) {
+                            realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
+                                type: BotanikaClientEventType.chatNameChanged,
+                                data: {
+                                    chatId: currentChatId.value,
+                                    name: val
+                                }
+                            });
+                        }
+                    }
+                }),
             ).build();
     }
 

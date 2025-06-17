@@ -1084,3 +1084,12 @@ pre {
 div:hover > .showOnParentHover {
     display: flex !important;
 }
+
+.invisible-input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: max-content !important;
+}
