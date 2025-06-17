@@ -97,6 +97,10 @@ export class Api extends ApiBase {
         return this.get<User & UserinfoResponse>(ApiEndpoint.GET_USER);
     }
 
+    static deleteUser() {
+        return this.post(ApiEndpoint.DELETE_USER);
+    }
+
     static getDeletedChats(ids: string[]) {
         return this.post<string[]>(ApiEndpoint.GET_DELETED_CHATS, {
             ids

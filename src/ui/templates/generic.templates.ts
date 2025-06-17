@@ -18,6 +18,7 @@ import {
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
+import {Api} from "../classes/state/api.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -523,6 +524,16 @@ export class GenericTemplates {
                 GenericTemplates.buttonWithIcon("logout", "Log out", async () => {
                     localStorage.clear();
                     window.location.href = "/logout";
+                }, ["negative"]),
+                GenericTemplates.buttonWithIcon("delete", "Delete account", async () => {
+                    createModal(GenericTemplates.confirmModal("Delete account", "Are you sure you want to delete your account? This action cannot be undone.", "DELETE ACCOUNT", "Cancel", () => {
+                        Api.deleteUser().then(r => {
+                            if (r.success) {
+                                localStorage.clear();
+                                window.location.href = "/logout";
+                            }
+                        });
+                    }))
                 }, ["negative"]),
             ).build();
     }

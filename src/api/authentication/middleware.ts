@@ -79,4 +79,14 @@ export function addUserEndpoints(app: Application) {
             ...req.oidc.user
         });
     });
+
+    app.post(ApiEndpoint.DELETE_USER, async (req: Request, res: Response) => {
+        await db.user.delete({
+            where: {
+                id: req.user.id
+            }
+        });
+
+        res.send();
+    })
 }
