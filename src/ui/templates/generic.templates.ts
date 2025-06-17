@@ -1,7 +1,5 @@
 import {closeModal, createModal, toast} from "../classes/ui";
 import {Callback, configuration, currentUser, target} from "../classes/state/store";
-import {Tab} from "../models-shared/Tab";
-import {TextSegment} from "../models-shared/TextSegment";
 import {ToastType} from "../enums/ToastType";
 import {
     AnyElement,
@@ -19,6 +17,8 @@ import {button, icon, input, textarea, toggle} from "@targoninc/jess-components"
 import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 import {Api} from "../classes/state/api.ts";
+import {TextSegment} from "../models/TextSegment.ts";
+import {Tab} from "../models/Tab.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -625,5 +625,14 @@ export class GenericTemplates {
             .children(
                 GenericTemplates.icon("drag_handle", ["rotate90"])
             ).build();
+    }
+
+    static link(url: string) {
+        return create("a")
+            .classes("text-small")
+            .text(url)
+            .href(url)
+            .target("_blank")
+            .build();
     }
 }

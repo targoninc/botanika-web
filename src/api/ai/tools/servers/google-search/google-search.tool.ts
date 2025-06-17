@@ -6,11 +6,9 @@ import dotenv from "dotenv";
 import {ChatToolResult} from "../../../../../models-shared/chat/ChatToolResult.ts";
 import {wrapTool} from "../../tooling.ts";
 import {BotanikaFeature} from "../../../../../models-shared/configuration/BotanikaFeature.ts";
-import { Configuration } from "src/models/configuration/Configuration.ts";
-import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
-import {ChatContext} from "../../../../../models-shared/chat/ChatContext.ts";
 import {Signal} from "@targoninc/jess";
 import {ChatMessage} from "../../../../../models-shared/chat/ChatMessage.ts";
+import {Configuration} from "../../../../../models-shared/configuration/Configuration.ts";
 
 dotenv.config();
 

@@ -167,6 +167,10 @@ export class SettingsTemplates {
                     .classes("text-small")
                     .text(sc.description)
                     .build()),
+                when(sc.descriptionContent, create("div")
+                    .classes("flex-v")
+                    .children(...(sc.descriptionContent ?? []))
+                    .build()),
                 signalMap(errors, create("div").classes("flex-v"), e => create("span")
                     .classes("error")
                     .text(e)

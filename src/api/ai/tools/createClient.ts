@@ -1,6 +1,5 @@
 import {experimental_createMCPClient as createMCPClient, ToolSet} from 'ai';
 import {TempMcpClient} from "./models/TempMcpClient";
-import {McpConfiguration} from "../../../models-shared/mcp/McpConfiguration";
 import {CLI} from "../../CLI";
 import {getMcpConfig} from "./endpoints.ts";
 import {McpServerConfig} from "../../../models-shared/mcp/McpServerConfig.ts";

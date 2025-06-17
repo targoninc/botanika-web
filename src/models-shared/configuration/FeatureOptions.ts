@@ -1,10 +1,11 @@
 import {BotanikaFeature} from "./BotanikaFeature";
 import {SettingConfiguration} from "./SettingConfiguration.ts";
+import {GenericTemplates} from "../../ui/templates/generic.templates.ts";
 
-const apiKeyConfig = <SettingConfiguration>{
+const apiKeyConfig = (url?: string) => <SettingConfiguration>{
     key: "apiKey",
     icon: "key",
-    description: "Your own API Key",
+    descriptionContent: url ? [GenericTemplates.link(url)] : [],
     label: "API Key",
     type: "password",
 };
@@ -18,19 +19,19 @@ const voiceConfig = <SettingConfiguration>{
 };
 
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
-    [BotanikaFeature.OpenRouter]: [apiKeyConfig],
-    [BotanikaFeature.ElevenLabs]: [apiKeyConfig],
-    [BotanikaFeature.RevAi]: [apiKeyConfig],
-    [BotanikaFeature.Groq]: [apiKeyConfig],
-    [BotanikaFeature.OpenAI]: [apiKeyConfig, voiceConfig],
-    [BotanikaFeature.Lmnt]: [apiKeyConfig, voiceConfig],
-    [BotanikaFeature.Hume]: [apiKeyConfig, voiceConfig],
+    [BotanikaFeature.OpenRouter]: [apiKeyConfig("https://openrouter.ai/settings/keys")],
+    [BotanikaFeature.ElevenLabs]: [apiKeyConfig("https://elevenlabs.io/app/settings/api-keys")],
+    [BotanikaFeature.RevAi]: [apiKeyConfig("https://www.rev.ai/access-token")],
+    [BotanikaFeature.Groq]: [apiKeyConfig("https://console.groq.com/keys")],
+    [BotanikaFeature.OpenAI]: [apiKeyConfig("https://platform.openai.com/account/api-keys"), voiceConfig],
+    [BotanikaFeature.Lmnt]: [apiKeyConfig("https://app.lmnt.com/account#api-keys"), voiceConfig],
+    [BotanikaFeature.Hume]: [apiKeyConfig("https://platform.hume.ai/settings/keys"), voiceConfig],
     [BotanikaFeature.GoogleSearch]: [
-        apiKeyConfig,
+        apiKeyConfig("https://console.cloud.google.com/apis/dashboard"),
         {
             key: "searchEngineId",
             icon: "key",
-            description: "Search engine ID",
+            descriptionContent: [GenericTemplates.link("https://programmablesearchengine.google.com/controlpanel/all")],
             label: "Search engine ID",
             type: "string",
         },
@@ -52,6 +53,6 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             label: "Resource name",
             type: "string",
         },
-        apiKeyConfig
+        apiKeyConfig()
     ],
 };
