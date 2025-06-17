@@ -12,8 +12,6 @@ import {Language} from "../i8n/language.ts";
 import { language } from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
 import { asyncSemaphore } from "../asyncSemaphore.ts";
-import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
-import {updateContext} from "../updateContext.ts";
 import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
@@ -33,10 +31,10 @@ export const chatContext = compute((id, chatsList) => {
 }, currentChatId, chats);
 export const availableModels = signal<Record<string, ProviderDefinition>>({});
 export const mcpConfig = signal<McpServerConfig[]|null>(null);
-export const currentlyPlayingAudio = signal<string>(null);
+export const currentlyPlayingAudio = signal<string | null>(null);
 export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
-export const currentUser = signal<User & UserinfoResponse>(null);
+export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
 
 export function initializeStore() {
@@ -46,6 +44,8 @@ export function initializeStore() {
     });
 
     currentChatId.subscribe(c => {
+        if (!c) return;
+
         const url = new URL(window.location.href);
         url.searchParams.set("chatId", c);
         history.pushState({}, "", url);
@@ -87,22 +87,11 @@ export function initializeStore() {
     });
 
     tryLoadFromCache<Configuration>("config", configuration, Api.getConfig());
-    tryLoadFromCache<ChatContext[]>("chats", chats, Api.getNewestChats().then(async result => {
-        if (result.success && result.data) {
-            return await loadAllChats(result.data as ChatContext[]);
-        }
-
-        const response: ApiResponse<ChatContext[] | string> = {
-            success: false,
-            data: "Failed to load chats",
-            status: 500
-        };
-
-        return response;
-    }), data => {
-        // TODO: Once getNewestChats actually return only the newest chats we need to combine the old chats and the new ones.
-        return data;
-    });
+    tryLoadFromCache<ChatContext[]>("chats", chats, new Promise((resolve) => resolve({
+        success: true,
+        data: chats.value,
+        status: 200
+    })));
     tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());
     tryLoadFromCache<McpServerConfig[]>("mcpConfig", mcpConfig, Api.getMcpConfig());
     tryLoadFromCache<Record<string, ProviderDefinition>>("models", availableModels, Api.getModels());
@@ -153,39 +142,3 @@ export function updateChats(newChats: ChatContext[]) {
 
 export const activateNextUpdate = signal(false);
 
-export async function processUpdate(update: ChatUpdate) {
-    const cs = chats.value;
-    if (!cs.find(c => c.id === update.chatId)) {
-        const newChat = updateContext(INITIAL_CONTEXT, update);
-        updateChats([
-            ...chats.value,
-            newChat
-        ]);
-
-        if (activateNextUpdate.value && update.messages && update.messages.length === 1 && update.messages[0].type === "user") {
-            currentChatId.value = update.chatId;
-        }
-    } else {
-        updateChats(chats.value.map(c => {
-            if (c.id === update.chatId) {
-                return updateContext(c, update);
-            }
-            return c;
-        }));
-    }
-
-    const playableMessage = update.messages?.find(m => m.hasAudio);
-    const isLast = playableMessage && update.messages.length > 0 && update.messages[update.messages.length - 1].id === playableMessage.id;
-    if (playableMessage && isLast) {
-        playAudio(playableMessage.id).then();
-    }
-}
-
-export function deleteChat(chatId: string) {
-    updateChats(chats.value.filter(c => c.id !== chatId));
-    Api.deleteChat(chatId).then(() => {
-        if (currentChatId.value === chatId) {
-            currentChatId.value = null;
-        }
-    });
-}

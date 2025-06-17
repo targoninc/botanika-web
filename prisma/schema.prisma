@@ -46,6 +46,7 @@ model Chat {
   shared             Boolean   @default(false) @map("shared") @db.Boolean
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   messages           Message[]
+  deleted            Boolean   @default(false)
 
   @@map("chats")
 }

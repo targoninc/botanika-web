@@ -60,7 +60,7 @@ if (isPublicUrl) {
         limit,
         standardHeaders: true,
         legacyHeaders: false,
-        keyGenerator: (req: Request) => req.user.id,
+        keyGenerator: (req: Request) => req.user!.id,
         message: 'Too many requests, please try again later.',
     });
 
@@ -85,8 +85,8 @@ export const signingKey = await crypto.subtle.generateKey("Ed25519", true, ["sig
 
 app.get(ApiEndpoint.WS_TOKEN, async (req: Request, res: Response) => {
     const payload = JSON.stringify({
-        id: req.user.id,
-        session: req.oidc.user.sid
+        id: req.user!.id,
+        session: req.oidc.user!.sid
     });
 
     const token = {

@@ -1,12 +1,7 @@
 import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
-import {BotanikaServerEventType} from "../../../models/websocket/serverEvents/botanikaServerEventType.ts";
-import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
 import {toast} from "../ui.ts";
-import {ServerErrorEvent} from "../../../models/websocket/serverEvents/serverErrorEvent.ts";
 import {ToastType} from "../../enums/ToastType.ts";
-import {ServerWarningEvent} from "../../../models/websocket/serverEvents/serverWarningEvent.ts";
-import {chats, currentChatId, deleteChat, processUpdate, updateChats} from "../state/store.ts";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
+import {chats, currentChatId} from "../state/store.ts";
 import {ChatMessage} from "../../../models/chat/ChatMessage.ts";
 import {playAudio} from "../audio/audio.ts";
 
@@ -14,182 +9,190 @@ import {playAudio} from "../audio/audio.ts";
  * Update a specific message in a chat
  * @param chatId The ID of the chat
  * @param messageId The ID of the message to update
+ * @param event The event that triggered the update
  * @param updateFn A function that takes the message and returns an updated version
  */
-function updateMessage(chatId: string, messageId: string, updateFn: (message: ChatMessage) => ChatMessage) {
+function updateMessage(chatId: string, messageId: string, event: BotanikaServerEvent, updateFn: (message: ChatMessage) => ChatMessage) {
     const chatsList = chats.value;
     const chat = chatsList.find(c => c.id === chatId);
 
     if (!chat) return;
 
-    const updatedChat = structuredClone(chat);
-    const messageIndex = updatedChat.history.findIndex(m => m.id === messageId);
+    const message = chat.history.find(m => m.id === messageId);
+    if (!message) return;
 
-    if (messageIndex === -1) return;
+    chat.updatedAt = event.timestamp!;
+    updateFn(message);
+    message.time = event.timestamp!;
 
-    updatedChat.history[messageIndex] = updateFn(updatedChat.history[messageIndex]);
-    updatedChat.updatedAt = Date.now();
-
-    updateChats(chatsList.map(c => c.id === chatId ? updatedChat : c));
+    chats._callbacks.forEach(c => c(chats.value, true));
 }
 
-/**
- * Add text to a message
- * @param chatId The ID of the chat
- * @param messageId The ID of the message
- * @param text The text to add
- */
-function addTextToMessage(chatId: string, messageId: string, text: string) {
-    updateMessage(chatId, messageId, message => {
-        if ('text' in message) {
-            return {
-                ...message,
-                text: message.text + text
-            };
+function addTextToMessage(chatId: string, event: BotanikaServerEvent & { type: "messageTextAdded" }) {
+    updateMessage(chatId, event.messageId, event, message => {
+        if ("text" in message) {
+            message.text += event.messageChunk;
         }
+
         return message;
     });
 }
 
-/**
- * Set the complete text of a message
- * @param chatId The ID of the chat
- * @param messageId The ID of the message
- * @param text The complete text
- */
-function setMessageText(chatId: string, messageId: string, text: string) {
-    updateMessage(chatId, messageId, message => {
+function setMessageText(chatId: string, event: BotanikaServerEvent & { type: "messageTextCompleted" }) {
+    updateMessage(chatId, event.messageId, event, message => {
         if ('text' in message) {
-            return {
-                ...message,
-                text
-            };
+            message.text = event.text;
         }
+
         return message;
     });
 }
 
-/**
- * Mark a message as having audio
- * @param chatId The ID of the chat
- * @param messageId The ID of the message
- * @param audioUrl The URL of the audio file
- */
-function setMessageAudio(chatId: string, messageId: string, audioUrl: string) {
-    updateMessage(chatId, messageId, message => {
+function setMessageAudio(chatId: string, event: BotanikaServerEvent & { type: "audioGenerated" }) {
+    updateMessage(chatId, event.messageId, event, message => {
         if (message.type === 'assistant') {
-            return {
-                ...message,
-                hasAudio: true,
-                audioUrl
-            };
+            message.hasAudio = true;
         }
+
         return message;
     });
 
     // Play the audio if this is the current chat
     if (currentChatId.value === chatId) {
-        playAudio(messageId).then();
+        playAudio(event.messageId).then();
     }
 }
 
-/**
- * Mark a message as finished
- * @param chatId The ID of the chat
- */
-function completeMessage(chatId: string) {
-    const chatsList = chats.value;
-    const chat = chatsList.find(c => c.id === chatId);
+function completeMessage(chatId: string, event: BotanikaServerEvent & { type: "messageCompleted" }) {
+    const chat = chats.value.find(c => c.id === chatId);
 
     if (!chat) return;
 
-    const updatedChat = structuredClone(chat);
+    const message = chat.history[chat.history.length - 1];
 
-    // Find the most recent message
-    if (updatedChat.history.length > 0) {
-        const latestMessage = updatedChat.history.reduce((latest, current) => 
-            current.time > latest.time ? current : latest
-        );
+    if (!message) return;
 
-        if (latestMessage.type === 'assistant') {
-            const messageIndex = updatedChat.history.findIndex(m => m.id === latestMessage.id);
-            updatedChat.history[messageIndex] = {
-                ...latestMessage,
-                finished: true
-            };
-            updatedChat.updatedAt = Date.now();
+    message.time = event.timestamp!;
+    chat.updatedAt = event.timestamp!;
 
-            updateChats(chatsList.map(c => c.id === chatId ? updatedChat : c));
-        }
+    if (message.type === "assistant") {
+        message.finished = true;
+
+        chats._callbacks.forEach(c => c(chats.value, true));
     }
 }
 
 /**
  * Update a chat's name
  * @param chatId The ID of the chat
- * @param name The new name
+ * @param event The event that triggered the name update
  */
-function setChatName(chatId: string, name: string) {
+function setChatName(chatId: string, event: BotanikaServerEvent & { type: "chatNameSet" }) {
     const chatsList = chats.value;
     const chat = chatsList.find(c => c.id === chatId);
 
     if (!chat) return;
 
-    const updatedChat = {
-        ...chat,
-        name,
-        updatedAt: Date.now()
-    };
+    chat.name = event.name;
+    chat.updatedAt = event.timestamp!;
 
-    updateChats(chatsList.map(c => c.id === chatId ? updatedChat : c));
+    chats._callbacks.forEach(c => c(chats.value, true));
 }
 
-/**
- * Update a message's references
- * @param chatId The ID of the chat
- * @param messageId The ID of the message
- * @param references The new references
- */
-function updateToolInvocations(chatId: string, messageId: string, references: any[]) {
-    updateMessage(chatId, messageId, message => {
+function updateToolInvocations(chatId: string, event: BotanikaServerEvent & { type: "updateToolInvocations" }) {
+    updateMessage(chatId, event.messageId, event, message => {
         if (message.type === 'assistant') {
-            return {
-                ...message,
-                references
-            };
+            message.toolInvocations = event.toolInvocations;
         }
         return message;
     });
 }
 
-/**
- * Update a message's files
- * @param chatId The ID of the chat
- * @param messageId The ID of the message
- * @param files The new files
- */
-function updateFiles(chatId: string, messageId: string, files: any[]) {
-    updateMessage(chatId, messageId, message => {
-        return {
-            ...message,
-            files
-        };
+function updateFiles(chatId: string, event: BotanikaServerEvent & { type: "updateFiles" }) {
+    updateMessage(chatId, event.messageId, event, message => {
+        if (message.type === 'assistant' || message.type === 'user') {
+            message.files = event.files;
+        }
+
+        return message;
     });
 }
 
 /**
  * Handle a chat branched event
  * @param chatId The ID of the new chat
- * @param branchedFromChatId The ID of the original chat
- * @param messageId The ID of the message to branch from
+ * @param event The event that triggered the branching
  */
-function handleChatBranched(chatId: string, branchedFromChatId: string, messageId: string) {
-    // If we're currently viewing the original chat, switch to the new one
-    if (currentChatId.value === branchedFromChatId) {
+function handleChatBranched(chatId: string, event: BotanikaServerEvent & { type: "chatBranched" }) {
+    const oldChat = chats.value.find(c => c.id === event.branchedFromChatId);
+
+    if (!oldChat) return;
+
+    const newChat = structuredClone(oldChat);
+    newChat.id = chatId;
+
+    if (currentChatId.value === event.branchedFromChatId) {
         currentChatId.value = chatId;
     }
 
-    // The new chat will be loaded from the server when needed
+    chats.value.push(newChat);
+    chats._callbacks.forEach(c => c(chats.value, true));
+}
+
+function handleMessageCreated(chatId: string, event: BotanikaServerEvent & { type: "messageCreated" | "userMessageCreated" }) {
+    chats.value.find(c => c.id === chatId)?.history.push(event.message);
+    chats._callbacks.forEach(c => c(chats.value, true));
+}
+
+function handleChatCreated(chatId: string, event: BotanikaServerEvent & { type: "chatCreated" }) {
+    chats.value.push({
+        id: chatId,
+        name: "",
+        createdAt: event.timestamp!,
+        updatedAt: event.timestamp!,
+        shared: false,
+        userId: event.userId,
+        history: [event.userMessage]
+    });
+    chats._callbacks.forEach(c => c(chats.value, true));
+}
+
+function handleChatDeletedAfterMessage(chatId: string, event: BotanikaServerEvent & { type: "chatDeletedAfterMessage" }) {
+    const chat = chats.value.find(c => c.id === chatId);
+
+    if (!chat) return;
+
+    const indexAfterMessage = chat.history.findIndex(m => m.id === event.afterMessageId);
+    if (indexAfterMessage === -1) return;
+
+    chat.history = chat.history.filter((_, i) => i > indexAfterMessage);
+    chat.updatedAt = event.timestamp!;
+
+    chats._callbacks.forEach(c => c(chats.value, true));
+}
+
+function handleUsageCreated(chatId: string, event: BotanikaServerEvent & { type: "usageCreated" }) {
+    updateMessage(chatId, event.messageId, event, message => {
+        if (message.type === 'assistant') {
+            message.usage = event.usage;
+        }
+
+        return message;
+    });
+}
+
+function handleReasoningFinished(chatId: string, event: BotanikaServerEvent & { type: "reasoningFinished" }) {
+    updateMessage(chatId, event.messageId, event, message => {
+        if (message.type === 'assistant') {
+            message.reasoning = event.reasoningDetails;
+        }
+
+        return message;
+    });
+}
+
+export function deleteChat(chatId: string) {
+    chats.value = chats.value.filter(c => c.id !== chatId);
 }
 
 export async function handleMessage(event: BotanikaServerEvent) {
@@ -213,72 +216,88 @@ export async function handleMessage(event: BotanikaServerEvent) {
         const chatId = event.chatId;
 
         switch (event.type) {
-            case "chatCreated":
-                // Create a new chat with the initial user message
-                const update: ChatUpdate = {
-                    chatId,
-                    messages: [event.userMessage]
-                };
-                await processUpdate(update);
+            case "messageCreated": {
+                handleMessageCreated(chatId, event);
                 break;
-
-            case "messageTextAdded":
+            }
+            case "userMessageCreated": {
+                handleMessageCreated(chatId, event);
+                break;
+            }
+            case "chatSharedSet": {
+                break;
+            }
+            case "toolCallStarted": {
+                break;
+            }
+            case "toolCallFinished": {
+                break;
+            }
+            case "reasoningFinished": {
+                handleReasoningFinished(chatId, event);
+                break;
+            }
+            case "usageCreated": {
+                handleUsageCreated(chatId, event);
+                break;
+            }
+            case "chatDeletedAfterMessage": {
+                handleChatDeletedAfterMessage(chatId, event);
+                break;
+            }
+            case "chatCreated": {
+                handleChatCreated(chatId, event);
+                break;
+            }
+            case "messageTextAdded": {
                 // Add text to a message incrementally
-                addTextToMessage(chatId, event.messageId, event.messageChunk);
+                addTextToMessage(chatId, event);
                 break;
-
-            case "messageTextCompleted":
+            }
+            case "messageTextCompleted": {
                 // Set the complete text of a message
-                setMessageText(chatId, event.messageId, event.text);
+                setMessageText(chatId, event);
                 break;
-
-            case "messageCompleted":
+            }
+            case "messageCompleted": {
                 // Mark the message as finished
-                completeMessage(chatId);
+                completeMessage(chatId, event);
                 break;
-
-            case "audioGenerated":
+            }
+            case "audioGenerated": {
                 // Set the audio URL and play it if appropriate
-                setMessageAudio(chatId, event.messageId, event.audioUrl);
+                setMessageAudio(chatId, event);
                 break;
-
-            case "chatNameSet":
+            }
+            case "chatNameSet": {
                 // Update the chat name
-                setChatName(chatId, event.name);
+                setChatName(chatId, event);
                 break;
-
-            case "updateToolInvocations":
-                // Update message references
-                updateToolInvocations(chatId, event.messageId, event.references);
+            }
+            case "updateToolInvocations": {
+                updateToolInvocations(chatId, event);
                 break;
-
-            case "updateFiles":
+            }
+            case "updateFiles": {
                 // Update message files
-                updateFiles(chatId, event.messageId, event.files);
+                updateFiles(chatId, event);
                 break;
-
-            case "chatDeleted":
+            }
+            case "chatDeleted": {
                 // Delete the chat
                 deleteChat(chatId);
                 break;
-
-            case "chatBranched":
+            }
+            case "chatBranched": {
                 // Handle chat branching
-                handleChatBranched(chatId, event.branchedFromChatId, event.messageId);
+                handleChatBranched(chatId, event);
                 break;
-
-            case "messageCreated":
-                // Add a new message to the chat
-                const messageUpdate: ChatUpdate = {
-                    chatId,
-                    messages: [event.message]
-                };
-                await processUpdate(messageUpdate);
-                break;
-
-            default:
+            }
+            default: {
+                // @ts-expect-error event.type should be "never" here. If there is no error that means we have a new event type that we don't handle yet.
                 console.warn(`Unhandled chat event type: ${event.type}`, event);
                 break;
+            }
         }
     } else {
         console.warn(`Don't know what to do with websocket message`, event);
