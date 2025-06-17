@@ -18,6 +18,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
         maxTokens,
         presencePenalty: 0.6,
         frequencyPenalty: 0.6,
+        temperature: .5,
         toolChoice: "none",
         tools
     });
@@ -59,6 +60,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         tools,
         presencePenalty: 0.6,
         frequencyPenalty: 0.6,
+        temperature: .5,
         maxSteps,
         maxRetries: 0,
         abortSignal,
