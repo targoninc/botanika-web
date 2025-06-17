@@ -1,6 +1,7 @@
 import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
 import {TranscriptionProvider} from "../../models-shared/configuration/TranscriptionProvider.ts";
 import {SpeechProvider} from "../../models-shared/configuration/SpeechProvider.ts";
+import {GenericTemplates} from "../templates/generic.templates.ts";
 
 export const generalSettings: SettingConfiguration[] = [
     {
@@ -71,7 +72,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
         key: "transcriptionModel",
         icon: "transcribe",
         label: "Transcription Model",
-        description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
+        descriptionContent: [GenericTemplates.link("https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models")],
         type: "string",
     },
 ];
@@ -96,7 +97,7 @@ export const speechSettings: SettingConfiguration[] = [
         key: "speechModel",
         icon: "record_voice_over",
         label: "Speech Model",
-        description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/speech#speech-models`,
+        descriptionContent: [GenericTemplates.link("https://ai-sdk.dev/docs/ai-sdk-core/speech#speech-models")],
         type: "string",
     },
 ]
