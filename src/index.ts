@@ -86,7 +86,8 @@ export const signingKey = await crypto.subtle.generateKey("Ed25519", true, ["sig
 app.get(ApiEndpoint.WS_TOKEN, async (req: Request, res: Response) => {
     const payload = JSON.stringify({
         id: req.user!.id,
-        session: req.oidc.user!.sid
+        session: req.oidc.user!.sid,
+        newestEventTimestamp: req.query.newestEventTimestamp
     });
 
     const token = {

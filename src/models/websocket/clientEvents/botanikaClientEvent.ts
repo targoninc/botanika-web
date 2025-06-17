@@ -24,7 +24,7 @@ export type BotanikaClientEvent = {
     message: string;
     provider: LlmProvider;
     model: string;
-    files: MessageFile[],
+    files: Omit<MessageFile, "id">[],
 } | {
     type: "chatNameChanged",
     direction: "toServer",

@@ -1,4 +1,5 @@
 import {BotanikaFeature} from "./features/BotanikaFeature";
+import {LlmProvider} from "./llms/llmProvider.ts";
 
 export interface Configuration extends Record<string, any> {
     display_hotkeys: boolean;
@@ -8,7 +9,7 @@ export interface Configuration extends Record<string, any> {
     displayname: string;
     userDescription: string;
     birthdate: string;
-    provider: string;
+    provider: LlmProvider;
     model: string;
     enableTts: boolean;
     enableStt: boolean;

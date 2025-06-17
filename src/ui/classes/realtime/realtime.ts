@@ -4,7 +4,10 @@ import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
 import {BotanikaClientEvent} from "../../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {handleMessage} from "./handleMessage.ts";
 import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
-import {connected} from "../state/store.ts";
+import {chats, connected} from "../state/store.ts";
+import {tryLoadFromCache} from "../state/tryLoadFromCache.ts";
+import {signal} from "@targoninc/jess";
+import {ChatContext} from "../../../models/chat/ChatContext.ts";
 
 export class Realtime {
     private static instance: Realtime;
@@ -38,8 +41,12 @@ export class Realtime {
         this.isConnecting = true;
 
         try {
-            // First get the authentication token
-            const tokenResponse = await fetch(ApiEndpoint.WS_TOKEN);
+            const chats = signal<ChatContext[]>([]);
+            tryLoadFromCache("chats", chats, new Promise(resolve => resolve(null!)), () => chats.value);
+            chats._callbacks = [];
+            const newestEventTimestamp = chats.value.reduce((acc, cur) => Math.max(acc, cur.updatedAt), 0);
+
+            const tokenResponse = await fetch(ApiEndpoint.WS_TOKEN + `?newestEventTimestamp=${newestEventTimestamp}`);
             if (!tokenResponse.ok) {
                 throw new Error('Failed to get WebSocket token');
             }
@@ -166,7 +173,7 @@ export class Realtime {
     /**
      * Send a message to the WebSocket server
      */
-    public send(data: BotanikaClientEvent<any>): boolean {
+    public send(data: BotanikaClientEvent & { direction: "toServer" }): boolean {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.error('Cannot send message: WebSocket is not connected');
             return false;

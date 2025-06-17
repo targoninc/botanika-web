@@ -125,7 +125,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
             if ("files" in m && m.files) {
                 parts.push(...m.files.map(f => ({
                     type: "file",
-                    messages: f.base64,
+                    data: f.base64,
                     mimeType: f.mimeType,
                 } as const)));
             }

@@ -10,7 +10,7 @@ export type PartialToolCall = BaseToolCall & {
 
 export type ToolCallResult = BaseToolCall & {
     state: "result";
-    result: unknown;
+    result: any;
 }
 
 export type ToolCallCall = BaseToolCall & {

@@ -3,8 +3,6 @@ import {toast} from "../ui";
 import {chatContext, configuration, currentText} from "../state/store.ts";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
-import {BotanikaClientEventType} from "../../../models/websocket/clientEvents/botanikaClientEventType.ts";
-import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {Api} from "../state/api.ts";
 
 export class VoiceRecorder {
@@ -16,9 +14,9 @@ export class VoiceRecorder {
     private audioContext: AudioContext;
     private chunkCounter = 0;
     private audioHeader: BlobPart;
-    private lastDataTime: number;
+    private lastDataTime: number | null;
     private dataInterval: number;
-    private audioChunks = [];
+    private audioChunks: Blob[] = [];
     private currentVolume = 0;
     private sum = 0.0;
     private recording = false;
@@ -68,7 +66,7 @@ export class VoiceRecorder {
             }
         };
 
-        // @ts-ignore
+        // @ts-expect-error setInterval returns a number in the browser but in Node it returns a NodeJS.Timeout. We know this will be executed in the browser, so we can ignore the error.
         this.dataInterval = setInterval(() => {
             if (!this.recording) {
                 return;
@@ -107,7 +105,10 @@ export class VoiceRecorder {
         if (this.mediaRecorder) {
             this.mediaRecorder.stop();
         }
-        this.dataInterval && clearInterval(this.dataInterval);
+
+        if (this.dataInterval) {
+            clearInterval(this.dataInterval);
+        }
         this.recording = false;
     }
 
@@ -133,6 +134,10 @@ export class VoiceRecorder {
         formData.append('file', audioBlob, "file.webm");
         console.log("Transcribing audio...");
         Api.transcribe(formData).then(async stream => {
+            if (!stream) {
+                return;
+            }
+
             const reader = stream.getReader();
 
             while (true) {
@@ -153,13 +158,13 @@ export class VoiceRecorder {
                     currentText.value = obj.text;
                     try {
                         realtime.send({
-                            type: BotanikaClientEventType.message,
-                            messages: <NewMessageEventData>{
-                                chatId: chatContext.value.id,
-                                provider: config.provider,
-                                model: config.model,
-                                message: currentText.value,
-                            }
+                            type: "newMessage",
+                            direction: "toServer",
+                            chatId: chatContext.value.id,
+                            provider: config.provider,
+                            model: config.model,
+                            message: currentText.value,
+                            files: [],
                         });
                     } catch (e) {
                         toast(e.toString());

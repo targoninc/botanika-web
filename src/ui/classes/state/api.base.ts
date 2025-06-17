@@ -83,7 +83,7 @@ export class ApiBase {
             return {
                 status: res.status,
                 success: res.ok,
-                messages: JSON.parse(text) as T
+                data: JSON.parse(text) as T
             };
         } catch {
             if (!res.ok && text !== "Not authorized") {
@@ -92,7 +92,7 @@ export class ApiBase {
             return {
                 status: res.status,
                 success: res.ok,
-                messages: text
+                data: text
             };
         }
     }

@@ -75,7 +75,9 @@ export function addWebsocketServer(server: Server) {
 
             const validToken = await crypto.subtle.verify("Ed25519", signingKey.publicKey, Buffer.from(token.signature, 'base64'), new TextEncoder().encode(token.payload));
             if (validToken){
-                info.req.userId = JSON.parse(token.payload).id;
+                const parsedPayload = JSON.parse(token.payload);
+                info.req.userId = parsedPayload.id;
+                info.req.newestEventTimestamp = parsedPayload.newestEventTimestamp;
             } else {
                 callback(false, 401, "Invalid token signature in WebSocket connection");
                 return;
@@ -117,11 +119,13 @@ export function addWebsocketServer(server: Server) {
     });
 }
 
-async function catchupUserChats(userId: string, newestEventTimestamp: number, ws: WebsocketConnection) {
-    const chats = await ChatStorage.getUserChats(userId, new Date(newestEventTimestamp));
+async function catchupUserChats(userId: string, newestEventTimestamp: number | undefined, ws: WebsocketConnection) {
+    const fromDate = newestEventTimestamp ? new Date(newestEventTimestamp) : null;
+
+    const chats = await ChatStorage.getUserChats(userId, fromDate);
 
     await Promise.allSettled(chats.map(async chat => {
-        const newestMessage = await ChatStorage.getNewestMessages(chat.id, new Date(newestEventTimestamp));
+        const newestMessage = await ChatStorage.getNewestMessages(chat.id, fromDate);
 
         ws.send(JSON.stringify({
             type: "newMessages",
@@ -133,7 +137,7 @@ async function catchupUserChats(userId: string, newestEventTimestamp: number, ws
 
 export interface CustomIncomingMessage extends IncomingMessage {
     userId: string;
-    newestEventTimestamp: number;
+    newestEventTimestamp?: number;
 }
 
 
