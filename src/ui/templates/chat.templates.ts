@@ -420,7 +420,7 @@ export class ChatTemplates {
             .id("chat-input-field")
             .classes("flex-grow", "chat-input-field", "full-width", disabledClass)
             .styles("resize", "none")
-            .placeholder(compute((c, conf) => conf ? `[Ctrl] + [${c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
+            .placeholder(compute((c, conf) => conf ? `[Ctrl] + [Shift] + [${c.focusInput === " " ? "Space" : c.focusInput}] to focus` : "Configure a provider and model before you can chat", shortCutConfig, configured))
             .value(input)
             .oninput((e: any) => {
                 input.value = target(e).value;

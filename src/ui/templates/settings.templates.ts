@@ -529,10 +529,7 @@ export class SettingsTemplates {
                                 .build(),
                             GenericTemplates.pill("CTRL"),
                             SettingsTemplates.plus(),
-                            // TODO: Make pills toggleable. Use sensible defaults
-                            GenericTemplates.pill("SHIFT <Ignored>"),
-                            SettingsTemplates.plus(),
-                            GenericTemplates.pill("ALT <Ignored>"),
+                            GenericTemplates.pill("SHIFT"),
                             SettingsTemplates.plus(),
                             input({
                                 type: InputType.text,
