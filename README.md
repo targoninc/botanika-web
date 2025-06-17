@@ -15,8 +15,9 @@ A chat app. Bring your own API keys.
 | ChatGPT  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            | ✅                |
 | Copilot  | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            | ✅                |
 | Claude   | ❌   | ❌   | ❌           | ✅           | ✅           | ✅       | ❌    | ✅            | ❌                |
+| Gemini   | ✅   | ✅   | ❌           | ❌           | ❌           | ✅       | ❌    | ✅            | ✅                |
 
-# Run
+## Run
 
 This app uses PostgreSQL as a database. You can run it locally or use Docker Compose for a complete setup.
 
@@ -47,7 +48,7 @@ Make sure you have all necessary [environment variables](.env.example) configure
 
 The PostgreSQL database will be initialized with the schema defined in [db_setup.sql](src/api/database/db_setup.sql).
 
-### Native integrations
+## Integrations
 
 If you want to use any of these integrations, add them on the "Settings" page.
 
@@ -66,15 +67,3 @@ Depending on the provider and model you select, requests might not work reliably
 | OpenRouter | [OpenRouter](https://openrouter.ai/settings/keys)                                     |
 | Azure      | Needs resource name and api key                                                       |
 | Ollama     | No key, use Ollama URL - if you host locally, you can use [ngrok](https://ngrok.com/) |
-
-### Transcription
-
-Available OpenAI transcription models: `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, `whisper`
-
-If you **don't** want to use OpenAI for transcription, you can use Whisper locally. This requires a bit of setup:
-
-Install [pnpm](https://pnpm.io/installation), then run the following command and wait until the model is downloaded:
-
-```bash
-pnpm whisper-tnode download --model large-v1
-```
