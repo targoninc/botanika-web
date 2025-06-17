@@ -33,21 +33,22 @@ export class SettingsTemplates {
                 type: "boolean",
             },
             {
+                key: "transcriptionModel",
+                icon: "transcribe",
+                label: "Transcription Model",
+                description: `Which OpenAI transcription model to use.`,
+                type: "select",
+                options: ttsModelOptions,
+                validator: value => {
+                    return ttsModelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${ttsModelOptions.join(",")}`];
+                }
+            },
+            {
                 key: "enableTts",
                 icon: "text_to_speech",
                 label: "Enable text to speech",
                 description: "Whether assistant messages should be spoken aloud",
                 type: "boolean",
-            },
-            {
-                key: "transcriptionModel",
-                icon: "transcribe",
-                label: "Transcription Model",
-                description: `Which OpenAI transcription model to use. One of ${ttsModelOptions.join(", ")}.`,
-                type: "string",
-                validator: value => {
-                    return ttsModelOptions.includes(value) || value === '' ? [] : [`Not a valid model, must be one of ${ttsModelOptions.join(",")}`];
-                }
             },
             {
                 key: "botname",
@@ -210,6 +211,8 @@ export class SettingsTemplates {
         switch (sc.type) {
             case "string":
                 return GenericTemplates.input(InputType.text, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
+            case "select":
+                return GenericTemplates.select(sc.label, (sc.options ?? []).map(o => ({ text: o, value: o })), value, (newValue) => updateKey(sc.key, newValue));
             case "password":
                 return GenericTemplates.input(InputType.password, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "color":

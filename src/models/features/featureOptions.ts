@@ -13,7 +13,7 @@ const apiKeyConfig = <SettingConfiguration>{
 };
 
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
-    [BotanikaFeature.OpenAI]: [
+    [BotanikaFeature.OpenRouter]: [
         apiKeyConfig,
     ],
     [BotanikaFeature.GoogleSearch]: [
@@ -28,6 +28,9 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
                 return [];
             }
         },
+    ],
+    [BotanikaFeature.OpenAI]: [
+        apiKeyConfig,
     ],
     [BotanikaFeature.Groq]: [
         apiKeyConfig,
@@ -56,9 +59,6 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             }
         },
         apiKeyConfig
-    ],
-    [BotanikaFeature.OpenRouter]: [
-        apiKeyConfig,
     ],
     /*[BotanikaFeature.Spotify]: [
         {
