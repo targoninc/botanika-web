@@ -657,6 +657,9 @@ kbd {
     max-width: 90%;
     overflow-x: auto;
     gap: 0;
+    padding: var(--gap-h) var(--gap-v);
+    background: var(--bg);
+    border-radius: var(--attachment-border-radius);
 }
 
 .message-actions {
@@ -819,7 +822,7 @@ pre {
     border-radius: var(--input-border-radius);
     border: 1px solid transparent;
     padding: var(--gap-v);
-    background: var(--bg);
+    background: var(--bg-2);
 }
 
 .reference:hover {
