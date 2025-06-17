@@ -10,22 +10,14 @@ const apiKeyConfig = (url?: string) => <SettingConfiguration>{
     type: "password",
 };
 
-const voiceConfig = <SettingConfiguration>{
-    key: "voice",
-    icon: "record_voice_over",
-    description: "The voice to use when generating speech",
-    label: "Voice",
-    type: "string",
-};
-
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
     [BotanikaFeature.OpenRouter]: [apiKeyConfig("https://openrouter.ai/settings/keys")],
     [BotanikaFeature.ElevenLabs]: [apiKeyConfig("https://elevenlabs.io/app/settings/api-keys")],
     [BotanikaFeature.RevAi]: [apiKeyConfig("https://www.rev.ai/access-token")],
     [BotanikaFeature.Groq]: [apiKeyConfig("https://console.groq.com/keys")],
-    [BotanikaFeature.OpenAI]: [apiKeyConfig("https://platform.openai.com/account/api-keys"), voiceConfig],
-    [BotanikaFeature.Lmnt]: [apiKeyConfig("https://app.lmnt.com/account#api-keys"), voiceConfig],
-    [BotanikaFeature.Hume]: [apiKeyConfig("https://platform.hume.ai/settings/keys"), voiceConfig],
+    [BotanikaFeature.OpenAI]: [apiKeyConfig("https://platform.openai.com/account/api-keys")],
+    [BotanikaFeature.Lmnt]: [apiKeyConfig("https://app.lmnt.com/account#api-keys")],
+    [BotanikaFeature.Hume]: [apiKeyConfig("https://platform.hume.ai/settings/keys")],
     [BotanikaFeature.GoogleSearch]: [
         apiKeyConfig("https://console.cloud.google.com/apis/dashboard"),
         {

@@ -100,4 +100,11 @@ export const speechSettings: SettingConfiguration[] = [
         descriptionContent: [GenericTemplates.link("https://ai-sdk.dev/docs/ai-sdk-core/speech#speech-models")],
         type: "string",
     },
+    {
+        key: "speechVoice",
+        icon: "record_voice_over",
+        description: "The voice to use when generating speech. Check your provider documentation for which voices are available.",
+        label: "Voice",
+        type: "string",
+    }
 ]

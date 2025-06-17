@@ -26,7 +26,7 @@ export class SettingsTemplates {
                 id: "general",
             },
             {
-                name: "Features",
+                name: "Keys",
                 icon: "key",
                 id: "keys",
             },
@@ -94,8 +94,12 @@ export class SettingsTemplates {
                             .build(),
                         when(loading, GenericTemplates.spinner()),
                     ).build(),
-                GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
-                GenericTemplates.buttonWithIcon("open_in_new", "GitHub Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
+                create("div")
+                    .classes("flex", "small-gap")
+                    .children(
+                        GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
+                        GenericTemplates.buttonWithIcon("open_in_new", "GitHub Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
+                    ).build(),
             ).build();
     }
 

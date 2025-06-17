@@ -17,6 +17,7 @@ export interface Configuration extends Record<string, any> {
     transcriptionProvider: string;
     speechModel: string;
     speechProvider: string;
+    speechVoice: string;
     featureOptions: {
         [BotanikaFeature.GoogleSearch]: {
             apiKey: string,

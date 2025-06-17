@@ -9,7 +9,7 @@ export async function getTtsAudio(text: string, config: Configuration): Promise<
         const result = await experimental_generateSpeech({
             model: ttsProviderMap[config.speechProvider](config.speechModel, config),
             text: text,
-            voice: featureOption(config, ttsProviderFeatures[config.speechProvider]).voice,
+            voice: config.speechVoice,
             outputFormat: "mp3"
         });
 

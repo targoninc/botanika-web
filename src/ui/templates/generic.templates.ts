@@ -293,7 +293,7 @@ export class GenericTemplates {
 
     static warning(warning: StringOrSignal) {
         return create("div")
-            .classes("warning", "flex", "align-center")
+            .classes("warning", "flex", "align-center", "text-small")
             .children(
                 GenericTemplates.icon("warning"),
                 create("span")
