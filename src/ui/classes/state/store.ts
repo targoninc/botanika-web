@@ -17,6 +17,7 @@ import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
 import {getPathname, getUrlParameter, updateUrlParameter, updateUrlPathname} from "./urlHelpers.ts";
 import {User} from "@prisma/client";
+import {EventStore} from "../realtime/eventStore.ts";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -36,6 +37,7 @@ export const currentText = signal<string>("");
 export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
 export const search = signal("");
+export const eventStore = new EventStore();
 
 const getNewestChatDate = (chts: ChatContext[]) => {
     const updatedDates = chts.filter(c => !!c.updatedAt).map(c => c.updatedAt);

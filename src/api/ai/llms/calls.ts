@@ -18,6 +18,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
         maxTokens,
         presencePenalty: 0.6,
         frequencyPenalty: 0.6,
+        toolChoice: "none",
         tools
     });
     if (res.finishReason !== "stop") {

@@ -9,6 +9,7 @@ import {
     currentlyPlayingAudio,
     currentText,
     currentUser,
+    eventStore,
     shortCutConfig,
     target,
     updateChats,
@@ -42,6 +43,11 @@ import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {BotanikaServerEvent} from "../../models/websocket/serverEvents/botanikaServerEvent.ts";
+import {BotanikaServerEventType} from "../../models/websocket/serverEvents/botanikaServerEventType.ts";
+import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
+import {ToolCall} from "../../models/chat/ToolCall.ts";
+import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -148,10 +154,27 @@ export class ChatTemplates {
     }
 
     private static chatMessage(message: ChatMessage, isLast: boolean) {
-        const waiting = compute((c) => {
+        const msg = signal(message);
+        const text = compute(m => m.text, msg);
+        const waiting = compute((c, t) => {
             const lastMessage = c?.history?.at(-1);
-            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished) && isLast && message.text.length === 0;
-        }, chatContext);
+            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished) && isLast && t.length === 0;
+        }, chatContext, text);
+
+        const update = (event: BotanikaServerEvent<any>) => {
+            if (event.type !== BotanikaServerEventType.chatUpdate) {
+                return;
+            }
+
+            const data = event.data as ChatUpdate;
+            for (const m of (data.messages ?? [])) {
+                if (m.id === message.id) {
+                    msg.value = m;
+                }
+            }
+        }
+
+        eventStore.subscribe(update);
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-message", message.type)
@@ -164,14 +187,14 @@ export class ChatTemplates {
                 create("div")
                     .classes("flex-v", "message-content")
                     .children(
-                        ChatTemplates.toolCalls(message),
-                        ChatTemplates.reasoning(message),
+                        compute(m => ChatTemplates.toolCalls(m.toolInvocations), msg),
+                        compute(m => ChatTemplates.reasoning(m.reasoning), msg),
                         create("div")
-                            .html(parseMarkdown(message.text))
+                            .html(compute(m => parseMarkdown(m.text), msg))
                             .build(),
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
-                when(message.finished, ChatTemplates.messageActions(message)),
+                when(compute(m => m.finished, msg), ChatTemplates.messageActions(message)),
                 when(waiting, GenericTemplates.spinner),
                 when(isLast, GenericTemplates.spacer()),
             ).build();
@@ -187,7 +210,7 @@ export class ChatTemplates {
 
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
-        const isOwnChat = compute((c, u) => u && c.userId === u.id, chatContext, currentUser);
+        const isOwnChat = compute((c, u) => u && (c.userId === u.id || !c.shared), chatContext, currentUser);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
@@ -592,48 +615,54 @@ export class ChatTemplates {
             ).build();
     }
 
-    private static toolCalls(message: ChatMessage) {
+    private static toolCalls(toolInvocations: ToolCall[]) {
         const expanded = signal(false);
-        const sources = message.toolInvocations?.flatMap(ti => ti.result?.references ?? []) ?? [];
+        const sources = toolInvocations?.flatMap(ti => ti.result?.references ?? []) ?? [];
         const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
-        return when(sources.length > 0, create("div")
-            .classes("flex-v", "small-gap", "no-wrap")
+        return create("div")
             .children(
-                GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"]),
-                when(expanded, create("div")
-                    .classes("flex-v", "small-gap")
+                when(sources.length > 0, create("div")
+                    .classes("flex-v", "small-gap", "no-wrap")
                     .children(
-                        ...sources.map(ChatTemplates.reference),
+                        GenericTemplates.buttonWithIcon(icon, `${sources.length ?? 0} sources`, () => expanded.value = !expanded.value, ["expand-button"]),
+                        when(expanded, create("div")
+                            .classes("flex-v", "small-gap")
+                            .children(
+                                ...sources.map(ChatTemplates.reference),
+                            ).build())
                     ).build())
-            ).build());
+            ).build();
     }
 
-    private static reasoning(message: ChatMessage) {
+    private static reasoning(reasoning: ReasoningDetail[]) {
         const expanded = signal(false);
-        const hasReasoning = (message.reasoning?.length ?? 0) > 0;
+        const hasReasoning = (reasoning?.length ?? 0) > 0;
         const icon = compute((e): string => e ? "keyboard_arrow_down" : "keyboard_arrow_right", expanded);
 
-        return when(hasReasoning, create("div")
-            .classes("flex-v", "small-gap", "no-wrap")
+        return create("div")
             .children(
-                GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"]),
-                when(expanded, create("div")
-                    .classes("flex-v", "small-gap")
+                when(hasReasoning, create("div")
+                    .classes("flex-v", "small-gap", "no-wrap")
                     .children(
-                        create("div")
-                            .classes("reasoning", "flex-v", "small-gap")
-                            .html(parseMarkdown((message.reasoning ?? []).reduce((acc, r) => {
-                                if (r.type === "text") {
-                                    acc += r.text;
-                                } else {
-                                    acc += "~~redacted reasoning~~";
-                                }
+                        GenericTemplates.buttonWithIcon(icon, `Show reasoning`, () => expanded.value = !expanded.value, ["expand-button"]),
+                        when(expanded, create("div")
+                            .classes("flex-v", "small-gap")
+                            .children(
+                                create("div")
+                                    .classes("reasoning", "flex-v", "small-gap")
+                                    .html(parseMarkdown((reasoning ?? []).reduce((acc, r) => {
+                                        if (r.type === "text") {
+                                            acc += r.text;
+                                        } else {
+                                            acc += "~~redacted reasoning~~";
+                                        }
 
-                                return acc + "\r\n";
-                            }, "")))
-                            .build(),
+                                        return acc + "\r\n";
+                                    }, "")))
+                                    .build(),
+                            ).build())
                     ).build())
-            ).build());
+            ).build();
     }
 }

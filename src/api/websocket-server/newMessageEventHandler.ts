@@ -175,7 +175,6 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const abortController = new AbortController();
     activeAbortControllers.set(chat.id, abortController);
 
-
     function getListener(chatId: string, userId: string, message: Signal<ChatMessage>) {
         return () => {
             updateConversation(chatId, userId, message.value, true);

@@ -5,12 +5,14 @@ import {toast} from "../ui.ts";
 import {ServerErrorEvent} from "../../../models/websocket/serverEvents/serverErrorEvent.ts";
 import {ToastType} from "../../enums/ToastType.ts";
 import {ServerWarningEvent} from "../../../models/websocket/serverEvents/serverWarningEvent.ts";
-import {activateNextUpdate, chats, currentChatId, updateChats} from "../state/store.ts";
+import {activateNextUpdate, chats, currentChatId, eventStore, updateChats} from "../state/store.ts";
 import {updateContext} from "../updateContext.ts";
 import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {playAudio} from "../audio/audio.ts";
 
 export async function handleMessage(event: BotanikaServerEvent<any>) {
+    eventStore.publish(event);
+
     switch (event.type) {
         case BotanikaServerEventType.chatUpdate:
             await processUpdate(event.data as ChatUpdate);
@@ -44,9 +46,16 @@ export async function processUpdate(update: ChatUpdate) {
             currentChatId.value = update.chatId;
         }
     } else {
-        updateChats(chats.value.map(c =>
-            c.id === update.chatId ? updateContext(c, update) : c
-        ));
+        let updatedMsgs = [];
+        if (update.messages && update.messages.length > 0) {
+            const updatedIds = update.messages.map(m => m.id);
+            updatedMsgs = chats.value.flatMap(c => c.history.filter(m => updatedIds.includes(m.id)));
+        }
+        if (currentChatId.value !== update.chatId || updatedMsgs.length === 0) {
+            updateChats(chats.value.map(c =>
+                c.id === update.chatId ? updateContext(c, update) : c
+            ));
+        }
     }
 
     const playableMessage = update.messages?.find(m => m.hasAudio);
