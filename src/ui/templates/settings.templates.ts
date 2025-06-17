@@ -300,7 +300,7 @@ export class SettingsTemplates {
             .classes("flex-v")
             .children(
                 GenericTemplates.heading(2, "Configured APIs"),
-                ...Object.keys(featureOptions).map((api: BotanikaFeature) => {
+                ...Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)).map((api: BotanikaFeature) => {
                     const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
                     const fOptions = featureOptions[api];
                     const loading = signal(false);

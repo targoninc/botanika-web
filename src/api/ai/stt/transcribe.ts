@@ -5,7 +5,7 @@ import {readFile} from "fs/promises";
 import {CLI} from "../../CLI.ts";
 import {sttProviderMap} from "./sttProviderMap.ts";
 
-export async function transcribeNew(file: string, config: Configuration, res: Response) {
+export async function transcribe(file: string, config: Configuration, res: Response) {
     try {
         const response = await experimental_transcribe({
             model: sttProviderMap[config.transcriptionProvider](config.transcriptionModel, config),

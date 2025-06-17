@@ -29,6 +29,9 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
     [BotanikaFeature.ElevenLabs]: [
         apiKeyConfig,
     ],
+    [BotanikaFeature.RevAi]: [
+        apiKeyConfig,
+    ],
     [BotanikaFeature.Groq]: [
         apiKeyConfig,
     ],

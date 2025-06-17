@@ -1,5 +1,5 @@
-import { ModelDefinition } from "../../../../models/llms/ModelDefinition";
-import {ModelCapability} from "../../../../models/llms/ModelCapability";
+import { ModelDefinition } from "../../../../../models/llms/ModelDefinition.ts";
+import {ModelCapability} from "../../../../../models/llms/ModelCapability.ts";
 
 export function getAzureModels(): ModelDefinition[] {
     return [

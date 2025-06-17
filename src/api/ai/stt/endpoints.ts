@@ -1,7 +1,7 @@
 import {Application, Request, Response} from "express";
 import fs from "fs";
 import {appDataPath} from "../../appData";
-import {transcribeNew} from "./openaiWhisper";
+import {transcribe} from "./transcribe.ts";
 import {getConfig} from "../../configuration.ts";
 import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
 import multer from "multer";
@@ -40,7 +40,7 @@ export async function transcribeEndpoint(req: Request, res: Response) {
 
     const startTime = performance.now();
     try {
-        await transcribeNew(convertedFileName, userConfig, res);
+        await transcribe(convertedFileName, userConfig, res);
         const diff = performance.now() - startTime;
         CLI.success(`Transcribed audio in ${diff}ms`);
     } catch (e) {

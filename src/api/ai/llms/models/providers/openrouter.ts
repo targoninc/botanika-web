@@ -1,4 +1,4 @@
-import {ModelDefinition} from "../../../../models/llms/ModelDefinition";
+import {ModelDefinition} from "../../../../../models/llms/ModelDefinition.ts";
 
 /**
  * Auto-generated with tools/generateOpenRouterModelJson.ts

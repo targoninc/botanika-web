@@ -6,6 +6,12 @@ import {featureOption} from "../tools/servers/allTools.ts";
 import {createGroq} from "@ai-sdk/groq";
 import {TranscriptionProvider} from "../../../models/transcriptionProvider.ts";
 import {createElevenLabs} from "@ai-sdk/elevenlabs";
+import {createAzure} from "@ai-sdk/azure";
+import {createRevai} from "@ai-sdk/revai";
+import {createDeepgram} from "@ai-sdk/deepgram";
+import {createGladia} from "@ai-sdk/gladia";
+import {createAssemblyAI} from "@ai-sdk/assemblyai";
+import {createFal} from "@ai-sdk/fal";
 
 export const sttProviderMap: Record<TranscriptionProvider, (modelName: string, config: Configuration) => TranscriptionModelV1> = {
     [TranscriptionProvider.openai]: (modelName: string, config: Configuration) => {
@@ -22,24 +28,37 @@ export const sttProviderMap: Record<TranscriptionProvider, (modelName: string, c
     [TranscriptionProvider.elevenlabs]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
         return createElevenLabs({
             apiKey: featureOption(config, BotanikaFeature.ElevenLabs).apiKey,
-        }).transcription(modelname);
+        }).transcription(modelName);
     },
     [TranscriptionProvider.azureopenai]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+        return createAzure({
+            resourceName: config.featureOptions[BotanikaFeature.Azure].resourceName,
+            apiKey: config.featureOptions[BotanikaFeature.Azure].apiKey,
+        }).transcription(modelName);
     },
-    [TranscriptionProvider.revai]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+    [TranscriptionProvider.revai]: function (modelName: any, config: Configuration): TranscriptionModelV1 {
+        return createRevai({
+            apiKey: featureOption(config, BotanikaFeature.RevAi).apiKey,
+        }).transcription(modelName);
     },
     [TranscriptionProvider.deepgram]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+        return createDeepgram({
+            apiKey: featureOption(config, BotanikaFeature.RevAi).apiKey,
+        }).transcription(modelName);
     },
     [TranscriptionProvider.gladia]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+        return createGladia({
+            apiKey: featureOption(config, BotanikaFeature.RevAi).apiKey,
+        }).transcription();
     },
-    [TranscriptionProvider.assemblyai]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+    [TranscriptionProvider.assemblyai]: function (modelName: any, config: Configuration): TranscriptionModelV1 {
+        return createAssemblyAI({
+            apiKey: featureOption(config, BotanikaFeature.RevAi).apiKey,
+        }).transcription(modelName);
     },
     [TranscriptionProvider.fal]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+        return createFal({
+            apiKey: featureOption(config, BotanikaFeature.RevAi).apiKey,
+        }).transcription(modelName);
     }
 }

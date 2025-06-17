@@ -7,4 +7,5 @@ export enum BotanikaFeature {
     OpenRouter = "OpenRouter",
     Spotify = "Spotify",
     ElevenLabs = "ElevenLabs",
+    RevAi = "RevAi",
 }

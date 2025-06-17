@@ -35,6 +35,9 @@ export interface Configuration extends Record<string, any> {
         [BotanikaFeature.ElevenLabs]: {
             apiKey: string,
         },
+        [BotanikaFeature.RevAi]: {
+            apiKey: string,
+        },
         [BotanikaFeature.Spotify]: {
             clientId: string,
             clientSecret: string,
