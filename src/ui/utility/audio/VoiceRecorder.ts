@@ -10,9 +10,11 @@ export class VoiceRecorder {
     private readonly threshold = 0.0175;
     private readonly timeout = 2000;
     private readonly mimeType = 'audio/webm; codecs=opus';
+    private readonly fftSize = 1024;
 
     private mediaRecorder: MediaRecorder;
     private audioContext: AudioContext;
+    private analyser: AnalyserNode;
     private chunkCounter = 0;
     private audioHeader: BlobPart;
     private lastDataTime: number;
@@ -22,6 +24,8 @@ export class VoiceRecorder {
     private sum = 0.0;
     private recording = false;
     private processing = false;
+    private animationFrameId: number;
+    private mediaStream: MediaStream;
 
     private loudness: Signal<number>;
 
@@ -47,15 +51,19 @@ export class VoiceRecorder {
     }
 
     private processMediaStream(stream: MediaStream) {
+        this.mediaStream = stream;
         this.mediaRecorder = new MediaRecorder(stream, {
             mimeType: this.mimeType
         });
         this.audioContext = new AudioContext();
         const source = this.audioContext.createMediaStreamSource(stream);
-        const processor = this.audioContext.createScriptProcessor(1024, 1, 1);
-        source.connect(processor);
-        processor.connect(this.audioContext.destination);
-        processor.onaudioprocess = this.processAudio.bind(this);
+
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = this.fftSize;
+        this.analyser.smoothingTimeConstant = 0.8;
+
+        source.connect(this.analyser);
+        this.analyzeAudio();
 
         this.chunkCounter = 0;
         this.mediaRecorder.ondataavailable = e => {
@@ -67,7 +75,6 @@ export class VoiceRecorder {
             }
         };
 
-        // @ts-ignore
         this.dataInterval = setInterval(() => {
             if (!this.recording) {
                 return;
@@ -77,36 +84,57 @@ export class VoiceRecorder {
         this.mediaRecorder.start();
     }
 
-    async processAudio(event: AudioProcessingEvent) {
+    private analyzeAudio() {
         if (!this.recording) {
-            this.lastDataTime = Date.now();
-            this.sum = 0.0;
+            this.animationFrameId = requestAnimationFrame(this.analyzeAudio.bind(this));
             return;
         }
-        const input = event.inputBuffer.getChannelData(0);
+
+        const dataArray = new Float32Array(this.analyser.fftSize);
+        this.analyser.getFloatTimeDomainData(dataArray);
+
         let sum = 0.0;
-        for (let i = 0; i < input.length; ++i) {
-            sum += input[i] * input[i];
+        for (let i = 0; i < dataArray.length; ++i) {
+            sum += dataArray[i] * dataArray[i];
         }
-        const level = Math.sqrt(sum / input.length);
+        const level = Math.sqrt(sum / dataArray.length);
+
         this.currentVolume = level;
         this.loudness.value = this.currentVolume;
+
         if (level > this.threshold) {
             this.lastDataTime = Date.now();
             this.sum += level;
         } else {
             if (this.lastDataTime && Date.now() - this.lastDataTime > this.timeout && !this.processing) {
-                await this.sendAudio();
-                this.sum = 0.0;
+                this.sendAudio().then(() => {
+                    this.sum = 0.0;
+                });
             }
         }
+
+        this.animationFrameId = requestAnimationFrame(this.analyzeAudio.bind(this));
     }
 
     private stop() {
         if (this.mediaRecorder) {
             this.mediaRecorder.stop();
         }
-        this.dataInterval && clearInterval(this.dataInterval);
+
+        if (this.dataInterval) {
+            clearInterval(this.dataInterval);
+            this.dataInterval = null;
+        }
+
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+
+        if (this.mediaStream) {
+            this.mediaStream.getTracks().forEach(track => track.stop());
+        }
+
         this.recording = false;
     }
 
