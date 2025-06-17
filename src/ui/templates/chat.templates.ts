@@ -148,9 +148,9 @@ export class ChatTemplates {
     }
 
     private static chatMessage(message: ChatMessage, isLast: boolean) {
-        const generating = compute((c) => {
+        const waiting = compute((c) => {
             const lastMessage = c?.history?.at(-1);
-            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished) && isLast;
+            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished) && isLast && message.text.length === 0;
         }, chatContext);
 
         return create("div")
@@ -172,7 +172,7 @@ export class ChatTemplates {
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
                 when(message.finished, ChatTemplates.messageActions(message)),
-                when(generating, GenericTemplates.spinner),
+                when(waiting, GenericTemplates.spinner),
                 when(isLast, GenericTemplates.spacer()),
             ).build();
     }
