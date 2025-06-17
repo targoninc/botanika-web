@@ -1,5 +1,5 @@
 import {GenericTemplates} from "./generic.templates";
-import {VoiceRecorder} from "../classes/audio/VoiceRecorder";
+import {VoiceRecorder} from "../utility/audio/VoiceRecorder";
 import {compute, create, Signal, signal} from "@targoninc/jess";
 
 const currentLoudness = signal(0);

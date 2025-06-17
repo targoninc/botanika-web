@@ -1,6 +1,6 @@
 import {GenericTemplates} from "./generic.templates";
 import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
-import {createModal, toast} from "../classes/ui";
+import {createModal, toast} from "../utility/ui";
 import {ShortcutConfiguration} from "../../models-shared/shortcuts/ShortcutConfiguration";
 import {shortcutNames} from "../../models-shared/shortcuts/Shortcut";
 import {McpServerConfig} from "../../models-shared/mcp/McpServerConfig";
@@ -10,8 +10,8 @@ import {compute, create, InputType, nullElement, Signal, signal, signalMap, when
 import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models-shared/configuration/BotanikaFeature.ts";
 import {ToastType} from "../enums/ToastType.ts";
-import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
-import {Api} from "../classes/state/api.ts";
+import {activePage, configuration, mcpConfig, shortCutConfig} from "../utility/state/store.ts";
+import {Api} from "../utility/state/api.ts";
 import {v4} from "uuid";
 import {transcriptionSettings, generalSettings, speechSettings} from "../enums/settings.ts";
 import {Tab} from "../models/Tab.ts";

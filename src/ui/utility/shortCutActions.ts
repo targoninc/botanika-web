@@ -1,6 +1,19 @@
-import {shortCutConfig, target} from "../state/store";
-import {shortCutActions} from "./shortCutActions";
-import {closeModal} from "../ui";
+import {Shortcut} from "../../models-shared/shortcuts/Shortcut.ts";
+import {activePage, currentChatId, shortCutConfig, target} from "./state/store.ts";
+import {closeModal} from "./ui.ts";
+
+export const shortCutActions: Record<Shortcut, () => void> = {
+    [Shortcut.newChat]: () => {
+        currentChatId.value = null;
+    },
+    [Shortcut.settings]: () => {
+        activePage.value = "settings";
+    },
+    [Shortcut.focusInput]: () => {
+        const area = document.getElementById("chat-input-field");
+        area?.focus();
+    }
+}
 
 export function addShortCutListener() {
     const blockShortcuts = ["INPUT", "TEXTAREA", "SELECT"];

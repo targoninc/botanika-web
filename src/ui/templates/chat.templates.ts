@@ -13,16 +13,16 @@ import {
     shortCutConfig,
     target, ttsEnabled,
     updateChats,
-} from "../classes/state/store";
+} from "../utility/state/store";
 import {GenericTemplates} from "./generic.templates";
 import {ChatContext} from "../../models-shared/chat/ChatContext";
 import {ChatMessage} from "../../models-shared/chat/ChatMessage";
-import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
+import {attachCodeCopyButtons, createModal, toast} from "../utility/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
 import {ResourceReference} from "../../models-shared/chat/ResourceReference";
 import {LlmProvider} from "../../models-shared/llms/llmProvider";
-import {playAudio, stopAudio} from "../classes/audio/audio";
+import {playAudio, stopAudio} from "../utility/audio/audio";
 import {ProviderDefinition} from "../../models-shared/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
@@ -33,13 +33,13 @@ import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models-shared/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
-import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
-import {Api} from "../classes/state/api.ts";
+import {attachFiles, handleDroppedFiles, pasteFile} from "../utility/attachFiles.ts";
+import {Api} from "../utility/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
-import {getHost} from "../classes/state/urlHelpers.ts";
+import {getHost} from "../utility/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
-import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
+import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
 import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
 import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";

@@ -1,14 +1,14 @@
 import {compute, create, InputType, Signal, signal, when} from "@targoninc/jess";
 import {GenericTemplates} from "./generic.templates.ts";
-import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, search} from "../classes/state/store.ts";
-import {searchList} from "../classes/search.ts";
+import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, search} from "../utility/state/store.ts";
+import {searchList} from "../utility/search.ts";
 import {ChatTemplates} from "./chat.templates.ts";
 import {button, icon, input} from "@targoninc/jess-components";
 import {ChatContext} from "../../models-shared/chat/ChatContext.ts";
 import { BotanikaClientEvent } from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
 import { SharedChangedEventData } from "../../models-shared/websocket/clientEvents/sharedChangedEventData.ts";
 import { BotanikaClientEventType } from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
-import {createModal, toast} from "../classes/ui.ts";
+import {createModal, toast} from "../utility/ui.ts";
 import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";
 import {realtime} from "../index.ts";
 import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";

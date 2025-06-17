@@ -1,5 +1,5 @@
-import {closeModal, createModal, toast} from "../classes/ui";
-import {Callback, configuration, currentUser, target} from "../classes/state/store";
+import {closeModal, createModal, toast} from "../utility/ui";
+import {Callback, configuration, currentUser, target} from "../utility/state/store";
 import {ToastType} from "../enums/ToastType";
 import {
     AnyElement,
@@ -15,8 +15,8 @@ import {
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
 import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
-import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
-import {Api} from "../classes/state/api.ts";
+import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
+import {Api} from "../utility/state/api.ts";
 import {TextSegment} from "../models/TextSegment.ts";
 import {Tab} from "../models/Tab.ts";
 
