@@ -3,10 +3,13 @@ import {Signal} from "@targoninc/jess";
 import {broadcastToUser, ongoingConversations, UPDATE_LIMIT} from "../../websocket-server/websocket.ts";
 import {BotanikaServerEventType} from "../../../models-shared/websocket/serverEvents/botanikaServerEventType.ts";
 import {CLI} from "../../CLI.ts";
+import {ChatStorage} from "../../storage/ChatStorage.ts";
+import {ChatContext} from "../../../models-shared/chat/ChatContext.ts";
 
-export function updateConversation(
+export async function updateConversation(
     chatId: string,
     userId: string,
+    chat: ChatContext,
     message: ChatMessage,
     isGenerating: boolean
 ) {
@@ -17,6 +20,16 @@ export function updateConversation(
             timestamp: Date.now(),
             messages: [message]
         };
+
+        if (message.finished) {
+            chat.history.forEach(m => {
+                if (m.id === message.id) {
+                    return message;
+                }
+                return m;
+            });
+            await ChatStorage.writeChatContext(userId, chat);
+        }
 
         broadcastToUser(userId, {
             type: BotanikaServerEventType.chatUpdate,

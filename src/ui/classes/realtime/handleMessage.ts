@@ -68,11 +68,13 @@ export async function processUpdate(update: ChatUpdate) {
         }
     }
 
-    if (update.messages.length > 0) {
+    if (update.messages?.length > 0) {
         const lastMessage = update.messages.at(-1);
 
         if (lastMessage.finished && lastMessage.type === "assistant" && ttsEnabled()) {
-            playAudio(lastMessage.id).then();
+            setTimeout(() => {
+                playAudio(lastMessage.id).then();
+            }, 500);
         }
     }
 }

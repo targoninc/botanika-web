@@ -4,19 +4,27 @@ import {SettingConfiguration} from "./SettingConfiguration.ts";
 const apiKeyConfig = <SettingConfiguration>{
     key: "apiKey",
     icon: "key",
-    description: "API Key",
+    description: "Your own API Key",
     label: "API Key",
     type: "password",
 };
 
+const voiceConfig = <SettingConfiguration>{
+    key: "voice",
+    icon: "record_voice_over",
+    description: "The voice to use when generating speech",
+    label: "Voice",
+    type: "string",
+};
+
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
     [BotanikaFeature.OpenRouter]: [apiKeyConfig],
-    [BotanikaFeature.OpenAI]: [apiKeyConfig],
     [BotanikaFeature.ElevenLabs]: [apiKeyConfig],
     [BotanikaFeature.RevAi]: [apiKeyConfig],
     [BotanikaFeature.Groq]: [apiKeyConfig],
-    [BotanikaFeature.Lmnt]: [apiKeyConfig],
-    [BotanikaFeature.Hume]: [apiKeyConfig],
+    [BotanikaFeature.OpenAI]: [apiKeyConfig, voiceConfig],
+    [BotanikaFeature.Lmnt]: [apiKeyConfig, voiceConfig],
+    [BotanikaFeature.Hume]: [apiKeyConfig, voiceConfig],
     [BotanikaFeature.GoogleSearch]: [
         apiKeyConfig,
         {

@@ -15,12 +15,18 @@ export const ttsProviderMap: Record<SpeechProvider, (modelName: string, config: 
     },
     [SpeechProvider.lmnt]: (modelName: string, config: Configuration) => {
         return createLMNT({
-            apiKey: featureOption(config, BotanikaFeature.OpenAI).apiKey,
+            apiKey: featureOption(config, BotanikaFeature.Lmnt).apiKey,
         }).speech(modelName);
     },
     [SpeechProvider.hume]: (modelName: string, config: Configuration) => {
         return createHume({
-            apiKey: featureOption(config, BotanikaFeature.OpenAI).apiKey,
+            apiKey: featureOption(config, BotanikaFeature.Hume).apiKey,
         }).speech();
     },
+}
+
+export const ttsProviderFeatures: Record<SpeechProvider, BotanikaFeature> = {
+    [SpeechProvider.lmnt]: BotanikaFeature.Lmnt,
+    [SpeechProvider.hume]: BotanikaFeature.Hume,
+    [SpeechProvider.openai]: BotanikaFeature.OpenAI,
 }

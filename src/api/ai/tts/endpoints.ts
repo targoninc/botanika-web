@@ -1,8 +1,5 @@
 import { Application, Request, Response } from "express";
-import { createReadStream, existsSync, statSync } from "fs";
-import { extname, resolve } from "path";
 import {CLI} from "../../CLI";
-import {appDataPath} from "../../appData";
 import { ApiEndpoint } from "../../../models-shared/ApiEndpoints";
 import {getTtsAudio} from "./tts.ts";
 import {db} from "../../database/db.ts";
@@ -30,7 +27,12 @@ export async function getAudioEndpoint(req: Request, res: Response) {
     const config = await getConfig(req.user.id);
     const audio = await getTtsAudio(message.text, config);
 
-    res.json(audio);
+    res.setHeader('Content-Type', audio.mimeType);
+
+    const audioBuffer = Buffer.from(audio.base64, 'base64');
+    res.send(audioBuffer);
+
+
 }
 
 export function addAudioEndpoints(app: Application) {

@@ -15,6 +15,8 @@ export interface Configuration extends Record<string, any> {
     maxSteps: number;
     transcriptionModel: string;
     transcriptionProvider: string;
+    speechModel: string;
+    speechProvider: string;
     featureOptions: {
         [BotanikaFeature.GoogleSearch]: {
             apiKey: string,
@@ -37,10 +39,6 @@ export interface Configuration extends Record<string, any> {
         },
         [BotanikaFeature.RevAi]: {
             apiKey: string,
-        },
-        [BotanikaFeature.Spotify]: {
-            clientId: string,
-            clientSecret: string,
         },
         [BotanikaFeature.Azure]: {
             resourceName: string,

@@ -13,7 +13,7 @@ import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
-import {transcriptionSettings, generalSettings, speechSettings} from "../enums/generalSettings.ts";
+import {transcriptionSettings, settings, speechSettings} from "../enums/settings.ts";
 import {Tab} from "../models/Tab.ts";
 
 export class SettingsTemplates {
@@ -26,7 +26,7 @@ export class SettingsTemplates {
                 id: "general",
             },
             {
-                name: "Keys",
+                name: "Features",
                 icon: "key",
                 id: "keys",
             },
@@ -63,7 +63,7 @@ export class SettingsTemplates {
             .classes("flex-v")
             .children(
                 GenericTemplates.heading(2, "General"),
-                ...generalSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
+                ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                     ...c,
                     [k]: v
                 }))),

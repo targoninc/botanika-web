@@ -223,28 +223,32 @@ export class ChatTemplates {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
         const isOwnChat = compute((c, u) => u && (c.userId === u.id || !c.shared), chatContext, currentUser);
         const isAssistant = compute(i => message.type === "assistant" && i, isOwnChat);
-        const ttsVisible = compute(_ => ttsEnabled(), configuration);
+        const ttsLoading = signal(false);
+        const ttsVisible = compute((_, i, l) => ttsEnabled() && i && !l, configuration, isAssistant, ttsLoading);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
             .children(
-                 when(ttsVisible, button({
-                    disabled: audioDisabled,
-                    icon: { icon: compute(a => a === message.id ? "stop_circle" : "volume_up", currentlyPlayingAudio) },
-                    onclick: () => {
-                        if (currentlyPlayingAudio.value === message.id) {
-                            stopAudio();
-                        } else {
-                            playAudio(message.id).then();
-                        }
-                    },
-                    classes: ["flex", "align-center", "icon-button"]
-                })),
                 GenericTemplates.iconButton("content_copy", "Copy", async (e) => {
                     e.stopPropagation();
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
+                when(ttsVisible, button({
+                    disabled: audioDisabled,
+                    icon: { icon: compute(a => a === message.id ? "stop" : "play_arrow", currentlyPlayingAudio) },
+                    title: "Play audio",
+                    onclick: () => {
+                        if (currentlyPlayingAudio.value === message.id) {
+                            stopAudio();
+                        } else {
+                            ttsLoading.value = true;
+                            playAudio(message.id).then(() => ttsLoading.value = false);
+                        }
+                    },
+                    classes: ["flex", "align-center", "icon-button"]
+                })),
+                when(ttsLoading, GenericTemplates.spinner()),
                 when(compute(i => message.type === "user" && i, isOwnChat), GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Retry message", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {

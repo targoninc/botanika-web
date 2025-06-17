@@ -7,7 +7,7 @@ import {ChatMessage} from "../../../../models-shared/chat/ChatMessage.ts";
 import {Tool, ToolSet} from "ai";
 
 export function featureOption(config: Configuration, option: BotanikaFeature): any {
-    return (config.featureOptions ?? {})[option] ?? {};
+    return (config?.featureOptions ?? {})[option] ?? {};
 }
 
 function addTool(toolSet: ToolSet, tool: Tool & { id: string }) {

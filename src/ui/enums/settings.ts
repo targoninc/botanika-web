@@ -2,7 +2,7 @@ import {SettingConfiguration} from "../../models-shared/configuration/SettingCon
 import {TranscriptionProvider} from "../../models-shared/configuration/TranscriptionProvider.ts";
 import {SpeechProvider} from "../../models-shared/configuration/SpeechProvider.ts";
 
-export const generalSettings: SettingConfiguration[] = [
+export const settings: SettingConfiguration[] = [
     {
         key: "display_hotkeys",
         icon: "keyboard",
@@ -72,7 +72,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
         label: "Transcription Provider",
         description: `Which transcription provider to use.`,
         type: "select",
-        options: Object.values(TranscriptionProvider)
+        options: [null].concat(Object.values(TranscriptionProvider))
     },
     {
         key: "transcriptionModel",
@@ -97,7 +97,7 @@ export const speechSettings: SettingConfiguration[] = [
         label: "Speech Provider",
         description: `Which speech provider to use.`,
         type: "select",
-        options: Object.values(SpeechProvider)
+        options: [null].concat(Object.values(SpeechProvider))
     },
     {
         key: "speechModel",
