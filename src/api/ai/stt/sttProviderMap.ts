@@ -5,6 +5,7 @@ import {createOpenAI} from "@ai-sdk/openai";
 import {featureOption} from "../tools/servers/allTools.ts";
 import {createGroq} from "@ai-sdk/groq";
 import {TranscriptionProvider} from "../../../models/transcriptionProvider.ts";
+import {createElevenLabs} from "@ai-sdk/elevenlabs";
 
 export const sttProviderMap: Record<TranscriptionProvider, (modelName: string, config: Configuration) => TranscriptionModelV1> = {
     [TranscriptionProvider.openai]: (modelName: string, config: Configuration) => {
@@ -19,7 +20,9 @@ export const sttProviderMap: Record<TranscriptionProvider, (modelName: string, c
         }).transcription(modelName);
     },
     [TranscriptionProvider.elevenlabs]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
-        throw new Error("Function not implemented.");
+        return createElevenLabs({
+            apiKey: featureOption(config, BotanikaFeature.ElevenLabs).apiKey,
+        }).transcription(modelname);
     },
     [TranscriptionProvider.azureopenai]: function (modelName: string, config: Configuration): TranscriptionModelV1 {
         throw new Error("Function not implemented.");

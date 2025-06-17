@@ -7,9 +7,6 @@ const apiKeyConfig = <SettingConfiguration>{
     description: "API Key",
     label: "API Key",
     type: "password",
-    validator: value => {
-        return [];
-    }
 };
 
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
@@ -24,12 +21,12 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             description: "Search engine ID",
             label: "Search engine ID",
             type: "string",
-            validator: value => {
-                return [];
-            }
         },
     ],
     [BotanikaFeature.OpenAI]: [
+        apiKeyConfig,
+    ],
+    [BotanikaFeature.ElevenLabs]: [
         apiKeyConfig,
     ],
     [BotanikaFeature.Groq]: [
@@ -42,9 +39,6 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             description: "Ollama URL",
             label: "Ollama URL",
             type: "string",
-            validator: value => {
-                return [];
-            }
         },
     ],
     [BotanikaFeature.Azure]: [
@@ -54,9 +48,6 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             description: "Resource name",
             label: "Resource name",
             type: "string",
-            validator: value => {
-                return [];
-            }
         },
         apiKeyConfig
     ],

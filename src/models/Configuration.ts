@@ -32,6 +32,9 @@ export interface Configuration extends Record<string, any> {
         [BotanikaFeature.OpenRouter]: {
             apiKey: string,
         },
+        [BotanikaFeature.ElevenLabs]: {
+            apiKey: string,
+        },
         [BotanikaFeature.Spotify]: {
             clientId: string,
             clientSecret: string,
