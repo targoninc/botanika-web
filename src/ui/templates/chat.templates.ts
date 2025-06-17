@@ -77,6 +77,7 @@ export class ChatTemplates {
 
     static botName() {
         const value = compute(c => c.name ?? "New chat", chatContext);
+        let timeoutId: NodeJS.Timeout;
 
         return create("div")
             .classes("flex", "align-center", "bot-name", "align-children")
@@ -96,18 +97,23 @@ export class ChatTemplates {
                     classes: ["invisible-input"],
                     value,
                     name: "chatname-input",
-                    onchange: val => {
-                        if (val.length > 0) {
-                            realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
-                                type: BotanikaClientEventType.chatNameChanged,
-                                data: {
-                                    chatId: currentChatId.value,
-                                    name: val
+                    onchange: (() => {
+                        return (val: string) => {
+                            clearTimeout(timeoutId);
+                            timeoutId = setTimeout(() => {
+                                if (val.length > 0) {
+                                    realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
+                                        type: BotanikaClientEventType.chatNameChanged,
+                                        data: {
+                                            chatId: currentChatId.value,
+                                            name: val
+                                        }
+                                    });
                                 }
-                            });
-                        }
-                    }
-                }),
+                            }, 1000);
+                        };
+                    })()
+                })
             ).build();
     }
 
