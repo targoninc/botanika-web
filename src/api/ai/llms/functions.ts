@@ -22,7 +22,7 @@ export async function updateConversation(
         };
 
         if (message.finished) {
-            chat.history.forEach(m => {
+            chat.history = chat.history.map(m => {
                 if (m.id === message.id) {
                     return message;
                 }
