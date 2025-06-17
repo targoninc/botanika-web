@@ -378,15 +378,6 @@ input.slider:checked ~ .toggle-container .toggle-slider {
     pointer-events: none;
 }
 
-input.invisible-input {
-    border: none;
-    background: var(--bg);
-    padding: var(--tag-padding);
-    border-radius: 999px;
-    flex-grow: 1;
-    margin-left: var(--gap-h);
-}
-
 .property-list {
     padding: var(--tag-padding);
     background: var(--bg-2);
@@ -666,6 +657,7 @@ kbd {
     width: max-content;
     max-width: 90%;
     overflow-x: auto;
+    gap: 0;
 }
 
 .message-actions {
@@ -899,7 +891,7 @@ pre {
 
 .chat-history {
     padding: var(--gap-v);
-    padding-top: 3em;
+    padding-top: 4em;
     width: 100%;
 }
 

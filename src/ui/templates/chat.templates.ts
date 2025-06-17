@@ -317,7 +317,7 @@ export class ChatTemplates {
         const input = currentText;
         const chatId = compute(c => c?.id, chatContext);
         const provider = compute(c => c.provider, configuration);
-        const modelConfigured = compute(c => !!c.model, configuration);
+        const modelConfigured = compute(c => c.model !== undefined && c.model.length > 0, configuration);
         const model = compute((c, conf) => conf ? c.model : "No model selected", configuration, modelConfigured);
         const files = signal<MessageFile[]>([]);
         const focusInput = () => {
@@ -521,10 +521,11 @@ export class ChatTemplates {
             return toUse;
         }, configuration, availableProviders);
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
-        anyProvider.subscribe((a) => configured.value = a);
-        configured.value = anyProvider.value;
         const currentProvider = compute(c => c.provider, configuration);
         const currentModel = compute(c => c.model, configuration);
+
+        currentProvider.subscribe((p) => configured.value = p !== undefined && currentModel.value !== undefined);
+        currentModel.subscribe((m) => configured.value = m !== undefined && currentProvider.value !== undefined);
 
         return create("div")
             .classes("flex-v")
