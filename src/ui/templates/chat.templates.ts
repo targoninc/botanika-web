@@ -11,7 +11,7 @@ import {
     currentUser,
     eventStore,
     shortCutConfig,
-    target,
+    target, ttsEnabled,
     updateChats,
 } from "../classes/state/store";
 import {GenericTemplates} from "./generic.templates";
@@ -222,11 +222,13 @@ export class ChatTemplates {
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
         const isOwnChat = compute((c, u) => u && (c.userId === u.id || !c.shared), chatContext, currentUser);
+        const isAssistant = compute(i => message.type === "assistant" && i, isOwnChat);
+        const ttsVisible = compute(_ => ttsEnabled(), configuration);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
             .children(
-                message.hasAudio ? button({
+                 when(ttsVisible, button({
                     disabled: audioDisabled,
                     icon: { icon: compute(a => a === message.id ? "stop_circle" : "volume_up", currentlyPlayingAudio) },
                     onclick: () => {
@@ -237,7 +239,7 @@ export class ChatTemplates {
                         }
                     },
                     classes: ["flex", "align-center", "icon-button"]
-                }) : null,
+                })),
                 GenericTemplates.iconButton("content_copy", "Copy", async (e) => {
                     e.stopPropagation();
                     await navigator.clipboard.writeText(message.text);
@@ -269,7 +271,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
+                when(isAssistant, GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);

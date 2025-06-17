@@ -1,41 +1,13 @@
 import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
 import {TranscriptionProvider} from "../../models-shared/configuration/TranscriptionProvider.ts";
+import {SpeechProvider} from "../../models-shared/configuration/SpeechProvider.ts";
 
-export const settings: SettingConfiguration[] = [
+export const generalSettings: SettingConfiguration[] = [
     {
         key: "display_hotkeys",
         icon: "keyboard",
         label: "Display hotkeys",
         description: "Whether to display hotkeys in the UI.",
-        type: "boolean",
-    },
-    {
-        key: "enableStt",
-        icon: "mic",
-        label: "Enable transcription",
-        description: "Whether transcription of what you say should be enabled",
-        type: "boolean",
-    },
-    {
-        key: "transcriptionProvider",
-        icon: "transcribe",
-        label: "Transcription Provider",
-        description: `Which transcription provider to use.`,
-        type: "select",
-        options: [TranscriptionProvider.openai]
-    },
-    {
-        key: "transcriptionModel",
-        icon: "transcribe",
-        label: "Transcription Model",
-        description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
-        type: "string",
-    },
-    {
-        key: "enableTts",
-        icon: "text_to_speech",
-        label: "Enable text to speech",
-        description: "Whether assistant messages should be spoken aloud",
         type: "boolean",
     },
     {
@@ -85,3 +57,53 @@ export const settings: SettingConfiguration[] = [
         type: "color",
     }
 ];
+
+export const transcriptionSettings: SettingConfiguration[] = [
+    {
+        key: "enableStt",
+        icon: "mic",
+        label: "Enable transcription",
+        description: "Whether transcription of what you say should be enabled",
+        type: "boolean",
+    },
+    {
+        key: "transcriptionProvider",
+        icon: "transcribe",
+        label: "Transcription Provider",
+        description: `Which transcription provider to use.`,
+        type: "select",
+        options: Object.values(TranscriptionProvider)
+    },
+    {
+        key: "transcriptionModel",
+        icon: "transcribe",
+        label: "Transcription Model",
+        description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
+        type: "string",
+    },
+];
+
+export const speechSettings: SettingConfiguration[] = [
+    {
+        key: "enableTts",
+        icon: "text_to_speech",
+        label: "Enable text to speech",
+        description: "Whether assistant messages should be spoken aloud",
+        type: "boolean",
+    },
+    {
+        key: "speechProvider",
+        icon: "record_voice_over",
+        label: "Speech Provider",
+        description: `Which speech provider to use.`,
+        type: "select",
+        options: Object.values(SpeechProvider)
+    },
+    {
+        key: "speechModel",
+        icon: "record_voice_over",
+        label: "Speech Model",
+        description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/speech#speech-models`,
+        type: "string",
+    },
+]

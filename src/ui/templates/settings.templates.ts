@@ -13,7 +13,7 @@ import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
-import {settings} from "../enums/settings.ts";
+import {transcriptionSettings, generalSettings, speechSettings} from "../enums/generalSettings.ts";
 import {Tab} from "../models/Tab.ts";
 
 export class SettingsTemplates {
@@ -49,7 +49,7 @@ export class SettingsTemplates {
                         }, ["fixed", "layer-shadow"]),
                         SettingsTemplates.settingsHeader(loading),
                         GenericTemplates.tabs([
-                            SettingsTemplates.generalSettings(settings, loading),
+                            SettingsTemplates.generalSettings(loading),
                             SettingsTemplates.configuredFeatures(),
                             SettingsTemplates.mcpConfig(),
                         ], tabs, activeTab),
@@ -58,12 +58,22 @@ export class SettingsTemplates {
             ).build();
     }
 
-    private static generalSettings(settings: SettingConfiguration[], loading: Signal<boolean>) {
+    private static generalSettings(loading: Signal<boolean>) {
         return create("div")
             .classes("flex-v")
             .children(
                 GenericTemplates.heading(2, "General"),
-                ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
+                ...generalSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
+                    ...c,
+                    [k]: v
+                }))),
+                GenericTemplates.heading(2, "Transcription"),
+                ...transcriptionSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
+                    ...c,
+                    [k]: v
+                }))),
+                GenericTemplates.heading(2, "Speech"),
+                ...speechSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                     ...c,
                     [k]: v
                 }))),

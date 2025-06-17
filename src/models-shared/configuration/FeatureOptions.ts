@@ -10,9 +10,13 @@ const apiKeyConfig = <SettingConfiguration>{
 };
 
 export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
-    [BotanikaFeature.OpenRouter]: [
-        apiKeyConfig,
-    ],
+    [BotanikaFeature.OpenRouter]: [apiKeyConfig],
+    [BotanikaFeature.OpenAI]: [apiKeyConfig],
+    [BotanikaFeature.ElevenLabs]: [apiKeyConfig],
+    [BotanikaFeature.RevAi]: [apiKeyConfig],
+    [BotanikaFeature.Groq]: [apiKeyConfig],
+    [BotanikaFeature.Lmnt]: [apiKeyConfig],
+    [BotanikaFeature.Hume]: [apiKeyConfig],
     [BotanikaFeature.GoogleSearch]: [
         apiKeyConfig,
         {
@@ -22,18 +26,6 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
             label: "Search engine ID",
             type: "string",
         },
-    ],
-    [BotanikaFeature.OpenAI]: [
-        apiKeyConfig,
-    ],
-    [BotanikaFeature.ElevenLabs]: [
-        apiKeyConfig,
-    ],
-    [BotanikaFeature.RevAi]: [
-        apiKeyConfig,
-    ],
-    [BotanikaFeature.Groq]: [
-        apiKeyConfig,
     ],
     [BotanikaFeature.Ollama]: [
         {
