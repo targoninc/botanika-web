@@ -11,7 +11,7 @@ import {
     currentUser,
     eventStore,
     shortCutConfig,
-    target, ttsEnabled,
+    target, ttsAvailable,
     updateChats,
 } from "../utility/state/store";
 import {GenericTemplates} from "./generic.templates";
@@ -224,7 +224,7 @@ export class ChatTemplates {
         const isOwnChat = compute((c, u) => u && (c.userId === u.id || !c.shared), chatContext, currentUser);
         const isAssistant = compute(i => message.type === "assistant" && i, isOwnChat);
         const ttsLoading = signal(false);
-        const ttsVisible = compute((_, i, l) => ttsEnabled() && i && !l, configuration, isAssistant, ttsLoading);
+        const ttsVisible = compute((_, i, l) => ttsAvailable() && i && !l, configuration, isAssistant, ttsLoading);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")

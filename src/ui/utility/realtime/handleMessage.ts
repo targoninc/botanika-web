@@ -7,10 +7,10 @@ import {ToastType} from "../../enums/ToastType.ts";
 import {ServerWarningEvent} from "../../../models-shared/websocket/serverEvents/serverWarningEvent.ts";
 import {
     activateNextUpdate,
-    chats,
+    chats, configuration,
     currentChatId,
     eventStore,
-    ttsEnabled,
+    ttsAvailable,
     updateChats
 } from "../state/store.ts";
 import {updateContext} from "../state/updateContext.ts";
@@ -71,7 +71,7 @@ export async function processUpdate(update: ChatUpdate) {
     if (update.messages?.length > 0) {
         const lastMessage = update.messages.at(-1);
 
-        if (lastMessage.finished && lastMessage.type === "assistant" && ttsEnabled()) {
+        if (lastMessage.finished && lastMessage.type === "assistant" && ttsAvailable() && configuration.value.enableTts) {
             setTimeout(() => {
                 playAudio(lastMessage.id).then();
             }, 500);

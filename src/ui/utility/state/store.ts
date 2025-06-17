@@ -167,7 +167,7 @@ export function deleteChat(chatId: string) {
     });
 }
 
-export function ttsEnabled() {
+export function ttsAvailable() {
     const c = configuration.value;
     return !!c.speechModel && !! c.speechProvider;
 }
