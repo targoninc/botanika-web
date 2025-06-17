@@ -2,7 +2,7 @@ import {AnyNode, create, Signal, signalMap} from "@targoninc/jess";
 import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {GenericTemplates} from "./generic.templates.ts";
 import {icon} from "@targoninc/jess-components";
-import {downloadFile} from "../utility/attachFiles.ts";
+import {downloadFile} from "../utility/files/attachFiles.ts";
 
 export class FileTemplates {
     static filesDisplay(files: Signal<MessageFile[]>) {

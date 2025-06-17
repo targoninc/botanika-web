@@ -13,7 +13,7 @@ import {
     ttsEnabled,
     updateChats
 } from "../state/store.ts";
-import {updateContext} from "../updateContext.ts";
+import {updateContext} from "../state/updateContext.ts";
 import {INITIAL_CONTEXT} from "../../../models-shared/chat/initialContext.ts";
 import {playAudio} from "../audio/audio.ts";
 

@@ -33,7 +33,7 @@ import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models-shared/websocket/clientEvents/newMessageEventData.ts";
 import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
-import {attachFiles, handleDroppedFiles, pasteFile} from "../utility/attachFiles.ts";
+import {attachFiles, handleDroppedFiles, pasteFile} from "../utility/files/attachFiles.ts";
 import {Api} from "../utility/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";

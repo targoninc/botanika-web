@@ -169,5 +169,5 @@ export function deleteChat(chatId: string) {
 
 export function ttsEnabled() {
     const c = configuration.value;
-    return c.enableTts && !!c.speechModel && !! c.speechProvider;
+    return !!c.speechModel && !! c.speechProvider;
 }
