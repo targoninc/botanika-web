@@ -2,14 +2,7 @@ import {SettingConfiguration} from "../../models-shared/configuration/SettingCon
 import {TranscriptionProvider} from "../../models-shared/configuration/TranscriptionProvider.ts";
 import {SpeechProvider} from "../../models-shared/configuration/SpeechProvider.ts";
 
-export const settings: SettingConfiguration[] = [
-    {
-        key: "display_hotkeys",
-        icon: "keyboard",
-        label: "Display hotkeys",
-        description: "Whether to display hotkeys in the UI.",
-        type: "boolean",
-    },
+export const generalSettings: SettingConfiguration[] = [
     {
         key: "botname",
         label: "Assistant name",
@@ -26,34 +19,34 @@ export const settings: SettingConfiguration[] = [
         key: "displayname",
         icon: "person",
         label: "Your name",
-        description: "Displayed in the UI",
+        description: "Model may use this name in answers",
         type: "string",
     },
     {
         key: "userDescription",
         label: "A short description of yourself",
-        description: "Will be given to the model(s) as context",
+        description: "Will be given to the model as context",
         type: "long-string",
     },
     {
         key: "birthdate",
         icon: "calendar_month",
         label: "Your birthdate",
-        description: "Will be given to the model(s) as context",
+        description: "Will be given to the model as context",
         type: "date",
     },
     {
         key: "maxSteps",
         icon: "checklist",
         label: "Maximum steps per call",
-        description: "Maximum amount of iterations each message you send will trigger",
+        description: "Maximum amount of steps (tool calls) per message",
         type: "number",
     },
     {
         key: "tintColor",
         icon: "colors",
         label: "UI tint color",
-        description: "What color to slightly tint the UI with.",
+        description: "What color to tint the UI with.",
         type: "color",
     }
 ];

@@ -868,7 +868,7 @@ pre {
 }
 
 .positive {
-    color: var(--tint-main);
+    color: var(--green);
 }
 
 .negative {
@@ -1083,4 +1083,10 @@ div:hover > .showOnParentHover {
     box-shadow: none !important;
     margin: 0 !important;
     width: max-content !important;
+}
+
+.setting {
+    background: var(--bg-2);
+    padding: var(--gap-v);
+    border-radius: var(--input-border-radius);
 }

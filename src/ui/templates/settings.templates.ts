@@ -13,7 +13,7 @@ import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
-import {transcriptionSettings, settings, speechSettings} from "../enums/settings.ts";
+import {transcriptionSettings, generalSettings, speechSettings} from "../enums/settings.ts";
 import {Tab} from "../models/Tab.ts";
 
 export class SettingsTemplates {
@@ -21,7 +21,7 @@ export class SettingsTemplates {
         const loading = signal(false);
         const tabs = signal<Tab[]>([
             {
-                name: "General",
+                name: "Configuration",
                 icon: "settings",
                 id: "general",
             },
@@ -62,22 +62,22 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "General"),
+                SettingsTemplates.settingsSection("General", generalSettings, loading),
+                SettingsTemplates.settingsSection("Transcription", transcriptionSettings, loading),
+                SettingsTemplates.settingsSection("Speech", speechSettings, loading),
+                SettingsTemplates.shortcuts()
+            ).build();
+    }
+
+    private static settingsSection(name: string, settings: SettingConfiguration[], loading: Signal<boolean>) {
+        return create("div")
+            .classes("flex-v", "card")
+            .children(
+                GenericTemplates.heading(2, name),
                 ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                     ...c,
                     [k]: v
                 }))),
-                GenericTemplates.heading(2, "Transcription"),
-                ...transcriptionSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
-                    ...c,
-                    [k]: v
-                }))),
-                GenericTemplates.heading(2, "Speech"),
-                ...speechSettings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
-                    ...c,
-                    [k]: v
-                }))),
-                SettingsTemplates.shortcuts()
             ).build();
     }
 
@@ -141,7 +141,7 @@ export class SettingsTemplates {
         const changed = compute((v, c) => v !== (getter(c) ?? null) && sc.type !== "boolean", value, configuration);
 
         return create("div")
-            .classes("flex-v", "card", "small-gap")
+            .classes("flex-v", "small-gap", "setting")
             .children(
                 create("div")
                     .classes("flex", "align-center")
@@ -229,7 +229,6 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "Configured APIs"),
                 ...Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)).map((api: BotanikaFeature) => {
                     const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
                     const fOptions = featureOptions[api];
@@ -250,7 +249,7 @@ export class SettingsTemplates {
                     }))) : [];
 
                     return create("div")
-                        .classes("flex-v")
+                        .classes("flex-v", "card", "small-gap")
                         .children(
                             create("div")
                                 .classes("flex", allSet ? "positive" : "negative")
@@ -278,7 +277,6 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "Configured MCP servers"),
                 ...(servers ?? []).map(SettingsTemplates.existingMcpServer),
                 SettingsTemplates.addMcpServer()
             ).build();
@@ -434,7 +432,7 @@ export class SettingsTemplates {
 
     static shortcuts() {
         return create("div")
-            .classes("flex-v")
+            .classes("flex-v", "card")
             .children(
                 GenericTemplates.heading(2, "Shortcuts"),
                 compute(sc => SettingsTemplates.shortcutsInternal(sc), shortCutConfig),
@@ -456,7 +454,7 @@ export class SettingsTemplates {
                     const unchanged = compute((k, current) => k === current[action], key, shortCutConfig);
 
                     return create("div")
-                        .classes("flex", "card", "align-center")
+                        .classes("flex", "setting", "align-center")
                         .children(
                             create("b")
                                 .text(shortcutNames[action])
