@@ -71,7 +71,7 @@ export async function processUpdate(update: ChatUpdate) {
     if (update.messages?.length > 0) {
         const lastMessage = update.messages.at(-1);
 
-        if (lastMessage.finished && lastMessage.type === "assistant" && ttsAvailable() && configuration.value.enableTts) {
+        if (lastMessage.finished && lastMessage.type === "assistant" && ttsAvailable() && configuration.value.enableAutoTts) {
             setTimeout(() => {
                 playAudio(lastMessage.id).then();
             }, 500);

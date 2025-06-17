@@ -10,7 +10,7 @@ export interface Configuration extends Record<string, any> {
     birthdate: string;
     provider: string;
     model: string;
-    enableTts: boolean;
+    enableAutoTts: boolean;
     enableStt: boolean;
     maxSteps: number;
     transcriptionModel: string;

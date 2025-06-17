@@ -79,7 +79,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
 
 export const speechSettings: SettingConfiguration[] = [
     {
-        key: "enableTts",
+        key: "enableAutoTts",
         icon: "text_to_speech",
         label: "Enable text to speech",
         description: "Whether assistant messages should automatically be spoken aloud once received",
