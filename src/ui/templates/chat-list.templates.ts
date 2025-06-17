@@ -1,6 +1,6 @@
 import {compute, create, InputType, Signal, signal, when} from "@targoninc/jess";
 import {GenericTemplates} from "./generic.templates.ts";
-import {activePage, chatContext, chats, currentChatId, deleteChat, search} from "../classes/state/store.ts";
+import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, search} from "../classes/state/store.ts";
 import {searchList} from "../classes/search.ts";
 import {ChatTemplates} from "./chat.templates.ts";
 import {button, icon, input} from "@targoninc/jess-components";
@@ -11,6 +11,7 @@ import { BotanikaClientEventType } from "../../models/websocket/clientEvents/bot
 import {createModal, toast} from "../classes/ui.ts";
 import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
 import {realtime} from "../index.ts";
+import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
 
 export class ChatListTemplates {
     static chatList(context: string, shown: Signal<boolean>) {
@@ -88,12 +89,15 @@ export class ChatListTemplates {
     }
 
     static chatListItem(chat: ChatContext, menuShown: Signal<boolean>) {
-        const active = compute(c => c && c.id === chat.id, chatContext);
+        const active = compute(c => c && c === chat.id, currentChatId);
         const activeClass = compute((c): string => c ? "active" : "_", active);
         const editing = signal(false);
         const chatName = signal(chat.name);
         const shared = signal(chat.shared);
-        shared.subscribe(s => {
+        shared.subscribe((s, changed) => {
+            if (!changed) {
+                return;
+            }
             realtime.send(<BotanikaClientEvent<SharedChangedEventData>>{
                 type: BotanikaClientEventType.sharedChanged,
                 data: {
@@ -107,6 +111,20 @@ export class ChatListTemplates {
                 toast("Link copied to clipboard");
             } else {
                 toast("Chat made private");
+            }
+        });
+
+        eventStore.subscribe((event) => {
+            if (event.type !== "chatUpdate") {
+                return;
+            }
+
+            const data = event.data as ChatUpdate;
+            if (data.chatId === currentChatId.value && data.name) {
+                chatName.value = data.name;
+            }
+            if (data.chatId === currentChatId.value && data.shared !== undefined) {
+                shared.value = data.shared;
             }
         });
 

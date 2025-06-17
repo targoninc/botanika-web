@@ -9,6 +9,8 @@ import {activateNextUpdate, chats, currentChatId, eventStore, updateChats} from 
 import {updateContext} from "../updateContext.ts";
 import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
 import {playAudio} from "../audio/audio.ts";
+import {Api} from "../state/api.ts";
+import {ChatContext} from "../../../models/chat/ChatContext.ts";
 
 export async function handleMessage(event: BotanikaServerEvent<any>) {
     eventStore.publish(event);
@@ -46,12 +48,15 @@ export async function processUpdate(update: ChatUpdate) {
             currentChatId.value = update.chatId;
         }
     } else {
-        let updatedMsgs = [];
+        let updatedMsgs = [], forceUpdate = false;
         if (update.messages && update.messages.length > 0) {
+            forceUpdate = update.messages.at(-1).finished;
+
             const updatedIds = update.messages.map(m => m.id);
             updatedMsgs = chats.value.flatMap(c => c.history.filter(m => updatedIds.includes(m.id)));
         }
-        if (currentChatId.value !== update.chatId || updatedMsgs.length === 0) {
+
+        if (currentChatId.value !== update.chatId || updatedMsgs.length === 0 || forceUpdate) {
             updateChats(chats.value.map(c =>
                 c.id === update.chatId ? updateContext(c, update) : c
             ));

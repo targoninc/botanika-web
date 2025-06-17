@@ -82,8 +82,19 @@ export class ChatTemplates {
     }
 
     static botName() {
-        const value = compute(c => c.name ?? "New chat", chatContext);
+        const chatName = compute(c => c.name ?? "New chat", chatContext);
         let timeoutId: NodeJS.Timeout;
+
+        eventStore.subscribe((event) => {
+            if (event.type !== "chatUpdate") {
+                return;
+            }
+
+            const data = event.data as ChatUpdate;
+            if (data.chatId === currentChatId.value && data.name) {
+                chatName.value = data.name;
+            }
+        });
 
         return create("div")
             .classes("flex", "align-center", "bot-name", "align-children")
@@ -101,7 +112,7 @@ export class ChatTemplates {
                 input({
                     type: InputType.text,
                     classes: ["invisible-input"],
-                    value,
+                    value: chatName,
                     name: "chatname-input",
                     onchange: (() => {
                         return (val: string) => {

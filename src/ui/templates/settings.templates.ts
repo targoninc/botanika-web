@@ -39,7 +39,7 @@ export class SettingsTemplates {
                 label: "Transcription Provider",
                 description: `Which transcription provider to use.`,
                 type: "select",
-                options: [TranscriptionProvider.openai, TranscriptionProvider.groq]
+                options: [TranscriptionProvider.openai]
             },
             {
                 key: "transcriptionModel",

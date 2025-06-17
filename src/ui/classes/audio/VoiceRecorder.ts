@@ -132,42 +132,24 @@ export class VoiceRecorder {
         const formData = new FormData();
         formData.append('file', audioBlob, "file.webm");
         console.log("Transcribing audio...");
-        Api.transcribe(formData).then(async stream => {
-            const reader = stream.getReader();
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) {
-                    break;
-                }
-                const decodedUpdates = new TextDecoder().decode(value).split(terminator).filter(s => s.length > 0);
-                const lastUpdate = decodedUpdates.pop();
-                if (!lastUpdate) {
-                    continue;
-                }
-                const obj = JSON.parse(lastUpdate);
-                if (obj.type === "transcript.text.delta") {
-                    currentText.value += obj.delta;
-                } else if (obj.type === "transcript.text.done") {
-                    const config = configuration.value;
-                    currentText.value = obj.text;
-                    try {
-                        activateNextUpdate.value = true;
-                        realtime.send({
-                            type: BotanikaClientEventType.message,
-                            data: <NewMessageEventData>{
-                                chatId: chatContext.value.id,
-                                provider: config.provider,
-                                model: config.model,
-                                message: currentText.value,
-                            }
-                        });
-                    } catch (e) {
-                        toast(e.toString());
+        Api.transcribe(formData).then(async text => {
+            currentText.value = currentText.value + " " + text;
+            try {
+                activateNextUpdate.value = true;
+                const config = configuration.value;
+                realtime.send({
+                    type: BotanikaClientEventType.message,
+                    data: <NewMessageEventData>{
+                        chatId: chatContext.value.id,
+                        provider: config.provider,
+                        model: config.model,
+                        message: currentText.value,
                     }
-                    currentText.value = "";
-                }
+                });
+            } catch (e) {
+                toast(e.toString());
             }
+            currentText.value = "";
         });
 
         this.audioChunks = [];

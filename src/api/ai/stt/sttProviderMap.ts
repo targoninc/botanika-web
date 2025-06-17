@@ -13,6 +13,7 @@ export const sttProviderMap: Record<TranscriptionProvider, (modelName: string, c
         }).transcription(modelName);
     },
     [TranscriptionProvider.groq]: (modelName: string, config: Configuration) => {
+        // Not working, see https://github.com/vercel/ai/issues/6413
         return createGroq({
             apiKey: featureOption(config, BotanikaFeature.Groq).apiKey,
         }).transcription(modelName);
