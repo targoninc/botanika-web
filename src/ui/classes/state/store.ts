@@ -89,7 +89,7 @@ export function initializeStore() {
     tryLoadFromCache<Configuration>("config", configuration, Api.getConfig());
     tryLoadFromCache<ChatContext[]>("chats", chats, new Promise((resolve) => resolve({
         success: true,
-        data: chats.value,
+        messages: chats.value,
         status: 200
     })));
     tryLoadFromCache<ShortcutConfiguration>("shortcuts", shortCutConfig, Api.getShortcutConfig());

@@ -1,21 +1,11 @@
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {sendEvent, WebsocketConnection} from "./websocket.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
-import {ChatStorage} from "../storage/ChatStorage.ts";
+import {WebsocketConnection} from "./websocket.ts";
+import {eventStore} from "../database/events/eventStore.ts";
 
-export async function chatNameChangedEventHandler(ws: WebsocketConnection, message: BotanikaClientEvent<ChatNameChangedEventData>) {
-    const request = message.data;
+export async function chatNameChangedEventHandler(ws: WebsocketConnection, request: BotanikaClientEvent & { type: "chatNameChanged" }) {
     if (!request.chatId || !request.name) {
         throw new Error("Invalid request");
     }
-
-    const chat = await ChatStorage.readChatContext(ws.userId, request.chatId);
-    if (!chat) {
-        throw new Error(`Chat ${request.chatId} not found for user ${ws.userId}`);
-    }
-
-    chat.name = request.name;
-    await ChatStorage.writeChatContext(ws.userId, chat);
 
     eventStore.publish({
         userId: ws.userId,

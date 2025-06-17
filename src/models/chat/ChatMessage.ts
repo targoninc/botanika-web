@@ -5,7 +5,7 @@ import {LanguageModelUsage} from "ai";
 
 type BaseMessage = {
     id: string;
-    time: number;
+    createdAt: number;
 }
 
 export type UserMessage = BaseMessage & {

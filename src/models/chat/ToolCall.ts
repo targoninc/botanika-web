@@ -1,5 +1,3 @@
-import {ChatToolResult} from "./ChatToolResult.ts";
-
 export type BaseToolCall = {
     toolCallId: string;
     toolName: string;
@@ -12,7 +10,7 @@ export type PartialToolCall = BaseToolCall & {
 
 export type ToolCallResult = BaseToolCall & {
     state: "result";
-    result: ChatToolResult;
+    result: unknown;
 }
 
 export type ToolCallCall = BaseToolCall & {

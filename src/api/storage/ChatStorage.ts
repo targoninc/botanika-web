@@ -2,10 +2,15 @@ import {ChatContext} from "../../models/chat/ChatContext";
 import {db} from "../database/db.ts";
 import {ChatMessage} from "../../models/chat/ChatMessage.ts";
 import {MessageFile} from "../../models/chat/MessageFile.ts";
-import {Chat, MessageType, Prisma} from "@prisma/client";
+import {Chat, Message, MessageType, Prisma} from "@prisma/client";
 import {ToolInvocation} from "@ai-sdk/ui-utils";
 import {MessageIncrement, UserIncrement} from "../database/events/incrementProjector.ts";
 import {CLI} from "../CLI.ts";
+import {ToolCall} from "../../models/chat/ToolCall.ts";
+import {ReasoningDetail} from "../ai/llms/aiMessage.ts";
+import {LanguageModelUsage} from "ai";
+import {eventStore} from "../database/events/eventStore.ts";
+import {applyEventOnChat} from "../database/events/chatAggregator.ts";
 
 export class ChatStorage {
     static async applyIncrements(userId: string, increment: UserIncrement) {
@@ -165,7 +170,7 @@ export class ChatStorage {
             let files: Prisma.MessageCreateManyChatInput["files"] | null = null;
             let usage: Prisma.MessageCreateManyChatInput["usage"] | null = null;
 
-            const createdAt: Date = new Date(message.time);
+            const createdAt: Date = new Date(message.createdAt);
             let toolInvocations: ToolInvocation[] | null = null;
 
             switch (message.type) {
@@ -240,7 +245,7 @@ export class ChatStorage {
         }
     }
 
-    static async readChatContext(userId: string, chatId: string): Promise<ChatContext | null> {
+    static async chatExists(userId: string, chatId: string): Promise<boolean> {
         const chat = await db.chat.findFirst({
             where: {
                 id: chatId,
@@ -248,11 +253,31 @@ export class ChatStorage {
             }
         });
 
-        if (!chat) {
-            return null;
+        return !!chat;
+    }
+
+    static async readChatContext(userId: string, chatId: string): Promise<ChatContext | null> {
+        const dbChat = await db.chat.findFirst({
+            where: {
+                id: chatId,
+                userId: userId
+            }
+        });
+
+        let chat: ChatContext | null = null;
+        if (dbChat) {
+            chat = await ChatStorage.addDataToChat(chatId, dbChat);
         }
 
-        return await ChatStorage.addDataToChat(chatId, chat);
+        await eventStore.consume({
+            chatId: chatId,
+        }, event => {
+            chat = applyEventOnChat(chat, event);
+        }, {
+            removeAfterConsume: false,
+        });
+
+        return chat;
     }
 
     static async readPublicChatContext(chatId: string): Promise<ChatContext | null> {
@@ -271,11 +296,7 @@ export class ChatStorage {
     }
 
     private static async addDataToChat(chatId: string, chat: Chat) {
-        const messages = await db.message.findMany({
-            where: {
-                chatId: chatId
-            }
-        });
+        const messages = await this.getNewestMessages(chatId);
 
         return {
             id: chat.id,
@@ -284,22 +305,58 @@ export class ChatStorage {
             updatedAt: chat.updatedAt.getTime(),
             shared: chat.shared,
             userId: chat.userId,
-            history: messages.map(m => {
-                return <ChatMessage>{
-                    id: m.id,
-                    finished: m.finished,
-                    text: m.text,
-                    model: m.model,
-                    time: m.createdAt.getTime(),
-                    type: m.type,
-                    provider: m.provider,
-                    hasAudio: m.hasAudio,
-                    reasoning: m.reasoning,
-                    toolInvocations: m.toolInvocations as unknown as ToolInvocation[],
-                    files: m.files as MessageFile[],
-                };
-            }).sort((a, b) => b.time - a.time)
+            deleted: chat.deleted,
+            history: messages
         }
+    }
+
+    static async getNewestMessages(chatId: string, from: Date | null = null): Promise<ChatMessage[]> {
+        const where: Prisma.MessageWhereInput  = {
+            chatId: chatId,
+        };
+
+        if (from) {
+            where.updatedAt = { gt: from };
+        }
+
+        const messages = await db.message.findMany({
+            where: where
+        });
+
+        return messages.map(m => {
+            return this.mapDbMessageToDomainMessage(m);
+        }).sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    private static mapDbMessageToDomainMessage(m: Message) : ChatMessage {
+        if (m.type === "assistant") {
+            return {
+                id: m.id,
+                text: m.text,
+                model: m.model!,
+                createdAt: m.createdAt.getTime(),
+                type: m.type,
+                provider: m.provider!,
+                hasAudio: m.hasAudio,
+                reasoning: m.reasoning as unknown as ReasoningDetail[],
+                toolInvocations: m.toolInvocations as unknown as ToolCall[],
+                usage: m.usage as unknown as LanguageModelUsage,
+                files: m.files as MessageFile[],
+                finished: m.finished,
+            };
+        }
+
+        if (m.type === "user") {
+            return {
+                id: m.id,
+                text: m.text,
+                createdAt: m.createdAt.getTime(),
+                type: m.type,
+                files: m.files as MessageFile[],
+            };
+        }
+
+        throw new Error(`Invalid message type: ${m.type}`);
     }
 
     static async getUserChats(userId: string, from: Date | null = null): Promise<Omit<ChatContext, "history">[]> {
@@ -321,6 +378,7 @@ export class ChatStorage {
                 userId: c.userId,
                 createdAt: c.createdAt.getTime(),
                 updatedAt: c.updatedAt.getTime(),
+                deleted: false
             }
         }).sort((a, b) => b.createdAt - a.createdAt);
     }

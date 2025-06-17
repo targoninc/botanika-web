@@ -9,4 +9,5 @@ export interface ChatContext {
     shared: boolean;
     userId: string;
     history: ChatMessage[];
+    deleted: boolean;
 }

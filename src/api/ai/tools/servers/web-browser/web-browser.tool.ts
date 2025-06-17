@@ -5,11 +5,8 @@ import { WebBrowserImage } from "./web-browser.models.ts";
 import { ResourceReference } from "../../../../../models/chat/ResourceReference.ts";
 import { ChatToolResult } from "../../../../../models/chat/ChatToolResult.ts";
 import { wrapTool } from "../../tooling.ts";
-import { Signal } from "@targoninc/jess";
-import { ChatMessage } from "../../../../../models/chat/ChatMessage.ts";
 import {CLI} from "../../../../CLI.ts";
-import {Tool, ToolCall} from "ai";
-import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
+import {Tool} from "ai";
 
 /**
  * Fetches the HTML content of a webpage
@@ -140,11 +137,11 @@ const webPageParameters = z.object({
   url: z.string().describe('The URL of the webpage to extract images from'),
 });
 
-export function extractImagesFromWebpageTool(userId: string, chat: ChatContext) : Tool<typeof webPageParameters, ChatToolResult> {
+export function extractImagesFromWebpageTool(userId: string, chatId: string, messageId: string) : Tool<typeof webPageParameters, ChatToolResult> {
   return {
     description: "Extracts images from a webpage. Returns a list of images found on the webpage.",
     parameters: webPageParameters,
-    execute: wrapTool("extract-images-from-webpage", extractImagesToolCall, userId, chat)
+    execute: wrapTool("extract-images-from-webpage", extractImagesToolCall, userId, chatId, messageId)
   };
 }
 
@@ -152,11 +149,11 @@ const extractContentParameters = z.object({
   url: z.string().describe('The URL of the webpage to extract content from'),
 });
 
-export function extractContentFromWebpageTool(userId: string, chat: ChatContext) : Tool<typeof extractContentParameters, ChatToolResult> {
+export function extractContentFromWebpageTool(userId: string, chatId: string, messageId: string) : Tool<typeof extractContentParameters, ChatToolResult> {
   return {
     type: "function",
     description: "Extracts the most relevant content from a webpage as a single string, without any HTML tags.",
     parameters: extractContentParameters,
-    execute: wrapTool("extract-content-from-webpage", extractContentToolCall, userId, chat),
+    execute: wrapTool("extract-content-from-webpage", extractContentToolCall, userId, chatId, messageId),
   };
 }

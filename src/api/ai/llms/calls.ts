@@ -1,11 +1,7 @@
-import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
 import {CLI} from "../../CLI";
 import {v4 as uuidv4} from "uuid";
 import {updateMessageFromStream} from "./functions";
-import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
-import {signal, Signal} from "@targoninc/jess";
-import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {AiMessage} from "./aiMessage.ts";
 import {eventStore} from "../../database/events/eventStore.ts";
@@ -90,14 +86,19 @@ export function streamResponseAsMessage(
         message: {
             id: messageId,
             text: "",
-            time: Date.now(),
+            createdAt: Date.now(),
             type: "assistant",
             model: model.modelId,
             provider: model.provider,
             hasAudio: false,
             files: [],
-            references: [],
-            finished: false
+            finished: false,
+            toolInvocations: [],
+            usage: {
+                completionTokens: 0,
+                promptTokens: 0,
+                totalTokens: 0
+            }
         }
     }).then();
 

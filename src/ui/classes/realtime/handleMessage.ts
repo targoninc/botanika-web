@@ -23,7 +23,7 @@ function updateMessage(chatId: string, messageId: string, event: BotanikaServerE
 
     chat.updatedAt = event.timestamp!;
     updateFn(message);
-    message.time = event.timestamp!;
+    message.createdAt = event.timestamp!;
 
     chats._callbacks.forEach(c => c(chats.value, true));
 }
@@ -72,7 +72,7 @@ function completeMessage(chatId: string, event: BotanikaServerEvent & { type: "m
 
     if (!message) return;
 
-    message.time = event.timestamp!;
+    message.createdAt = event.timestamp!;
     chat.updatedAt = event.timestamp!;
 
     if (message.type === "assistant") {

@@ -2,7 +2,7 @@ import {AssistantMessage, UserMessage} from "../../chat/ChatMessage.ts";
 import {MessageFile} from "../../chat/MessageFile.ts";
 import {ReasoningDetail} from "../../../api/ai/llms/aiMessage.ts";
 import {LanguageModelUsage} from "ai";
-import {ToolInvocation} from "@ai-sdk/ui-utils";
+import {ToolCall} from "../../chat/ToolCall.ts";
 
 export type UserMessageCreatedEvent = {
     type: "userMessageCreated";
@@ -46,14 +46,14 @@ export type UpdateFilesEvent = {
     type: "updateFiles";
     chatId: string;
     messageId: string;
-    files: MessageFile[];
+    files: Omit<MessageFile, "id">[];
 }
 
 export type UpdateToolInvocationsEvent = {
     type: "updateToolInvocations";
     chatId: string;
     messageId: string;
-    toolInvocations: ToolInvocation[];
+    toolInvocations: ToolCall[];
 }
 
 export type ChatNameSetEvent = {
@@ -108,6 +108,7 @@ export type ToolCallStartedEvent = {
     toolName: string;
     messageId: string;
     toolCallId: string;
+    args: any;
 }
 
 export type ToolCallFinishedEvent = {

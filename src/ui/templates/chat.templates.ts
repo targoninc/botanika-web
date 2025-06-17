@@ -129,7 +129,7 @@ export class ChatTemplates {
                 create("div")
                     .classes("flex", "message-time")
                     .children(
-                        ChatTemplates.date(message.time),
+                        ChatTemplates.date(message.createdAt),
                     ).build(),
                 create("div")
                     .classes("flex-v", "card", "message-content")
@@ -186,14 +186,14 @@ export class ChatTemplates {
                             updateChats(chats.value.map(c => {
                                 if (c.id === chatContext.value.id) {
                                     const updatedChat = structuredClone(c);
-                                    updatedChat.history = updatedChat.history.filter(m => m.time < message.time);
+                                    updatedChat.history = updatedChat.history.filter(m => m.createdAt < message.createdAt);
                                     return updatedChat;
                                 }
                                 return c;
                             }));
                             realtime.send({
                                 type: BotanikaClientEventType.message,
-                                data: <NewMessageEventData>{
+                                messages: <NewMessageEventData>{
                                     chatId: currentChatId.value,
                                     message: message.text,
                                     files: message.files,
@@ -212,7 +212,7 @@ export class ChatTemplates {
                             updateChats(chats.value.map(c => {
                                 if (c.id === chatContext.value.id) {
                                     const updatedChat = structuredClone(c);
-                                    updatedChat.history = updatedChat.history.filter(m => m.time <= message.time);
+                                    updatedChat.history = updatedChat.history.filter(m => m.createdAt <= message.createdAt);
                                     return updatedChat;
                                 }
                                 return c;
@@ -271,7 +271,7 @@ export class ChatTemplates {
                 activateNextUpdate.value = true;
                 realtime.send({
                     type: BotanikaClientEventType.message,
-                    data: <NewMessageEventData>{
+                    messages: <NewMessageEventData>{
                         chatId: chatId.value,
                         provider: provider.value,
                         model: model.value,

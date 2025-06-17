@@ -61,11 +61,11 @@ const searchParameters = z.object({
     query: z.string().describe('The query to search for'),
 });
 
-export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) : Tool<typeof searchParameters, ChatToolResult | ErrorToolResult> {
+export function googleSearchTool(userConfig: Configuration, ws: WebsocketConnection, chatId: string, messageId: string) : Tool<typeof searchParameters, ChatToolResult | ErrorToolResult> {
     return {
         type: "function",
         description: "Web search. Useful for when you need to answer search questions. Input should be a search query.",
         parameters: searchParameters,
-        execute: wrapTool<z.input<typeof searchParameters>, ChatToolResult>("google-search-engine", input => toolCall(input, userConfig), ws.userId, chat),
+        execute: wrapTool<z.input<typeof searchParameters>, ChatToolResult>("google-search-engine", input => toolCall(input, userConfig), ws.userId, chatId, messageId),
     };
 }

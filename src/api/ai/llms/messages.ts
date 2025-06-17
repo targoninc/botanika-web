@@ -1,14 +1,10 @@
 import {v4 as uuidv4} from "uuid";
-import {ChatContext} from "../../../models/chat/ChatContext";
 import {LanguageModelV1, Message,} from "ai";
-import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
 import {AssistantMessage, ChatMessage, UserMessage} from "../../../models/chat/ChatMessage";
 import {Configuration} from "../../../models/Configuration";
 import {getSimpleResponse} from "./calls";
-import {ChatStorage} from "../../storage/ChatStorage.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
-import {undefined} from "zod";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {
     const response = await getSimpleResponse(model, {}, getChatNameMessages(message), 1000);
@@ -20,19 +16,24 @@ export function newUserMessage(message: string, files: MessageFile[]): UserMessa
         id: uuidv4(),
         type: "user",
         text: message,
-        time: Date.now(),
+        createdAt: Date.now(),
         files,
     };
 }
 
 export function newAssistantMessage(responseText: string, provider: string, modelName: string) : AssistantMessage {
     return {
+        toolInvocations: [],
+        usage: {
+            completionTokens: 0,
+            promptTokens: 0,
+            totalTokens: 0
+        },
         hasAudio: false,
-        references: [],
         id: uuidv4(),
         type: "assistant",
         text: responseText,
-        time: Date.now(),
+        createdAt: Date.now(),
         files: [],
         finished: true,
         provider,
@@ -124,7 +125,7 @@ export function getPromptMessages(messages: ChatMessage[], worldContext: Record<
             if ("files" in m && m.files) {
                 parts.push(...m.files.map(f => ({
                     type: "file",
-                    data: f.base64,
+                    messages: f.base64,
                     mimeType: f.mimeType,
                 } as const)));
             }

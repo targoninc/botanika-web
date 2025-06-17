@@ -1,20 +1,19 @@
 import {CLI} from "../../CLI";
-import {v4 as uuidv4} from "uuid";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
 import {ToolExecutionOptions} from "ai";
 import {eventStore} from "../../database/events/eventStore.ts";
 
-export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, userId: string, chat: ChatContext) {
+export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TParams) => Promise<TResult>, userId: string, chatId: string, messageId: string) {
     return async (input: TParams, options: ToolExecutionOptions) => {
-        const messageId = uuidv4();
         eventStore.publish({
             userId,
             type: "toolCallStarted",
-            chatId: chat.id,
+            chatId: chatId,
             toolName: toolName,
             messageId,
             toolCallId: options.toolCallId,
+            args: input
         }).then();
+
         const start = performance.now();
         CLI.debug(`Calling tool ${toolName}`);
 
@@ -29,7 +28,7 @@ export function wrapTool<TParams, TResult>(toolName: string, execute: (input: TP
         eventStore.publish({
             userId,
             type: "toolCallFinished",
-            chatId: chat.id,
+            chatId: chatId,
             messageId,
             toolName: toolName,
             toolCallId: options.toolCallId,

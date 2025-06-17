@@ -23,7 +23,7 @@ export async function updateUser(id: string, update: Prisma.UserUpdateArgs["data
     }
 
     await db.user.update({
-        data: update,
+        messages: update,
         where: { id }
     });
 }

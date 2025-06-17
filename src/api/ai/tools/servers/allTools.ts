@@ -19,15 +19,16 @@ export type BuiltInTools = {
 export function getBuiltInTools(
     userConfig: Configuration,
     ws: WebsocketConnection,
-    chat: ChatContext
+    chatId: string,
+    messageId: string
 ) : BuiltInTools {
     const tools: BuiltInTools = {
-        "web-browser.extract-images": extractImagesFromWebpageTool(ws.userId, chat),
-        "web-browser.extract-content": extractContentFromWebpageTool(ws.userId, chat),
+        "web-browser.extract-images": extractImagesFromWebpageTool(ws.userId, chatId, messageId),
+        "web-browser.extract-content": extractContentFromWebpageTool(ws.userId, chatId, messageId),
     };
 
     if (featureOption(userConfig, BotanikaFeature.GoogleSearch).apiKey && featureOption(userConfig, BotanikaFeature.GoogleSearch).searchEngineId) {
-        tools["google.search-engine"] = googleSearchTool(userConfig, ws, chat);
+        tools["google.search-engine"] = googleSearchTool(userConfig, ws, chatId, messageId);
     }
 
     return tools

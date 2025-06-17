@@ -2,6 +2,7 @@
 import { CLI } from "../CLI.ts";
 import { eventStore, EventHandler } from "../database/events/eventStore.ts";
 import { WebsocketConnection } from "./websocket.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 
 const userConnections: Map<string, Set<WebsocketConnection>> = new Map();
 
@@ -47,7 +48,7 @@ export function unregisterConnection(userId: string, connection: WebsocketConnec
  * @param connection The WebSocket connection
  * @param message The message to send
  */
-export function sendToConnection(connection: WebsocketConnection, message: BotanikaServerEvent): void {
+export function sendToConnection(connection: WebsocketConnection, message: BotanikaClientEvent): void {
     if (connection.readyState === 1) { // OPEN
         try {
             connection.send(JSON.stringify(message));
@@ -70,16 +71,13 @@ export const websocketEventHandler: EventHandler = (event: BotanikaServerEvent):
     const connections = userConnections.get(event.userId);
     if (connections) {
         const connectionsArray = Array.from(connections);
-        let closedConnections = false;
 
         for (let i = 0; i < connectionsArray.length; i++) {
             const connection = connectionsArray[i];
-            sendToConnection(connection, event);
-        }
-
-        if (closedConnections && connections.size === 0) {
-            userConnections.delete(event.userId);
-            CLI.debug(`Removed user ${event.userId} from connections map due to all connections being closed`);
+            sendToConnection(connection, {
+                type: "serverEvent",
+                event: event
+            });
         }
     }
 };

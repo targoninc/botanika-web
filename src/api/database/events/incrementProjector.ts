@@ -35,7 +35,7 @@ export type ChatIncrement = Increment & ({
 export type MessageIncrement = Increment & ({
     type: "addToMessage";
     text: string;
-    files: MessageFile[];
+    files: Omit<MessageFile, "id">[];
     toolInvocations: ToolCall[];
     audio?: boolean;
     finished?: boolean;
@@ -138,6 +138,10 @@ export class IncrementProjector {
                                 }
 
                                 break;
+                            default: {
+                                // @ts-expect-error messageIncrement.type should be "never" here. If there is no error that means we have a new event type that we don't handle yet.
+                                CLI.error(`Unhandled message increment type: ${messageIncrement.type}`, messageIncrement);
+                            }
                         }
                     }
 
@@ -159,6 +163,12 @@ export class IncrementProjector {
                     if (!messageFound) {
                         CLI.error(`Message with ID ${event.messageId} not found in chat ${chatIncrement.chat.id}`);
                     }
+
+                    break;
+                }
+                default: {
+                    // @ts-expect-error event.type should be "never" here. If there is no error that means we have a new event type that we don't handle yet.
+                    CLI.error(`Unhandled chat event type: ${event.type}`, event);
                 }
             }
 
@@ -193,6 +203,7 @@ export class IncrementProjector {
                     history: [event.userMessage],
                     userId: userId,
                     shared: false,
+                    deleted: false
                 },
                 latestUpdateTimestamp: timestamp,
                 earliestUpdateTimestamp: timestamp,
@@ -379,7 +390,6 @@ export class IncrementProjector {
             const userIncrement = this.getOrCreateUserIncrement(userId, timestamp);
             const chatIncrement = this.getOrCreateChatIncrement(userIncrement, event.chatId, timestamp);
 
-            // Create message files with IDs
             const files = event.files;
 
             switch (chatIncrement.type) {
@@ -554,7 +564,7 @@ export class IncrementProjector {
                     // Find the most recent message
                     if (chatIncrement.chat.history.length > 0) {
                         const latestMessage = chatIncrement.chat.history.reduce((latest, current) => 
-                            current.time > latest.time ? current : latest
+                            current.createdAt > latest.createdAt ? current : latest
                         );
 
                         if (latestMessage.type === "assistant") {
@@ -787,7 +797,7 @@ export class IncrementProjector {
                     updatedAt: timestamp,
                     // Filter history to only include messages up to the specified message
                     history: originalChat.history
-                        .filter(m => m.time <= message.time)
+                        .filter(m => m.createdAt <= message.createdAt)
                         .map(msg => ({
                             ...msg,
                             id: crypto.randomUUID() // Generate new IDs for all messages
@@ -908,7 +918,7 @@ export function registerIncrementProjectorEventHandler(): () => void {
             };
 
             setTimeout(() => {
-                executeIncrement(event.userId).catch(error => {
+                updateDatabase(event.userId).catch(error => {
                     CLI.error(`Error executing increment for user ${event.userId}: ${error}`);
                 });
             }, 5000)
@@ -919,17 +929,10 @@ export function registerIncrementProjectorEventHandler(): () => void {
         const additionalSize = IncrementProjector.calculateSize(event);
         userIncrement.size += additionalSize;
         userIncrement.latestUpdateTimestamp = event.timestamp;
+        totalSize += additionalSize;
 
         if (userIncrement.size > perUserCleanupSize || event.type === "messageCompleted") {
-            const incrementProjector = new IncrementProjector();
-            const consumedEvents = await eventStore.consume({ chatId: event.chatId }, event => {
-                incrementProjector.handleEvent(event);
-            });
-            CLI.debug(`Consumed ${consumedEvents} events for user ${event.userId} to handle increment projection.`);
-
-            await ChatStorage.applyIncrements(event.userId, incrementProjector.userIncrementMap[event.userId]);
-        }else{
-            totalSize += additionalSize;
+            await updateDatabase(event.userId);
         }
 
         if (totalSize > cleanupSize) {
@@ -940,21 +943,12 @@ export function registerIncrementProjectorEventHandler(): () => void {
                 const [userId, userIncrement] = (biggestUser.pop() ?? []);
                 if (!userIncrement || !userId) break;
 
-                totalSize -= userIncrement.size;
-                userIncrementMap.delete(userId);
-
-                const incrementProjector = new IncrementProjector();
-                const consumedEvents = await eventStore.consume({ chatId: event.chatId }, event => {
-                    incrementProjector.handleEvent(event);
-                });
-                CLI.debug(`Consumed ${consumedEvents} events for user ${event.userId} to handle increment projection.`);
-
-                await ChatStorage.applyIncrements(event.userId, incrementProjector.userIncrementMap[event.userId]);
+                await updateDatabase(userId);
             }
         }
     });
 
-    async function executeIncrement(userId: string){
+    async function updateDatabase(userId: string){
         const userIncrement = userIncrementMap.get(userId);
         if (!userIncrement) {
             return;
@@ -969,11 +963,12 @@ export function registerIncrementProjectorEventHandler(): () => void {
                 CLI.debug(`Handling event for user ${userId}: ${event.type}`);
                 incrementProjector.handleEvent(event);
             }
+        }, {
+            removeAfterConsume: true
         });
 
         CLI.debug(`Consumed ${consumedEvents} events for user ${userId} to handle increment projection.`);
 
-        CLI.debug(JSON.stringify(incrementProjector.userIncrementMap, null, 2));
         return ChatStorage.applyIncrements(userId, incrementProjector.userIncrementMap.get(userId)!);
     }
 }

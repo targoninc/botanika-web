@@ -140,31 +140,14 @@ export class EventStore {
         this.eventHistory = [];
     }
 
-    /**
-     * Consume all events in the store by processing them with the provided handler
-     * and then clearing the event history
-     * 
-     * @param handler The handler function to process each event
-     * @returns The number of events processed
-     */
-    public async consume(handler: EventHandler): Promise<number>;
-
-    /**
-     * Consume events in the store that match the specified criteria by processing them
-     * with the provided handler and then clearing those events from the history
-     * 
-     * @template T Type of events to consume, inferred from the filter properties
-     * @param filter An object with properties to filter events by (e.g., { userId: "123", chatId: "456" })
-     * @param handler The handler function to process each filtered event
-     * @returns The number of events processed
-     */
+    public async consume(handler: EventHandler, options?: EventConsumerOptions): Promise<number>;
     public async consume<
         F extends Record<string, unknown>,
         T extends BotanikaServerEventWithTimestamp = Extract<
             BotanikaServerEventWithTimestamp,
             { [K in keyof F]: F[K] }
         >
-    >(filter: F, handler: EventHandler<T>): Promise<number>;
+    >(filter: F, handler: EventHandler<T>, options?: EventConsumerOptions): Promise<number>;
 
     public async consume<
         F extends Record<string, unknown> = Record<string, never>,
@@ -172,10 +155,16 @@ export class EventStore {
             BotanikaServerEventWithTimestamp,
             { [K in keyof F]: F[K] }
         >
-    >(filterOrHandler: F | EventHandler, handlerOrNothing?: EventHandler<T>): Promise<number> {
+    >(filterOrHandler: F | EventHandler, handlerOrOptions?: EventHandler<T> | EventConsumerOptions, options?: EventConsumerOptions): Promise<number> {
         // Determine if this is the overload with filter or without
-        const hasFilter = handlerOrNothing !== undefined;
-        const handler = hasFilter ? handlerOrNothing : filterOrHandler as EventHandler;
+        const hasFilter = handlerOrOptions !== undefined;
+
+        const handler = hasFilter ? handlerOrOptions as EventHandler : filterOrHandler as EventHandler;
+
+        options = (hasFilter ? handlerOrOptions as EventConsumerOptions : options) ?? {
+            removeAfterConsume: false,
+        };
+
         const filter = hasFilter ? filterOrHandler as F : {};
 
         // Get all events from the history
@@ -184,6 +173,14 @@ export class EventStore {
         // Filter events if a filter is provided
         const events = hasFilter 
             ? allEvents.filter(event => {
+                if (options.fromTimestamp && event.timestamp! < options.fromTimestamp) {
+                    return false;
+                }
+
+                if (options.toTimestamp && event.timestamp! > options.toTimestamp) {
+                    return false;
+                }
+
                 // Check if the event matches all filter criteria
                 return Object.entries(filter).every(([key, value]) => 
                     event[key] === value
@@ -191,15 +188,14 @@ export class EventStore {
             }) 
             : allEvents;
 
-        // If we're consuming all events, clear the entire history
-        if (!hasFilter) {
-            this.clearEvents();
-        } 
-        // Otherwise, only remove the filtered events
-        else if (events.length > 0) {
-            this.eventHistory = this.eventHistory.filter(event => 
-                !events.includes(event)
-            );
+        if (options.removeAfterConsume) {
+            if (!hasFilter) {
+                this.clearEvents();
+            } else if (events.length > 0) {
+                this.eventHistory = this.eventHistory.filter(event =>
+                    !events.includes(event)
+                );
+            }
         }
 
         const eventCount = events.length;
@@ -216,6 +212,12 @@ export class EventStore {
         // Return the number of events processed
         return eventCount;
     }
+}
+
+export type EventConsumerOptions = {
+    removeAfterConsume?: boolean;
+    fromTimestamp?: number;
+    toTimestamp?: number;
 }
 
 // Export a singleton instance

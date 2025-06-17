@@ -3,7 +3,6 @@ import {WebSocketServer} from "ws";
 import {CLI} from "../CLI.ts";
 import {URL} from "url";
 import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
 import {newMessageEventHandler} from "./newMessageEventHandler.ts";
 import {signingKey} from "../../index.ts";
 import {base64Decode} from "../authentication/base64Decode.ts";
@@ -11,6 +10,7 @@ import { eventStore } from "../database/events/eventStore.ts";
 import { registerConnection, unregisterConnection } from "./websocketEventHandler.ts";
 import {chatNameChangedEventHandler} from "./chatNameChangedEventHandler.ts";
 import {sharedChangedEventHandler} from "./sharedChangedEventHandler.ts";
+import {ChatStorage} from "../storage/ChatStorage.ts";
 
 export function sendError(ws: WebsocketConnection, message: string) {
     CLI.error(`Error in realtime: ${message}`);
@@ -30,16 +30,23 @@ export function sendWarning(ws: WebsocketConnection, message: string) {
     });
 }
 
-async function handleMessage(message: BotanikaClientEvent<any>, ws: WebsocketConnection) {
-    switch (message.type) {
-        case BotanikaClientEventType.message:
-            await newMessageEventHandler(ws, message);
+async function handleMessage(event: BotanikaClientEvent & { direction: "toServer" }, ws: WebsocketConnection) {
+    if ("chatId" in event && event.chatId) {
+        const chatExists = await ChatStorage.chatExists(ws.userId, event.chatId);
+        if (!chatExists) {
+            throw new Error("Chat not found");
+        }
+    }
+
+    switch (event.type) {
+        case "newMessage":
+            await newMessageEventHandler(ws, event);
             break;
-        case BotanikaClientEventType.chatNameChanged:
-            await chatNameChangedEventHandler(ws, message);
+        case "chatNameChanged":
+            await chatNameChangedEventHandler(ws, event);
             break;
-        case BotanikaClientEventType.sharedChanged:
-            await sharedChangedEventHandler(ws, message);
+        case "sharedChanged":
+            await sharedChangedEventHandler(ws, event);
             break;
     }
 }
@@ -78,19 +85,21 @@ export function addWebsocketServer(server: Server) {
         }
     });
 
-    wss.on('connection', (ws: WebsocketConnection, req: CustomIncomingMessage) => {
+    wss.on('connection', async (ws: WebsocketConnection, req: CustomIncomingMessage) => {
         const userId = req.userId;
         CLI.log(`Client connected to WebSocket with userId: ${userId}`);
         ws.userId = userId;
 
-        // catchupUserChats(userId, req.newestEventTimestamp, ws); // TODO: implement
+        await catchupUserChats(userId, req.newestEventTimestamp, ws);
         registerConnection(userId, ws);
 
         ws.on("message", async (msg: string) => {
-            const message = JSON.parse(msg);
+            const message = JSON.parse(msg) as BotanikaClientEvent;
             CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
             try {
-                await handleMessage(message, ws);
+                if (message.direction === "toServer") {
+                    await handleMessage(message, ws);
+                }
             } catch (e) {
                 console.error(e);
                 sendError(ws, e);
@@ -106,6 +115,20 @@ export function addWebsocketServer(server: Server) {
             CLI.error(`Websocket error: ` + err.message);
         });
     });
+}
+
+async function catchupUserChats(userId: string, newestEventTimestamp: number, ws: WebsocketConnection) {
+    const chats = await ChatStorage.getUserChats(userId, new Date(newestEventTimestamp));
+
+    await Promise.allSettled(chats.map(async chat => {
+        const newestMessage = await ChatStorage.getNewestMessages(chat.id, new Date(newestEventTimestamp));
+
+        ws.send(JSON.stringify({
+            type: "newMessages",
+            messages: newestMessage,
+            chatId: chat.id
+        }));
+    }));
 }
 
 export interface CustomIncomingMessage extends IncomingMessage {

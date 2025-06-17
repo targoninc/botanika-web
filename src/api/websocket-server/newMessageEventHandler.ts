@@ -1,9 +1,6 @@
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
 import {sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
-import {CLI} from "../CLI.ts";
 import {
     getChatName,
     getPromptMessages,
@@ -23,19 +20,20 @@ import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";
 import {eventStore} from "../database/events/eventStore.ts";
+import {ChatStorage} from "../storage/ChatStorage.ts";
+import {AiMessage} from "../ai/llms/aiMessage.ts";
+import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
 
-async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
-    CLI.debug(`Creating chat for user ${ws.userId}`);
-    const chatId = uuidv4();
+async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: BotanikaClientEvent & { type: "newMessage" }, model: LanguageModelV1) {
+    const chatId = request.chatId ?? uuidv4();
     const chatMsg = newUserMessage(request.message, request.files);
-    eventStore.publish({
-        userId: ws.userId,
-        type: "chatCreated",
-        chatId: chatId,
-        userMessage: chatMsg
-    }).then();
-
-    try {
+    if (!request.chatId) {
+        eventStore.publish({
+            userId: ws.userId,
+            type: "chatCreated",
+            chatId: chatId,
+            userMessage: chatMsg
+        }).then();
 
         getChatName(model, chatMsg.text).then(name => {
             const newLineIndex = name.indexOf("\n");
@@ -47,44 +45,24 @@ async function createNewChat(ws: WebsocketConnection, request: NewMessageEventDa
                 name,
             });
         });
-    } catch (e) {
-        throw new Error("An error occurred while creating the chat", {
-            cause: e
-        });
-    }
-
-    CLI.debug(`Chat created for user ${ws.userId}`);
-
-    return chatId;
-}
-
-async function getOrCreateChatWithMessage(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
-    if (!request.chatId) {
-        return await createNewChat(ws, request, model);
-    } else {
+    }else{
         eventStore.publish({
             userId: ws.userId,
             type: "userMessageCreated",
             chatId: request.chatId,
-            message: {
-                id: uuidv4(),
-                text: request.message,
-                time: Date.now(),
-                type: "user",
-                files: [],
-            }
-        });
+            message: chatMsg
+        }).then();
     }
 
-    return request.chatId;
+    return chatId;
 }
 
-async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: ChatContext) {
+async function getTools(modelDefinition: ModelDefinition, userConfig: Configuration, ws: WebsocketConnection, chat: string, messageId: string) {
     const mcpInfo = await getMcpTools(ws.userId);
     if (!modelDefinition.capabilities.includes(ModelCapability.tools)) {
         mcpInfo.tools = {};
     }
-    const builtInTools = getBuiltInTools(userConfig, ws, chat);
+    const builtInTools = getBuiltInTools(userConfig, ws, chat, messageId);
     return {
         mcpInfo,
         tools: Object.assign(builtInTools, mcpInfo.tools)
@@ -101,16 +79,16 @@ async function requestSimpleIfOnlyToolCalls(
     maxSteps: number,
     model: LanguageModelV1,
     chat: ChatContext,
-    worldContext: Record<string, any>,
-    request: NewMessageEventData
+    request: BotanikaClientEvent & { type: "newMessage" },
+    promptMessages: AiMessage[]
 ) {
     const toolResults = (await steps).flatMap(s => s.toolResults)
     if (toolResults.length === maxSteps) {
-        const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
+        const response = await getSimpleResponse(model, {}, promptMessages);
         const message = newAssistantMessage(response.text, request.provider, request.model);
 
         // Set the message as finished
-        message.time = Date.now();
+        message.createdAt = Date.now();
         message.finished = true;
 
         eventStore.publish({
@@ -127,8 +105,7 @@ async function requestSimpleIfOnlyToolCalls(
     }
 }
 
-export async function newMessageEventHandler(ws: WebsocketConnection, message: BotanikaClientEvent<NewMessageEventData>) {
-    const request = message.data;
+export async function newMessageEventHandler(ws: WebsocketConnection, request: BotanikaClientEvent & { type: "newMessage" }) {
     if (!request.message || !request.provider || !request.model || !Object.values(LlmProvider).includes(request.provider)) {
         throw new Error("Invalid request");
     }
@@ -147,15 +124,21 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const userConfig = await getConfig(ws.userId);
     const model = getModel(request.provider, request.model, userConfig);
 
-    const chat = await getOrCreateChatWithMessage(ws, request, model);
-    const toolInfo = await getTools(modelDefinition, userConfig, ws, chat);
+    const chatId = await getOrCreateChatWithMessage(ws, request, model);
+
+    const chat = await ChatStorage.readChatContext(ws.userId, chatId);
+    if (!chat) {
+        throw new Error("Something went wrong");
+    }
+
+    const toolInfo = await getTools(modelDefinition, userConfig, ws, chatId, chat.history[chat.history.length - 1].id);
 
     const worldContext = getWorldContext();
     const promptMessages = getPromptMessages(chat.history, worldContext, userConfig, modelSupportsFiles);
     const maxSteps = userConfig.maxSteps ?? 5;
-    const streamResponse = streamResponseAsMessage(ws, maxSteps, model, toolInfo.tools, promptMessages, chat.id);
+    const streamResponse = streamResponseAsMessage(ws, maxSteps, model, toolInfo.tools, promptMessages, chatId);
 
-    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse.steps, maxSteps, model, chat, worldContext, request);
+    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse.steps, maxSteps, model, chat, request, promptMessages);
     toolInfo.mcpInfo.onClose();
 
     await streamResponse.all();

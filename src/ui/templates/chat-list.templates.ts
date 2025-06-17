@@ -88,7 +88,7 @@ export class ChatListTemplates {
         shared.subscribe(s => {
             realtime.send(<BotanikaClientEvent<SharedChangedEventData>>{
                 type: BotanikaClientEventType.sharedChanged,
-                data: {
+                messages: {
                     chatId: chat.id,
                     newValue: s
                 }
@@ -131,7 +131,7 @@ export class ChatListTemplates {
                                 when(compute(cn => cn !== chat.name, chatName), GenericTemplates.buttonWithIcon("check", "", () => {
                                     realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
                                         type: BotanikaClientEventType.chatNameChanged,
-                                        data: {
+                                        messages: {
                                             chatId: chat.id,
                                             name: chatName.value
                                         }

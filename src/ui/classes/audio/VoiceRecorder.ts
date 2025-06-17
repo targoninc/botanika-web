@@ -154,7 +154,7 @@ export class VoiceRecorder {
                     try {
                         realtime.send({
                             type: BotanikaClientEventType.message,
-                            data: <NewMessageEventData>{
+                            messages: <NewMessageEventData>{
                                 chatId: chatContext.value.id,
                                 provider: config.provider,
                                 model: config.model,
