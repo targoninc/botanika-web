@@ -4,7 +4,7 @@ import {broadcastToUser, ongoingConversations, UPDATE_LIMIT} from "../../websock
 import {BotanikaServerEventType} from "../../../models/websocket/serverEvents/botanikaServerEventType.ts";
 import {CLI} from "../../CLI.ts";
 
-function updateConversation(
+export function updateConversation(
     chatId: string,
     userId: string,
     message: ChatMessage,
@@ -50,9 +50,7 @@ function updateConversation(
 export async function updateMessageFromStream(
     message: Signal<ChatMessage>,
     stream: AsyncIterable<string> & ReadableStream<string>,
-    text: Promise<string>,
-    chatId: string,
-    userId: string
+    text: Promise<string>
 ) {
     const reader = stream.getReader();
 
@@ -65,8 +63,6 @@ export async function updateMessageFromStream(
                 ...m,
                 text: m.text + value
             }
-
-            updateConversation(chatId, userId, message.value, true);
         }
 
         if (done) {
@@ -80,6 +76,4 @@ export async function updateMessageFromStream(
         text: finalText,
         finished: true
     }
-
-    updateConversation(chatId, userId, message.value, false);
 }

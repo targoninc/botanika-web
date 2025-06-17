@@ -1,10 +1,7 @@
 import {CLI} from "../../CLI";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {v4 as uuidv4} from "uuid";
-import {ToolResultUnion, ToolSet} from "ai";
 import {ChatToolResult} from "../../../models/chat/ChatToolResult";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {sendChatUpdate, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {Signal} from "@targoninc/jess";
 
 async function getToolResult(id: string, execute: (input: any) => Promise<any>, input: any) {
@@ -24,7 +21,7 @@ async function getToolResult(id: string, execute: (input: any) => Promise<any>, 
 }
 
 export function wrapTool(id: string, execute: (input: any) => Promise<any>, message: Signal<ChatMessage>) {
-    return async (input: any, ...args: any[]) => {
+    return async (input: any) => {
         let assMsg = structuredClone(message.value);
         const callId = uuidv4();
 
@@ -40,7 +37,7 @@ export function wrapTool(id: string, execute: (input: any) => Promise<any>, mess
         });
         message.value = assMsg;
 
-        let result = await getToolResult(id, execute, input);
+        const result = await getToolResult(id, execute, input);
 
         assMsg = structuredClone(message.value);
         assMsg.toolInvocations = assMsg.toolInvocations.map(ti => {

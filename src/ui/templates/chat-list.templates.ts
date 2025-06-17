@@ -1,6 +1,6 @@
 import {compute, create, InputType, Signal, signal, when} from "@targoninc/jess";
 import {GenericTemplates} from "./generic.templates.ts";
-import {activePage, chatContext, chats, currentChatId, deleteChat} from "../classes/state/store.ts";
+import {activePage, chatContext, chats, currentChatId, deleteChat, search} from "../classes/state/store.ts";
 import {searchList} from "../classes/search.ts";
 import {ChatTemplates} from "./chat.templates.ts";
 import {button, icon, input} from "@targoninc/jess-components";
@@ -16,7 +16,6 @@ export class ChatListTemplates {
     static chatList(context: string, shown: Signal<boolean>) {
         const newDisabled = compute(c => Object.keys(c).length === 0, chatContext);
         const userPopupVisible = signal(false);
-        const search = signal("");
         const filteredChats = compute((c, s) => searchList(["history", "name"], c, s), chats, search);
         const cachedWidth = localStorage.getItem(`divider-width-.chat-list.sidebar`);
         let initialWidth = "max(30%, 200px)";

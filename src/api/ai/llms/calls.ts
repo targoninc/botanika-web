@@ -1,9 +1,8 @@
-import {CoreMessage, GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
+import {GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
 import {ChatMessage} from "../../../models/chat/ChatMessage";
 import {CLI} from "../../CLI";
 import {updateMessageFromStream} from "./functions";
-import {LanguageModelSourceV1} from "./models/LanguageModelSourceV1";
-import {signal, Signal} from "@targoninc/jess";
+import {Signal} from "@targoninc/jess";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
@@ -74,7 +73,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         onError: event => sendError(ws, JSON.stringify(event.error)),
     });
 
-    updateMessageFromStream(message, textStream, text, chatId, ws.userId).then();
+    updateMessageFromStream(message, textStream, text).then();
 
     files.then((f: GeneratedFile[]) => {
         CLI.debug(`Generated ${f.length} files`);
@@ -101,7 +100,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
             ...message.value,
             usage: u
         };
-    })
+    });
 
     return {
         steps

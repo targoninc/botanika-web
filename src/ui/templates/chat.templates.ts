@@ -143,13 +143,15 @@ export class ChatTemplates {
             .styles("overflow-y", "auto")
             .children(
                 signalMap(dedupHistory, create("div").classes("restrict-width-small", "message-history", "flex-v"), (m, i) => ChatTemplates.chatMessage(m, i === dedupHistory.value.length - 1)),
+
             ).build();
     }
 
     private static chatMessage(message: ChatMessage, isLast: boolean) {
-        if (message.text.trim().length === 0) {
-            return nullElement();
-        }
+        const generating = compute((c) => {
+            const lastMessage = c?.history?.at(-1);
+            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished) && isLast;
+        }, chatContext);
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-message", message.type)
@@ -170,6 +172,7 @@ export class ChatTemplates {
                     ).build(),
                 message.files && message.files.length > 0 ? ChatTemplates.messageFiles(message) : null,
                 when(message.finished, ChatTemplates.messageActions(message)),
+                when(generating, GenericTemplates.spinner),
                 when(isLast, GenericTemplates.spacer()),
             ).build();
     }
@@ -315,10 +318,12 @@ export class ChatTemplates {
         const hasText = compute(i => i.length > 0, input);
         const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
         const voiceConfigured = compute(c => c && !!c.transcriptionModel, configuration);
-        const sendingDisabled = compute((c, h) => {
+        const generating = compute((c) => {
             const lastMessage = c?.history?.at(-1);
-            return (lastMessage && (lastMessage.type === "user" || !lastMessage.finished)) || !h;
-        }, chatContext, hasText);
+            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished);
+        }, chatContext);
+        const stopButtonClass = compute((g): string => g ? "_" : "hidden", generating);
+        const sendingDisabled = compute((g, h) => g || !h, generating, hasText);
         const disabledClass = compute((d): string => d ? "disabled" : "_", sendingDisabled);
         const noHistory = compute(c => (c?.history?.length ?? 0) === 0, chatContext);
         const noHistoryClass = compute((c): string => c?.history?.length > 0 ? "_" : "no-history", chatContext);
@@ -411,18 +416,15 @@ export class ChatTemplates {
                                     .classes("flex", "align-center")
                                     .children(
                                         when(voiceConfigured, AudioTemplates.voiceButton(sendingDisabled)),
-                                        when(compute((c) => {
-                                            const lastMessage = c?.history?.at(-1);
-                                            return lastMessage && (lastMessage.type === "user" || !lastMessage.finished);
-                                        }, chatContext), GenericTemplates.verticalButtonWithIcon("stop_circle", "", () => {
+                                        GenericTemplates.verticalButtonWithIcon("stop_circle", "", () => {
                                             realtime.send({
                                                 type: BotanikaClientEventType.generationStopped,
                                                 data: {
                                                     chatId: chatId.value
                                                 }
                                             });
-                                        }, ["stop-button"])),
-                                        GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]),
+                                        }, ["stop-button", stopButtonClass]),
+                                        when(generating, GenericTemplates.verticalButtonWithIcon("arrow_upward", "", send, ["send-button", sendButtonClass, disabledClass]), true),
                                     ).build(),
                             ).build(),
                     ).build()

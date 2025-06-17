@@ -12,9 +12,6 @@ import {Language} from "../i8n/language.ts";
 import {language} from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
 import {asyncSemaphore} from "../asyncSemaphore.ts";
-import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
-import {updateContext} from "../updateContext.ts";
-import {playAudio} from "../audio/audio.ts";
 import {UserinfoResponse} from "openid-client";
 import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
@@ -38,6 +35,7 @@ export const shortCutConfig = signal<ShortcutConfiguration>(defaultShortcuts);
 export const currentText = signal<string>("");
 export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
+export const search = signal("");
 
 const getNewestChatDate = (chts: ChatContext[]) => {
     const updatedDates = chts.filter(c => !!c.updatedAt).map(c => c.updatedAt);
@@ -157,30 +155,6 @@ export function updateChats(newChats: ChatContext[]) {
 }
 
 export const activateNextUpdate = signal(false);
-
-export async function processUpdate(update: ChatUpdate) {
-    const chatExists = chats.value.some(c => c.id === update.chatId);
-
-    if (!chatExists) {
-        const newChat = updateContext(INITIAL_CONTEXT, update);
-        updateChats([...chats.value, newChat]);
-
-        const isFirstUserMessage = update.messages?.length === 1 && update.messages[0].type === "user";
-        if (activateNextUpdate.value && isFirstUserMessage) {
-            currentChatId.value = update.chatId;
-        }
-    } else {
-        updateChats(chats.value.map(c =>
-            c.id === update.chatId ? updateContext(c, update) : c
-        ));
-    }
-
-    const playableMessage = update.messages?.find(m => m.hasAudio);
-    const isLast = playableMessage && update.messages.length > 0 && update.messages[update.messages.length - 1].id === playableMessage.id;
-    if (playableMessage && isLast) {
-        playAudio(playableMessage.id).then();
-    }
-}
 
 export function deleteChat(chatId: string) {
     updateChats(chats.value.filter(c => c.id !== chatId));

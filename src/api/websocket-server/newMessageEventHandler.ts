@@ -25,6 +25,7 @@ import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
 import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
 import {LlmProvider} from "../../models/llms/llmProvider.ts";
+import {updateConversation} from "../ai/llms/functions.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
     CLI.debug(`Creating chat for user ${ws.userId}`);
@@ -102,31 +103,23 @@ async function getTools(modelDefinition: ModelDefinition, userConfig: Configurat
 /**
  * Requests another assistant message without tools just to have a summary or description of what happened
  */
-async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, userConfig: Configuration,
+async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, message: Signal<ChatMessage>, userConfig: Configuration,
                                streamResponse: {
                                    steps: Promise<Array<StepResult<ToolSet>>>
-                               }, maxSteps: number, model: LanguageModelV1, chat: ChatContext, worldContext: Record<string, any>, request: NewMessageEventData) {
+                               }, maxSteps: number, model: LanguageModelV1, chat: ChatContext, worldContext: Record<string, any>) {
     const steps = await streamResponse.steps;
     const toolResults = steps.flatMap(s => s.toolResults);
     if (toolResults.length === maxSteps) {
-        const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true));
-        const m = newAssistantMessage(response.text, request.provider, request.model);
+        const response = await getSimpleResponse(model, {}, getPromptMessages(chat.history, worldContext, userConfig, true), 10000);
 
-        // Set the message as finished
+        const m = structuredClone(message.value);
+
         m.time = Date.now();
         m.finished = true;
+        m.text = response.text;
 
-        // Send the message to the client
-        sendChatUpdate(ws, {
-            chatId: chat.id,
-            timestamp: Date.now(),
-            messages: [m]
-        });
+        message.value = m;
 
-        // Add the message to the chat history
-        chat.history.push(m);
-
-        // Send audio if enabled
         if (userConfig.enableTts && m.text.length > 0) {
             await sendAudioAndStop(ws, chat.id, m);
         }
@@ -182,6 +175,16 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     const abortController = new AbortController();
     activeAbortControllers.set(chat.id, abortController);
 
+
+    function getListener(chatId: string, userId: string, message: Signal<ChatMessage>) {
+        return () => {
+            updateConversation(chatId, userId, message.value, true);
+        }
+    }
+
+    const listener = getListener(chat.id, ws.userId, assMessage);
+    assMessage.subscribe(listener);
+
     const streamResponse = await streamResponseAsMessage(ws, maxSteps, assMessage, model, toolInfo.tools, promptMessages, chat.id, abortController.signal);
 
     // Wait for the steps to complete
@@ -204,11 +207,12 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
         }, 100);
     });
 
-    await requestSimpleIfOnlyToolCalls(ws, userConfig, streamResponse, maxSteps, model, chat, worldContext, request);
+    await requestSimpleIfOnlyToolCalls(ws, assMessage, userConfig, streamResponse, maxSteps, model, chat, worldContext);
     await waitForMessageFinished;
-    toolInfo.mcpInfo.onClose();
 
-    // Clean up the AbortController
+    // Cleanup
+    assMessage.unsubscribe(listener);
+    toolInfo.mcpInfo.onClose();
     activeAbortControllers.delete(chat.id);
 
     chat.history.map(m => {
@@ -219,4 +223,6 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     });
 
     await ChatStorage.writeChatContext(ws.userId, chat);
+
+    CLI.success("Request finished successfully");
 }
