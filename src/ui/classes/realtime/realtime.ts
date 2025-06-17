@@ -1,9 +1,9 @@
 import {toast} from "../ui.ts";
 import {ToastType} from "../../enums/ToastType.ts";
-import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
-import {BotanikaClientEvent} from "../../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {ApiEndpoint} from "../../../models-shared/ApiEndpoints.ts";
+import {BotanikaClientEvent} from "../../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
 import {handleMessage} from "./handleMessage.ts";
-import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
+import {BotanikaServerEvent} from "../../../models-shared/websocket/serverEvents/botanikaServerEvent.ts";
 import {connected} from "../state/store.ts";
 
 export class Realtime {

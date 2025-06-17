@@ -2,18 +2,18 @@ import {Api} from "./api";
 import {compute, signal} from "@targoninc/jess";
 import {ApiResponse} from "./api.base.ts";
 import {tryLoadFromCache} from "./tryLoadFromCache.ts";
-import {Configuration} from "../../../models/Configuration";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
-import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
-import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
-import {defaultShortcuts} from "../../../models/shortcuts/defaultShortcuts.ts";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
+import {ChatContext} from "../../../models-shared/chat/ChatContext.ts";
+import {INITIAL_CONTEXT} from "../../../models-shared/chat/initialContext.ts";
+import {ProviderDefinition} from "../../../models-shared/llms/ProviderDefinition.ts";
+import {ShortcutConfiguration} from "../../../models-shared/shortcuts/ShortcutConfiguration.ts";
+import {defaultShortcuts} from "../../../models-shared/shortcuts/defaultShortcuts.ts";
 import {Language} from "../i8n/language.ts";
 import {language} from "../i8n/translation.ts";
 import {setRootCssVar} from "../setRootCssVar.ts";
 import {asyncSemaphore} from "../asyncSemaphore.ts";
 import {UserinfoResponse} from "openid-client";
-import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {McpServerConfig} from "../../../models-shared/mcp/McpServerConfig.ts";
 import {focusChatInput} from "../../index.ts";
 import {getPathname, getUrlParameter, updateUrlParameter, updateUrlPathname} from "./urlHelpers.ts";
 import {User} from "@prisma/client";
@@ -165,4 +165,9 @@ export function deleteChat(chatId: string) {
             currentChatId.value = null;
         }
     });
+}
+
+export function ttsEnabled() {
+    const c = configuration.value;
+    return c.enableTts && !!c.speechModel && !! c.speechProvider;
 }

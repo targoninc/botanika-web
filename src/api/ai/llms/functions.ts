@@ -1,7 +1,7 @@
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {ChatMessage} from "../../../models-shared/chat/ChatMessage";
 import {Signal} from "@targoninc/jess";
 import {broadcastToUser, ongoingConversations, UPDATE_LIMIT} from "../../websocket-server/websocket.ts";
-import {BotanikaServerEventType} from "../../../models/websocket/serverEvents/botanikaServerEventType.ts";
+import {BotanikaServerEventType} from "../../../models-shared/websocket/serverEvents/botanikaServerEventType.ts";
 import {CLI} from "../../CLI.ts";
 
 export function updateConversation(

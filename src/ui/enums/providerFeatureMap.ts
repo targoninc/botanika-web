@@ -1,5 +1,5 @@
-import {LlmProvider} from "../../models/llms/llmProvider.ts";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
+import {LlmProvider} from "../../models-shared/llms/llmProvider.ts";
+import {BotanikaFeature} from "../../models-shared/configuration/BotanikaFeature.ts";
 
 export const providerFeatureMap: Record<LlmProvider, BotanikaFeature> = {
     [LlmProvider.openai]: BotanikaFeature.OpenAI,

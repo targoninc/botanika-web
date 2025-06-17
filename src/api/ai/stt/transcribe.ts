@@ -1,5 +1,5 @@
 import {Response} from "express";
-import {Configuration} from "../../../models/Configuration.ts";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
 import {experimental_transcribe} from "ai";
 import {readFile} from "fs/promises";
 import {CLI} from "../../CLI.ts";

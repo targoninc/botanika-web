@@ -1,10 +1,10 @@
 import {GeneratedFile, generateText, LanguageModelV1, StepResult, streamText, ToolSet} from "ai";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {ChatMessage} from "../../../models-shared/chat/ChatMessage";
 import {CLI} from "../../CLI";
 import {updateMessageFromStream} from "./functions";
 import {Signal} from "@targoninc/jess";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
-import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{

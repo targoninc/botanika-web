@@ -1,8 +1,8 @@
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
+import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
 import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
-import {SharedChangedEventData} from "../../models/websocket/clientEvents/sharedChangedEventData.ts";
+import {SharedChangedEventData} from "../../models-shared/websocket/clientEvents/sharedChangedEventData.ts";
 
 export async function sharedChangedEventHandler(ws: WebsocketConnection, message: BotanikaClientEvent<SharedChangedEventData>) {
     const request = message.data;

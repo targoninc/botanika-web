@@ -1,17 +1,17 @@
 import {currentlyPlayingAudio} from "../state/store.ts";
-import {ApiBase} from "../state/api.base.ts";
+import {ApiEndpoint} from "../../../models-shared/ApiEndpoints.ts";
 
 let audio;
 
-export async function playAudio(file: string) {
+export async function playAudio(id: string) {
     if (currentlyPlayingAudio.value) {
         return;
     }
     if (!audio) {
         audio = new Audio();
     }
-    currentlyPlayingAudio.value = file;
-    const src = `${ApiBase.baseUrl}/audio?file=${file}`;
+    currentlyPlayingAudio.value = id;
+    const src = `${ApiEndpoint.AUDIO}?id=${id}`;
     console.log(`Playing audio: ${src}`);
     audio.src = src;
     audio.onended = () => {

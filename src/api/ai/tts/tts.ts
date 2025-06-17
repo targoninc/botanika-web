@@ -1,26 +1,15 @@
-import {getTtsAudioOpenAi} from "./openai";
-import {experimental_generateSpeech} from "ai";
-import {Configuration} from "../../../models/Configuration.ts";
+import {experimental_generateSpeech, GeneratedAudioFile} from "ai";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
 import {ttsProviderMap} from "./ttsProviderMap.ts";
 
-/**
- * Returns a base64 encoded string of the audio blob
- * @param text The text to generate audio for
- */
-export async function getTtsAudio(text: string, config: Configuration): Promise<Blob> {
-
+export async function getTtsAudio(text: string, config: Configuration): Promise<GeneratedAudioFile> {
     try {
-        await experimental_generateSpeech({
+        const result = await experimental_generateSpeech({
             model: ttsProviderMap[config.speechProvider](config.speechModel),
             text: text,
         });
+        return result.audio;
     } catch (error) {
-        if (AI_NoAudioGeneratedError.isInstance(error)) {
-            console.log('AI_NoAudioGeneratedError');
-            console.log('Cause:', error.cause);
-            console.log('Responses:', error.responses);
-        }
+        console.error("Error while generating speech", error);
     }
-
-    //return await getTtsAudioOpenAi(text);
 }

@@ -1,7 +1,7 @@
 import {Application, Request} from "express";
-import {defaultShortcuts} from "../../models/shortcuts/defaultShortcuts";
-import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
-import {ApiEndpoint} from "../../models/ApiEndpoints";
+import {defaultShortcuts} from "../../models-shared/shortcuts/defaultShortcuts";
+import {ShortcutConfiguration} from "../../models-shared/shortcuts/ShortcutConfiguration";
+import {ApiEndpoint} from "../../models-shared/ApiEndpoints";
 import {db, updateUser} from "../database/db.ts";
 
 export async function getConfig(userId: string) {

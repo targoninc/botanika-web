@@ -1,4 +1,4 @@
-import {TextSegmentType} from "../../ui/enums/TextSegmentType";
+import {TextSegmentType} from "../enums/TextSegmentType.ts";
 import {HtmlPropertyValue, TypeOrSignal} from "@targoninc/jess";
 
 export interface TextSegment {

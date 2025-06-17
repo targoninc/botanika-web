@@ -3,7 +3,7 @@ import fs from "fs";
 import {appDataPath} from "../../appData";
 import {transcribe} from "./transcribe.ts";
 import {getConfig} from "../../configuration.ts";
-import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
+import {ApiEndpoint} from "../../../models-shared/ApiEndpoints.ts";
 import multer from "multer";
 import {CLI} from "../../CLI.ts";
 import {execSync} from "child_process";

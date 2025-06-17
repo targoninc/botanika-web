@@ -1,5 +1,5 @@
 import {BotanikaFeature} from "./BotanikaFeature";
-import {SettingConfiguration} from "../uiExtensions/SettingConfiguration";
+import {SettingConfiguration} from "./SettingConfiguration.ts";
 
 const apiKeyConfig = <SettingConfiguration>{
     key: "apiKey",
@@ -54,26 +54,4 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
         },
         apiKeyConfig
     ],
-    /*[BotanikaFeature.Spotify]: [
-        {
-            key: "clientId",
-            icon: "key",
-            description: "Client ID",
-            label: "Client ID",
-            type: "string",
-            validator: value => {
-                return [];
-            }
-        },
-        {
-            key: "clientSecret",
-            icon: "key",
-            description: "Client secret",
-            label: "Client secret",
-            type: "password",
-            validator: value => {
-                return [];
-            }
-        },
-    ]*/
 };

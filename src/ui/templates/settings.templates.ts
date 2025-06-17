@@ -1,107 +1,23 @@
 import {GenericTemplates} from "./generic.templates";
-import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
+import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
 import {createModal, toast} from "../classes/ui";
-import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
-import {shortcutNames} from "../../models/shortcuts/Shortcut";
-import {McpServerConfig} from "../../models/mcp/McpServerConfig";
-import {Configuration} from "../../models/Configuration";
-import {featureOptions} from "../../models/features/featureOptions";
+import {ShortcutConfiguration} from "../../models-shared/shortcuts/ShortcutConfiguration";
+import {shortcutNames} from "../../models-shared/shortcuts/Shortcut";
+import {McpServerConfig} from "../../models-shared/mcp/McpServerConfig";
+import {Configuration} from "../../models-shared/configuration/Configuration.ts";
+import {featureOptions} from "../../models-shared/configuration/FeatureOptions.ts";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
+import {BotanikaFeature} from "../../models-shared/configuration/BotanikaFeature.ts";
 import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
-import {Tab} from "../../models/uiExtensions/Tab.ts";
-import {TranscriptionProvider} from "../../models/transcriptionProvider.ts";
+import {settings} from "../enums/settings.ts";
+import {Tab} from "../models/Tab.ts";
 
 export class SettingsTemplates {
     static settings() {
-        const settings: SettingConfiguration[] = [
-            {
-                key: "display_hotkeys",
-                icon: "keyboard",
-                label: "Display hotkeys",
-                description: "Whether to display hotkeys in the UI.",
-                type: "boolean",
-            },
-            {
-                key: "enableStt",
-                icon: "mic",
-                label: "Enable transcription",
-                description: "Whether transcription of what you say should be enabled",
-                type: "boolean",
-            },
-            {
-                key: "transcriptionProvider",
-                icon: "transcribe",
-                label: "Transcription Provider",
-                description: `Which transcription provider to use.`,
-                type: "select",
-                options: [TranscriptionProvider.openai]
-            },
-            {
-                key: "transcriptionModel",
-                icon: "transcribe",
-                label: "Transcription Model",
-                description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
-                type: "string",
-            },
-            {
-                key: "enableTts",
-                icon: "text_to_speech",
-                label: "Enable text to speech",
-                description: "Whether assistant messages should be spoken aloud",
-                type: "boolean",
-            },
-            {
-                key: "botname",
-                label: "Assistant name",
-                description: "What name LLMs will use to refer to themselves",
-                type: "string",
-            },
-            {
-                key: "botDescription",
-                label: "What should the assistant be like?",
-                description: "The assistant will try to align with this description",
-                type: "long-string",
-            },
-            {
-                key: "displayname",
-                icon: "person",
-                label: "Your name",
-                description: "Displayed in the UI",
-                type: "string",
-            },
-            {
-                key: "userDescription",
-                label: "A short description of yourself",
-                description: "Will be given to the model(s) as context",
-                type: "long-string",
-            },
-            {
-                key: "birthdate",
-                icon: "calendar_month",
-                label: "Your birthdate",
-                description: "Will be given to the model(s) as context",
-                type: "date",
-            },
-            {
-                key: "maxSteps",
-                icon: "checklist",
-                label: "Maximum steps per call",
-                description: "Maximum amount of iterations each message you send will trigger",
-                type: "number",
-            },
-            {
-                key: "tintColor",
-                icon: "colors",
-                label: "UI tint color",
-                description: "What color to slightly tint the UI with.",
-                type: "color",
-            }
-        ];
         const loading = signal(false);
         const tabs = signal<Tab[]>([
             {
@@ -119,7 +35,7 @@ export class SettingsTemplates {
                 icon: "linked_services",
                 id: "mcp",
             }
-        ])
+        ]);
         const activeTab = signal("general");
 
         return create("div")

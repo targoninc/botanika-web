@@ -14,8 +14,8 @@ import {CLI} from "./api/CLI.ts";
 import {addWebsocketServer} from "./api/websocket-server/websocket.ts";
 import * as http from "node:http";
 import path from "node:path";
-import {ApiEndpoint} from "./models/ApiEndpoints.ts";
 import {addTranscribeEndpoints} from "./api/ai/stt/endpoints.ts";
+import {ApiEndpoint} from "./models-shared/ApiEndpoints.ts";
 
 dotenv.config();
 

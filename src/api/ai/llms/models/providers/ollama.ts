@@ -1,4 +1,4 @@
-import { ModelDefinition } from "../../../../../models/llms/ModelDefinition.ts";
+import { ModelDefinition } from "../../../../../models-shared/llms/ModelDefinition.ts";
 
 export function getOllamaModels(): ModelDefinition[] {
     return [

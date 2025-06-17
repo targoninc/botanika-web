@@ -1,4 +1,4 @@
-import {BotanikaFeature} from "./features/BotanikaFeature";
+import {BotanikaFeature} from "./BotanikaFeature.ts";
 
 export interface Configuration extends Record<string, any> {
     display_hotkeys: boolean;

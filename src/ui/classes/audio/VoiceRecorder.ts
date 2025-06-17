@@ -1,10 +1,10 @@
-import {terminator} from "../../../models/chat/terminator";
+import {terminator} from "../../../models-shared/chat/terminator";
 import {toast} from "../ui";
 import {activateNextUpdate, chatContext, configuration, currentText} from "../state/store.ts";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
-import {BotanikaClientEventType} from "../../../models/websocket/clientEvents/botanikaClientEventType.ts";
-import {NewMessageEventData} from "../../../models/websocket/clientEvents/newMessageEventData.ts";
+import {BotanikaClientEventType} from "../../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
+import {NewMessageEventData} from "../../../models-shared/websocket/clientEvents/newMessageEventData.ts";
 import {Api} from "../state/api.ts";
 
 export class VoiceRecorder {

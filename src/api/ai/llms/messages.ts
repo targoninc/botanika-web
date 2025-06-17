@@ -1,12 +1,12 @@
 import {v4 as uuidv4} from "uuid";
-import {ChatContext} from "../../../models/chat/ChatContext";
+import {ChatContext} from "../../../models-shared/chat/ChatContext";
 import {LanguageModelV1,} from "ai";
 import {FileUIPart, ToolInvocationUIPart} from "@ai-sdk/ui-utils";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
-import {Configuration} from "../../../models/Configuration";
+import {ChatMessage} from "../../../models-shared/chat/ChatMessage";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
 import {getSimpleResponse} from "./calls";
 import {ChatStorage} from "../../storage/ChatStorage.ts";
-import {MessageFile} from "../../../models/chat/MessageFile.ts";
+import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
 
 export async function getChatName(model: LanguageModelV1, message: string): Promise<string> {

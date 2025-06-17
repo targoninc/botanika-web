@@ -4,17 +4,17 @@ import {createOpenAI} from "@ai-sdk/openai";
 import {createAzure} from "@ai-sdk/azure";
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {createOllama} from 'ollama-ai-provider';
-import {LlmProvider} from "../../../models/llms/llmProvider";
-import {ModelDefinition} from "../../../models/llms/ModelDefinition";
+import {LlmProvider} from "../../../models-shared/llms/llmProvider";
+import {ModelDefinition} from "../../../models-shared/llms/ModelDefinition";
 import {getGroqModels} from "./models/providers/groq";
 import {getOpenaiModels} from "./models/providers/openai";
 import {getOllamaModels} from "./models/providers/ollama";
 import {getAzureModels} from "./models/providers/azure";
 import {getOpenrouterModels} from "./models/providers/openrouter";
 import dotenv from "dotenv";
-import {ProviderDefinition} from "../../../models/llms/ProviderDefinition";
-import { BotanikaFeature } from "../../../models/features/BotanikaFeature";
-import {Configuration} from "../../../models/Configuration.ts";
+import {ProviderDefinition} from "../../../models-shared/llms/ProviderDefinition";
+import { BotanikaFeature } from "../../../models-shared/configuration/BotanikaFeature";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
 
 dotenv.config();
 

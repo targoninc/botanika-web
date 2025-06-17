@@ -1,7 +1,7 @@
 import {closeModal, createModal, toast} from "../classes/ui";
 import {Callback, configuration, currentUser, target} from "../classes/state/store";
-import {Tab} from "../../models/uiExtensions/Tab";
-import {TextSegment} from "../../models/uiExtensions/TextSegment";
+import {Tab} from "../models-shared/Tab";
+import {TextSegment} from "../models-shared/TextSegment";
 import {ToastType} from "../enums/ToastType";
 import {
     AnyElement,
@@ -16,7 +16,7 @@ import {
     when
 } from "@targoninc/jess";
 import {button, icon, input, textarea, toggle} from "@targoninc/jess-components";
-import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 import {Api} from "../classes/state/api.ts";
 

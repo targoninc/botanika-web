@@ -1,9 +1,9 @@
-import {Configuration} from "../models/Configuration";
+import {Configuration} from "../models-shared/configuration/Configuration.ts";
 import {appDataPath} from "./appData";
 import {Application, Request} from "express";
-import {ApiEndpoint} from "../models/ApiEndpoints";
+import {ApiEndpoint} from "../models-shared/ApiEndpoints";
 import {execSync} from "child_process";
-import {BotanikaFeature} from "../models/features/BotanikaFeature";
+import {BotanikaFeature} from "../models-shared/configuration/BotanikaFeature";
 import {db, updateUser} from "./database/db.ts";
 
 export async function getConfig(userId: string): Promise<Configuration> {

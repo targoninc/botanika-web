@@ -4,14 +4,14 @@ import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, s
 import {searchList} from "../classes/search.ts";
 import {ChatTemplates} from "./chat.templates.ts";
 import {button, icon, input} from "@targoninc/jess-components";
-import {ChatContext} from "../../models/chat/ChatContext.ts";
-import { BotanikaClientEvent } from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import { SharedChangedEventData } from "../../models/websocket/clientEvents/sharedChangedEventData.ts";
-import { BotanikaClientEventType } from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
+import {ChatContext} from "../../models-shared/chat/ChatContext.ts";
+import { BotanikaClientEvent } from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
+import { SharedChangedEventData } from "../../models-shared/websocket/clientEvents/sharedChangedEventData.ts";
+import { BotanikaClientEventType } from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
 import {createModal, toast} from "../classes/ui.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
+import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";
 import {realtime} from "../index.ts";
-import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
+import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";
 
 export class ChatListTemplates {
     static chatList(context: string, shown: Signal<boolean>) {
