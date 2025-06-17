@@ -1,7 +1,6 @@
 import {chromium} from 'playwright';
-import {ModelDefinition} from "../src/models/llms/ModelDefinition";
-import {ModelCapability} from "../src/models/llms/ModelCapability";
 import fs from "fs";
+import {ModelCapability} from "../src/models-shared/llms/ModelCapability.ts";
 
 function getCapabilities(params: string[]) {
     let caps: ModelCapability[] = [ModelCapability.streaming];

@@ -94,7 +94,7 @@ export class ChatListTemplates {
         const editing = signal(false);
         const chatName = signal(chat.name);
         const shared = signal(chat.shared);
-        shared.subscribe((s, changed) => {
+        shared.subscribe(async (s, changed) => {
             if (!changed) {
                 return;
             }
@@ -107,7 +107,7 @@ export class ChatListTemplates {
             });
             if (s) {
                 const link = window.location.origin + `/chat?chatId=${chat.id}&shared=true`;
-                navigator.clipboard.writeText(link);
+                await navigator.clipboard.writeText(link);
                 toast("Link copied to clipboard");
             } else {
                 toast("Chat made private");

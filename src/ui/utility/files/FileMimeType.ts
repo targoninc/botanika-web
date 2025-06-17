@@ -143,7 +143,7 @@ export function getMimeType(fileName: string) {
         return "";
     }
 
-    const entry = Object.entries(FileMimeType).find(([k, v]) => v === ext);
+    const entry = Object.entries(FileMimeType).find(([_, v]) => v === ext);
     return (entry ?? [""])[0];
 }
 

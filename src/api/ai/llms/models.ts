@@ -75,12 +75,12 @@ export function getAvailableModels(provider: string): ModelDefinition[] {
     }
 }
 
-export async function initializeLlms() {
+export function initializeLlms() {
     const availableProviders = Object.values(LlmProvider);
     const models: Record<string, ProviderDefinition> = {};
     for (const provider of availableProviders) {
         models[provider] = <ProviderDefinition>{
-            models: await getAvailableModels(provider)
+            models: getAvailableModels(provider)
         };
     }
     return models;

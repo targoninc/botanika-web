@@ -13,14 +13,14 @@ import {Configuration} from "../../../../../models-shared/configuration/Configur
 dotenv.config();
 
 async function search(userConfig: Configuration, query: string): Promise<GoogleSearchResult> {
+    const apiKey = userConfig.featureOptions[BotanikaFeature.GoogleSearch].apiKey;
+    const searchEngineId = userConfig.featureOptions[BotanikaFeature.GoogleSearch].searchEngineId;
+
+    if (!apiKey || !searchEngineId) {
+        throw new Error("Google API Key or Search Engine ID is not defined in environment variables.");
+    }
+
     try {
-        const apiKey = userConfig.featureOptions[BotanikaFeature.GoogleSearch].apiKey;
-        const searchEngineId = userConfig.featureOptions[BotanikaFeature.GoogleSearch].searchEngineId;
-
-        if (!apiKey || !searchEngineId) {
-            throw new Error("Google API Key or Search Engine ID is not defined in environment variables.");
-        }
-
         const url = `https://www.googleapis.com/customsearch/v1`;
         const response = await axios.get(url, {
             params: {
@@ -33,7 +33,7 @@ async function search(userConfig: Configuration, query: string): Promise<GoogleS
         return response.data as GoogleSearchResult;
     } catch (error: any) {
         console.error("Error occurred while searching:", error.message);
-        throw new Error(`Search failed: ${error.message}`);
+        throw new Error(`Executing search failed: ${error.message}`);
     }
 }
 

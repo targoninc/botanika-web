@@ -3,7 +3,6 @@ import {appDataPath} from "./appData";
 import {Application, Request} from "express";
 import {ApiEndpoint} from "../models-shared/ApiEndpoints";
 import {execSync} from "child_process";
-import {BotanikaFeature} from "../models-shared/configuration/BotanikaFeature";
 import {db, updateUser} from "./database/db.ts";
 
 export async function getConfig(userId: string): Promise<Configuration> {

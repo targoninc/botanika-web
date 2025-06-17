@@ -1,6 +1,6 @@
-import {ModelDefinition} from "../src/models/llms/ModelDefinition";
-import {ModelCapability} from "../src/models/llms/ModelCapability";
 import fs from "fs";
+import {ModelCapability} from "../src/models-shared/llms/ModelCapability.ts";
+import {ModelDefinition} from "../src/models-shared/llms/ModelDefinition.ts";
 
 function getCapabilities(params: string[]) {
     let caps = [ModelCapability.streaming, ModelCapability.fileInput];

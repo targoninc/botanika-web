@@ -1,6 +1,5 @@
 import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
 import {sendChatUpdate, WebsocketConnection} from "./websocket.ts";
-import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {SharedChangedEventData} from "../../models-shared/websocket/clientEvents/sharedChangedEventData.ts";
 

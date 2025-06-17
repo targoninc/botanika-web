@@ -1,6 +1,6 @@
-import {create, Signal} from "@targoninc/jess";
+import {Signal} from "@targoninc/jess";
 import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
-import {getExtension, getMimeType} from "./FileMimeType.ts";
+import {getMimeType} from "./FileMimeType.ts";
 
 export function attachFiles(files: Signal<MessageFile[]>) {
     const fileInput = document.createElement('input');

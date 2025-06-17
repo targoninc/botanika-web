@@ -69,9 +69,9 @@ export function deleteChatEndpoint(req: Request, res: Response) {
 
 let models = {};
 
-export async function getModelsEndpoint(req: Request, res: Response) {
+export function getModelsEndpoint(req: Request, res: Response) {
     if (Object.keys(models).length === 0) {
-        models = await initializeLlms();
+        models = initializeLlms();
     }
     res.status(200).send(models);
 }

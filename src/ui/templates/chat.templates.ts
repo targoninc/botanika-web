@@ -38,7 +38,7 @@ import {Api} from "../utility/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {getHost} from "../utility/state/urlHelpers.ts";
-import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
+import {llmProviderFeatureMap} from "../enums/LlmProviderFeatureMap.ts";
 import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
 import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
@@ -504,7 +504,7 @@ export class ChatTemplates {
 
     private static llmSelector(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         const availableProviders = compute(c => Object.keys(LlmProvider).filter(p => {
-            const feat = providerFeatureMap[p];
+            const feat = llmProviderFeatureMap[p];
             if (!c.featureOptions || !c.featureOptions[feat]) {
                 return false;
             }

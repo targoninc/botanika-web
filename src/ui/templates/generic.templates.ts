@@ -382,8 +382,8 @@ export class GenericTemplates {
         return create("div")
             .classes("parent-top-left", "flex", "code-copy-button")
             .children(
-                GenericTemplates.iconButton("content_copy", "Copy to clipboard", () => {
-                    navigator.clipboard.writeText(content);
+                GenericTemplates.iconButton("content_copy", "Copy to clipboard", async () => {
+                    await navigator.clipboard.writeText(content);
                     toast("Copied to clipboard");
                 }),
             ).build();

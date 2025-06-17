@@ -38,9 +38,9 @@ export class Realtime {
         this.isConnecting = true;
 
         try {
-            // First get the authentication token
             const tokenResponse = await fetch(ApiEndpoint.WS_TOKEN);
             if (!tokenResponse.ok) {
+                // noinspection ExceptionCaughtLocallyJS because we want to reconnect in that case
                 throw new Error('Failed to get WebSocket token');
             }
 
