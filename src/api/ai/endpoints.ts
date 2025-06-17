@@ -1,38 +1,9 @@
 import {Application, Request, Response} from "express";
-import {ChatMessage} from "../../models/chat/ChatMessage";
 import {initializeLlms} from "./llms/models";
-import {ApiEndpoint} from "../../models/ApiEndpoints";
-import {getTtsAudio} from "./tts/tts";
-import {AudioStorage} from "../storage/AudioStorage";
-import {removeOngoingConversation, sendChatUpdate, WebsocketConnection} from "../websocket-server/websocket.ts";
+import {ApiEndpoint} from "../../models-shared/ApiEndpoints";
+import {removeOngoingConversation} from "../websocket-server/websocket.ts";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4} from "uuid";
-
-export async function getAudio(lastMessage: ChatMessage): Promise<string> {
-    if (lastMessage.type === "assistant") {
-        const blob = await getTtsAudio(lastMessage.text);
-        await AudioStorage.writeAudio(lastMessage.id, blob);
-        return AudioStorage.getLocalFileUrl(lastMessage.id);
-    }
-
-    return null;
-}
-
-export async function sendAudioAndStop(ws: WebsocketConnection, chatId: string, lastMessage: ChatMessage) {
-    const audioUrl = await getAudio(lastMessage);
-    if (audioUrl) {
-        sendChatUpdate(ws, {
-            chatId,
-            timestamp: Date.now(),
-            messages: [
-                {
-                    ...lastMessage,
-                    hasAudio: true
-                }
-            ]
-        })
-    }
-}
 
 export async function getChatsEndpoint(req: Request, res: Response) {
     const from = req.query.from ? new Date(req.query.from as string) : null;

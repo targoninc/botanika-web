@@ -1,16 +1,21 @@
-import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
-import {BotanikaServerEventType} from "../../../models/websocket/serverEvents/botanikaServerEventType.ts";
-import {ChatUpdate} from "../../../models/chat/ChatUpdate.ts";
+import {BotanikaServerEvent} from "../../../models-shared/websocket/serverEvents/botanikaServerEvent.ts";
+import {BotanikaServerEventType} from "../../../models-shared/websocket/serverEvents/botanikaServerEventType.ts";
+import {ChatUpdate} from "../../../models-shared/chat/ChatUpdate.ts";
 import {toast} from "../ui.ts";
-import {ServerErrorEvent} from "../../../models/websocket/serverEvents/serverErrorEvent.ts";
+import {ServerErrorEvent} from "../../../models-shared/websocket/serverEvents/serverErrorEvent.ts";
 import {ToastType} from "../../enums/ToastType.ts";
-import {ServerWarningEvent} from "../../../models/websocket/serverEvents/serverWarningEvent.ts";
-import {activateNextUpdate, chats, currentChatId, eventStore, updateChats} from "../state/store.ts";
+import {ServerWarningEvent} from "../../../models-shared/websocket/serverEvents/serverWarningEvent.ts";
+import {
+    activateNextUpdate,
+    chats,
+    currentChatId,
+    eventStore,
+    ttsEnabled,
+    updateChats
+} from "../state/store.ts";
 import {updateContext} from "../updateContext.ts";
-import {INITIAL_CONTEXT} from "../../../models/chat/initialContext.ts";
+import {INITIAL_CONTEXT} from "../../../models-shared/chat/initialContext.ts";
 import {playAudio} from "../audio/audio.ts";
-import {Api} from "../state/api.ts";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
 
 export async function handleMessage(event: BotanikaServerEvent<any>) {
     eventStore.publish(event);
@@ -63,9 +68,13 @@ export async function processUpdate(update: ChatUpdate) {
         }
     }
 
-    const playableMessage = update.messages?.find(m => m.hasAudio);
-    const isLast = playableMessage && update.messages.length > 0 && update.messages[update.messages.length - 1].id === playableMessage.id;
-    if (playableMessage && isLast) {
-        playAudio(playableMessage.id).then();
+    if (update.messages?.length > 0) {
+        const lastMessage = update.messages.at(-1);
+
+        if (lastMessage.finished && lastMessage.type === "assistant" && ttsEnabled()) {
+            setTimeout(() => {
+                playAudio(lastMessage.id).then();
+            }, 500);
+        }
     }
 }

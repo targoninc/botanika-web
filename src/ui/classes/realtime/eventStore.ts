@@ -1,4 +1,4 @@
-import {BotanikaServerEvent} from "../../../models/websocket/serverEvents/botanikaServerEvent.ts";
+import {BotanikaServerEvent} from "../../../models-shared/websocket/serverEvents/botanikaServerEvent.ts";
 
 type EventListener = (event: BotanikaServerEvent<any>) => void;
 

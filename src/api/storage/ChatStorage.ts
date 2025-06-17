@@ -1,7 +1,7 @@
-import {ChatContext} from "../../models/chat/ChatContext";
+import {ChatContext} from "../../models-shared/chat/ChatContext";
 import {db} from "../database/db.ts";
-import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {ChatMessage} from "../../models-shared/chat/ChatMessage.ts";
+import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {Chat, MessageType} from "@prisma/client";
 import {ToolInvocation} from "@ai-sdk/ui-utils";
 

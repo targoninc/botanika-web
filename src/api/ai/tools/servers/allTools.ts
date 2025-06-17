@@ -1,13 +1,13 @@
 import {googleSearchTool} from "./google-search/google-search.tool.ts";
 import {extractImagesFromWebpageTool, extractContentFromWebpageTool} from "./web-browser/web-browser.tool.ts";
-import {Configuration} from "../../../../models/Configuration.ts";
-import {BotanikaFeature} from "../../../../models/features/BotanikaFeature.ts";
+import {Configuration} from "../../../../models-shared/configuration/Configuration.ts";
+import {BotanikaFeature} from "../../../../models-shared/configuration/BotanikaFeature.ts";
 import {Signal} from "@targoninc/jess";
-import {ChatMessage} from "../../../../models/chat/ChatMessage.ts";
+import {ChatMessage} from "../../../../models-shared/chat/ChatMessage.ts";
 import {Tool, ToolSet} from "ai";
 
 export function featureOption(config: Configuration, option: BotanikaFeature): any {
-    return (config.featureOptions ?? {})[option] ?? {};
+    return (config?.featureOptions ?? {})[option] ?? {};
 }
 
 function addTool(toolSet: ToolSet, tool: Tool & { id: string }) {

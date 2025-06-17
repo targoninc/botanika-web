@@ -1,5 +1,5 @@
 import {AnyNode, create, Signal, signalMap} from "@targoninc/jess";
-import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {GenericTemplates} from "./generic.templates.ts";
 import {icon} from "@targoninc/jess-components";
 import {downloadFile} from "../classes/attachFiles.ts";

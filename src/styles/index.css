@@ -119,9 +119,7 @@ h1 {
 
 h2 {
     font-size: 1.75rem;
-    margin-top: 1em;
     font-weight: 500;
-    margin-left: calc(var(--gap-h) * 2);
 }
 
 h3 {

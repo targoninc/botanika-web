@@ -1,4 +1,4 @@
-import {SettingConfiguration} from "../uiExtensions/SettingConfiguration";
+import {SettingConfiguration} from "./SettingConfiguration.ts";
 
 export interface FeatureConfigurationInfo {
     enabled: boolean;

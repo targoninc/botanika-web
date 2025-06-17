@@ -1,9 +1,8 @@
 import {experimental_createMCPClient as createMCPClient, ToolSet} from 'ai';
 import {TempMcpClient} from "./models/TempMcpClient";
-import {McpConfiguration} from "../../../models/mcp/McpConfiguration";
 import {CLI} from "../../CLI";
 import {getMcpConfig} from "./endpoints.ts";
-import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {McpServerConfig} from "../../../models-shared/mcp/McpServerConfig.ts";
 
 export async function createClient(url: string, headers: Record<string, string>): Promise<TempMcpClient> {
     return await createMCPClient({

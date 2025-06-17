@@ -1,116 +1,32 @@
 import {GenericTemplates} from "./generic.templates";
-import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration";
+import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
 import {createModal, toast} from "../classes/ui";
-import {ShortcutConfiguration} from "../../models/shortcuts/ShortcutConfiguration";
-import {shortcutNames} from "../../models/shortcuts/Shortcut";
-import {McpServerConfig} from "../../models/mcp/McpServerConfig";
-import {Configuration} from "../../models/Configuration";
-import {featureOptions} from "../../models/features/featureOptions";
+import {ShortcutConfiguration} from "../../models-shared/shortcuts/ShortcutConfiguration";
+import {shortcutNames} from "../../models-shared/shortcuts/Shortcut";
+import {McpServerConfig} from "../../models-shared/mcp/McpServerConfig";
+import {Configuration} from "../../models-shared/configuration/Configuration.ts";
+import {featureOptions} from "../../models-shared/configuration/FeatureOptions.ts";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {BotanikaFeature} from "../../models/features/BotanikaFeature.ts";
+import {BotanikaFeature} from "../../models-shared/configuration/BotanikaFeature.ts";
 import {ToastType} from "../enums/ToastType.ts";
 import {activePage, configuration, mcpConfig, shortCutConfig} from "../classes/state/store.ts";
 import {Api} from "../classes/state/api.ts";
 import {v4} from "uuid";
-import {Tab} from "../../models/uiExtensions/Tab.ts";
-import {TranscriptionProvider} from "../../models/transcriptionProvider.ts";
+import {transcriptionSettings, generalSettings, speechSettings} from "../enums/settings.ts";
+import {Tab} from "../models/Tab.ts";
 
 export class SettingsTemplates {
     static settings() {
-        const settings: SettingConfiguration[] = [
-            {
-                key: "display_hotkeys",
-                icon: "keyboard",
-                label: "Display hotkeys",
-                description: "Whether to display hotkeys in the UI.",
-                type: "boolean",
-            },
-            {
-                key: "enableStt",
-                icon: "mic",
-                label: "Enable transcription",
-                description: "Whether transcription of what you say should be enabled",
-                type: "boolean",
-            },
-            {
-                key: "transcriptionProvider",
-                icon: "transcribe",
-                label: "Transcription Provider",
-                description: `Which transcription provider to use.`,
-                type: "select",
-                options: [TranscriptionProvider.openai]
-            },
-            {
-                key: "transcriptionModel",
-                icon: "transcribe",
-                label: "Transcription Model",
-                description: `Find available models: https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models`,
-                type: "string",
-            },
-            {
-                key: "enableTts",
-                icon: "text_to_speech",
-                label: "Enable text to speech",
-                description: "Whether assistant messages should be spoken aloud",
-                type: "boolean",
-            },
-            {
-                key: "botname",
-                label: "Assistant name",
-                description: "What name LLMs will use to refer to themselves",
-                type: "string",
-            },
-            {
-                key: "botDescription",
-                label: "What should the assistant be like?",
-                description: "The assistant will try to align with this description",
-                type: "long-string",
-            },
-            {
-                key: "displayname",
-                icon: "person",
-                label: "Your name",
-                description: "Displayed in the UI",
-                type: "string",
-            },
-            {
-                key: "userDescription",
-                label: "A short description of yourself",
-                description: "Will be given to the model(s) as context",
-                type: "long-string",
-            },
-            {
-                key: "birthdate",
-                icon: "calendar_month",
-                label: "Your birthdate",
-                description: "Will be given to the model(s) as context",
-                type: "date",
-            },
-            {
-                key: "maxSteps",
-                icon: "checklist",
-                label: "Maximum steps per call",
-                description: "Maximum amount of iterations each message you send will trigger",
-                type: "number",
-            },
-            {
-                key: "tintColor",
-                icon: "colors",
-                label: "UI tint color",
-                description: "What color to slightly tint the UI with.",
-                type: "color",
-            }
-        ];
         const loading = signal(false);
         const tabs = signal<Tab[]>([
             {
-                name: "General",
+                name: "Configuration",
                 icon: "settings",
                 id: "general",
             },
             {
-                name: "Keys",
+                name: "Features",
                 icon: "key",
                 id: "keys",
             },
@@ -119,7 +35,7 @@ export class SettingsTemplates {
                 icon: "linked_services",
                 id: "mcp",
             }
-        ])
+        ]);
         const activeTab = signal("general");
 
         return create("div")
@@ -133,7 +49,7 @@ export class SettingsTemplates {
                         }, ["fixed", "layer-shadow"]),
                         SettingsTemplates.settingsHeader(loading),
                         GenericTemplates.tabs([
-                            SettingsTemplates.generalSettings(settings, loading),
+                            SettingsTemplates.generalSettings(loading),
                             SettingsTemplates.configuredFeatures(),
                             SettingsTemplates.mcpConfig(),
                         ], tabs, activeTab),
@@ -142,16 +58,26 @@ export class SettingsTemplates {
             ).build();
     }
 
-    private static generalSettings(settings: SettingConfiguration[], loading: Signal<boolean>) {
+    private static generalSettings(loading: Signal<boolean>) {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "General"),
+                SettingsTemplates.settingsSection("General", generalSettings, loading),
+                SettingsTemplates.settingsSection("Transcription", transcriptionSettings, loading),
+                SettingsTemplates.settingsSection("Speech", speechSettings, loading),
+                SettingsTemplates.shortcuts()
+            ).build();
+    }
+
+    private static settingsSection(name: string, settings: SettingConfiguration[], loading: Signal<boolean>) {
+        return create("div")
+            .classes("flex-v", "card")
+            .children(
+                GenericTemplates.heading(2, name),
                 ...settings.map(s => SettingsTemplates.setting(s, loading, c => c[s.key], (c, k, v) => ({
                     ...c,
                     [k]: v
                 }))),
-                SettingsTemplates.shortcuts()
             ).build();
     }
 
@@ -215,7 +141,7 @@ export class SettingsTemplates {
         const changed = compute((v, c) => v !== (getter(c) ?? null) && sc.type !== "boolean", value, configuration);
 
         return create("div")
-            .classes("flex-v", "card", "small-gap")
+            .classes("flex-v", "small-gap", "setting")
             .children(
                 create("div")
                     .classes("flex", "align-center")
@@ -240,6 +166,10 @@ export class SettingsTemplates {
                 when(sc.description, create("span")
                     .classes("text-small")
                     .text(sc.description)
+                    .build()),
+                when(sc.descriptionContent, create("div")
+                    .classes("flex-v")
+                    .children(...(sc.descriptionContent ?? []))
                     .build()),
                 signalMap(errors, create("div").classes("flex-v"), e => create("span")
                     .classes("error")
@@ -299,7 +229,6 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "Configured APIs"),
                 ...Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)).map((api: BotanikaFeature) => {
                     const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
                     const fOptions = featureOptions[api];
@@ -320,7 +249,7 @@ export class SettingsTemplates {
                     }))) : [];
 
                     return create("div")
-                        .classes("flex-v")
+                        .classes("flex-v", "card", "small-gap")
                         .children(
                             create("div")
                                 .classes("flex", allSet ? "positive" : "negative")
@@ -348,7 +277,6 @@ export class SettingsTemplates {
         return create("div")
             .classes("flex-v")
             .children(
-                GenericTemplates.heading(2, "Configured MCP servers"),
                 ...(servers ?? []).map(SettingsTemplates.existingMcpServer),
                 SettingsTemplates.addMcpServer()
             ).build();
@@ -504,7 +432,7 @@ export class SettingsTemplates {
 
     static shortcuts() {
         return create("div")
-            .classes("flex-v")
+            .classes("flex-v", "card")
             .children(
                 GenericTemplates.heading(2, "Shortcuts"),
                 compute(sc => SettingsTemplates.shortcutsInternal(sc), shortCutConfig),
@@ -526,7 +454,7 @@ export class SettingsTemplates {
                     const unchanged = compute((k, current) => k === current[action], key, shortCutConfig);
 
                     return create("div")
-                        .classes("flex", "card", "align-center")
+                        .classes("flex", "setting", "align-center")
                         .children(
                             create("b")
                                 .text(shortcutNames[action])

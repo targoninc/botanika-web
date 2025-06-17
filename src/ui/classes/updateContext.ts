@@ -1,6 +1,6 @@
-import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
-import {ChatContext} from "../../models/chat/ChatContext.ts";
-import {ChatMessage} from "../../models/chat/ChatMessage.ts";
+import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";
+import {ChatContext} from "../../models-shared/chat/ChatContext.ts";
+import {ChatMessage} from "../../models-shared/chat/ChatMessage.ts";
 
 export function updateContext(c: ChatContext, update: ChatUpdate) {
     if (c.id && c.id !== update.chatId) {

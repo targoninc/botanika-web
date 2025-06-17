@@ -1,5 +1,5 @@
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {GenerationStoppedEventData} from "../../models/websocket/clientEvents/generationStoppedEventData.ts";
+import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
+import {GenerationStoppedEventData} from "../../models-shared/websocket/clientEvents/generationStoppedEventData.ts";
 import {WebsocketConnection, ongoingConversations, sendChatUpdate} from "./websocket.ts";
 import {CLI} from "../CLI.ts";
 import {activeAbortControllers} from "./newMessageEventHandler.ts";

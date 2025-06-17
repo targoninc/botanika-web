@@ -1,16 +1,14 @@
 import {z} from "zod";
 import axios from "axios";
 import {GoogleSearchResult} from "./google-search.models.ts";
-import {ResourceReference} from "../../../../../models/chat/ResourceReference.ts";
+import {ResourceReference} from "../../../../../models-shared/chat/ResourceReference.ts";
 import dotenv from "dotenv";
-import {ChatToolResult} from "../../../../../models/chat/ChatToolResult.ts";
+import {ChatToolResult} from "../../../../../models-shared/chat/ChatToolResult.ts";
 import {wrapTool} from "../../tooling.ts";
-import {BotanikaFeature} from "../../../../../models/features/BotanikaFeature.ts";
-import { Configuration } from "src/models/Configuration.ts";
-import { WebsocketConnection } from "src/api/websocket-server/websocket.ts";
-import {ChatContext} from "../../../../../models/chat/ChatContext.ts";
+import {BotanikaFeature} from "../../../../../models-shared/configuration/BotanikaFeature.ts";
 import {Signal} from "@targoninc/jess";
-import {ChatMessage} from "../../../../../models/chat/ChatMessage.ts";
+import {ChatMessage} from "../../../../../models-shared/chat/ChatMessage.ts";
+import {Configuration} from "../../../../../models-shared/configuration/Configuration.ts";
 
 dotenv.config();
 

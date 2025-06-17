@@ -1,8 +1,8 @@
 import {Application, Request, Response} from "express";
-import { ApiEndpoint } from "../../../models/ApiEndpoints";
+import { ApiEndpoint } from "../../../models-shared/ApiEndpoints";
 import {db, updateUser} from "../../database/db.ts";
 import { JsonArray } from "@prisma/client/runtime/library";
-import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
+import {McpServerConfig} from "../../../models-shared/mcp/McpServerConfig.ts";
 
 export async function getMcpConfig(id: string) {
     const config = await db.user.findUnique({

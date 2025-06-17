@@ -1,5 +1,5 @@
-import {ModelDefinition} from "../../../../../models/llms/ModelDefinition.ts";
-import {ModelCapability} from "../../../../../models/llms/ModelCapability.ts";
+import {ModelDefinition} from "../../../../../models-shared/llms/ModelDefinition.ts";
+import {ModelCapability} from "../../../../../models-shared/llms/ModelCapability.ts";
 
 export function getOpenaiModels(): ModelDefinition[] {
     return [

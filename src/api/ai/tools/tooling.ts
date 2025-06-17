@@ -1,7 +1,7 @@
 import {CLI} from "../../CLI";
-import {ChatMessage} from "../../../models/chat/ChatMessage";
+import {ChatMessage} from "../../../models-shared/chat/ChatMessage";
 import {v4 as uuidv4} from "uuid";
-import {ChatToolResult} from "../../../models/chat/ChatToolResult";
+import {ChatToolResult} from "../../../models-shared/chat/ChatToolResult";
 import {Signal} from "@targoninc/jess";
 
 async function getToolResult(id: string, execute: (input: any) => Promise<any>, input: any) {

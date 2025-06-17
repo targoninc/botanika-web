@@ -1,5 +1,5 @@
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
+import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
+import {NewMessageEventData} from "../../models-shared/websocket/clientEvents/newMessageEventData.ts";
 import {sendChatUpdate, sendWarning, WebsocketConnection} from "./websocket.ts";
 import {getAvailableModels, getModel} from "../ai/llms/models.ts";
 import {getConfig} from "../configuration.ts";
@@ -8,23 +8,21 @@ import {
     createChat, getChatName,
     getPromptMessages,
     getWorldContext,
-    newAssistantMessage,
     newUserMessage
 } from "../ai/llms/messages.ts";
 import {LanguageModelV1, StepResult, ToolSet} from "ai";
-import {ChatContext} from "../../models/chat/ChatContext.ts";
+import {ChatContext} from "../../models-shared/chat/ChatContext.ts";
 import {getMcpTools} from "../ai/initializer.ts";
-import {ModelCapability} from "../../models/llms/ModelCapability.ts";
+import {ModelCapability} from "../../models-shared/llms/ModelCapability.ts";
 import {getBuiltInTools} from "../ai/tools/servers/allTools.ts";
-import {Configuration} from "../../models/Configuration.ts";
+import {Configuration} from "../../models-shared/configuration/Configuration.ts";
 import {getSimpleResponse, streamResponseAsMessage} from "../ai/llms/calls.ts";
-import {ChatMessage} from "../../models/chat/ChatMessage.ts";
-import {sendAudioAndStop} from "../ai/endpoints.ts";
+import {ChatMessage} from "../../models-shared/chat/ChatMessage.ts";
 import {signal, Signal} from "@targoninc/jess";
 import {ChatStorage} from "../storage/ChatStorage.ts";
 import {v4 as uuidv4} from "uuid";
-import { ModelDefinition } from "../../models/llms/ModelDefinition.ts";
-import {LlmProvider} from "../../models/llms/llmProvider.ts";
+import { ModelDefinition } from "../../models-shared/llms/ModelDefinition.ts";
+import {LlmProvider} from "../../models-shared/llms/llmProvider.ts";
 import {updateConversation} from "../ai/llms/functions.ts";
 
 async function createNewChat(ws: WebsocketConnection, request: NewMessageEventData, model: LanguageModelV1) {
@@ -119,10 +117,6 @@ async function requestSimpleIfOnlyToolCalls(ws: WebsocketConnection, message: Si
         m.text = response.text;
 
         message.value = m;
-
-        if (userConfig.enableTts && m.text.length > 0) {
-            await sendAudioAndStop(ws, chat.id, m);
-        }
     }
 }
 
@@ -176,8 +170,8 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
     activeAbortControllers.set(chat.id, abortController);
 
     function getListener(chatId: string, userId: string, message: Signal<ChatMessage>) {
-        return () => {
-            updateConversation(chatId, userId, message.value, true);
+        return async () => {
+            await updateConversation(chatId, userId, chat, message.value, true);
         }
     }
 
@@ -195,13 +189,7 @@ export async function newMessageEventHandler(ws: WebsocketConnection, message: B
             if (assMessage.value.finished) {
                 clearInterval(checkInterval);
                 chat.history.push(assMessage.value);
-                if (userConfig.enableTts && assMessage.value.text.length > 0) {
-                    sendAudioAndStop(ws, chat.id, assMessage.value).then(() => {
-                        resolve();
-                    });
-                } else {
-                    resolve();
-                }
+                resolve();
             }
         }, 100);
     });

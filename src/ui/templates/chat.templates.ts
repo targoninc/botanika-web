@@ -11,28 +11,28 @@ import {
     currentUser,
     eventStore,
     shortCutConfig,
-    target,
+    target, ttsEnabled,
     updateChats,
 } from "../classes/state/store";
 import {GenericTemplates} from "./generic.templates";
-import {ChatContext} from "../../models/chat/ChatContext";
-import {ChatMessage} from "../../models/chat/ChatMessage";
+import {ChatContext} from "../../models-shared/chat/ChatContext";
+import {ChatMessage} from "../../models-shared/chat/ChatMessage";
 import {attachCodeCopyButtons, createModal, toast} from "../classes/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
-import {ResourceReference} from "../../models/chat/ResourceReference";
-import {LlmProvider} from "../../models/llms/llmProvider";
+import {ResourceReference} from "../../models-shared/chat/ResourceReference";
+import {LlmProvider} from "../../models-shared/llms/llmProvider";
 import {playAudio, stopAudio} from "../classes/audio/audio";
-import {ProviderDefinition} from "../../models/llms/ProviderDefinition";
+import {ProviderDefinition} from "../../models-shared/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {featureOptions} from "../../models/features/featureOptions.ts";
-import {SettingConfiguration} from "../../models/uiExtensions/SettingConfiguration.ts";
+import {featureOptions} from "../../models-shared/configuration/FeatureOptions.ts";
+import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
 import {focusChatInput, realtime} from "../index.ts";
-import {BotanikaClientEventType} from "../../models/websocket/clientEvents/botanikaClientEventType.ts";
-import {NewMessageEventData} from "../../models/websocket/clientEvents/newMessageEventData.ts";
-import {MessageFile} from "../../models/chat/MessageFile.ts";
+import {BotanikaClientEventType} from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
+import {NewMessageEventData} from "../../models-shared/websocket/clientEvents/newMessageEventData.ts";
+import {MessageFile} from "../../models-shared/chat/MessageFile.ts";
 import {attachFiles, handleDroppedFiles, pasteFile} from "../classes/attachFiles.ts";
 import {Api} from "../classes/state/api.ts";
 import hljs from "highlight.js";
@@ -41,12 +41,12 @@ import {getHost} from "../classes/state/urlHelpers.ts";
 import {providerFeatureMap} from "../enums/providerFeatureMap.ts";
 import {toHumanizedTime} from "../classes/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
-import {BotanikaClientEvent} from "../../models/websocket/clientEvents/botanikaClientEvent.ts";
-import {ChatNameChangedEventData} from "../../models/websocket/clientEvents/chatNameChangedEventData.ts";
-import {BotanikaServerEvent} from "../../models/websocket/serverEvents/botanikaServerEvent.ts";
-import {BotanikaServerEventType} from "../../models/websocket/serverEvents/botanikaServerEventType.ts";
-import {ChatUpdate} from "../../models/chat/ChatUpdate.ts";
-import {ToolCall} from "../../models/chat/ToolCall.ts";
+import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
+import {ChatNameChangedEventData} from "../../models-shared/websocket/clientEvents/chatNameChangedEventData.ts";
+import {BotanikaServerEvent} from "../../models-shared/websocket/serverEvents/botanikaServerEvent.ts";
+import {BotanikaServerEventType} from "../../models-shared/websocket/serverEvents/botanikaServerEventType.ts";
+import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";
+import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 
 function parseMarkdown(text: string) {
@@ -222,27 +222,33 @@ export class ChatTemplates {
     static messageActions(message: ChatMessage) {
         const audioDisabled = compute(a => !!a && a !== message.id, currentlyPlayingAudio);
         const isOwnChat = compute((c, u) => u && (c.userId === u.id || !c.shared), chatContext, currentUser);
+        const isAssistant = compute(i => message.type === "assistant" && i, isOwnChat);
+        const ttsLoading = signal(false);
+        const ttsVisible = compute((_, i, l) => ttsEnabled() && i && !l, configuration, isAssistant, ttsLoading);
 
         return create("div")
             .classes("flex", "align-center", "message-actions")
             .children(
-                message.hasAudio ? button({
-                    disabled: audioDisabled,
-                    icon: { icon: compute(a => a === message.id ? "stop_circle" : "volume_up", currentlyPlayingAudio) },
-                    onclick: () => {
-                        if (currentlyPlayingAudio.value === message.id) {
-                            stopAudio();
-                        } else {
-                            playAudio(message.id).then();
-                        }
-                    },
-                    classes: ["flex", "align-center", "icon-button"]
-                }) : null,
                 GenericTemplates.iconButton("content_copy", "Copy", async (e) => {
                     e.stopPropagation();
                     await navigator.clipboard.writeText(message.text);
                     toast("Copied to clipboard");
                 }),
+                when(ttsVisible, button({
+                    disabled: audioDisabled,
+                    icon: { icon: compute(a => a === message.id ? "stop" : "play_arrow", currentlyPlayingAudio) },
+                    title: "Play audio",
+                    onclick: () => {
+                        if (currentlyPlayingAudio.value === message.id) {
+                            stopAudio();
+                        } else {
+                            ttsLoading.value = true;
+                            playAudio(message.id).then(() => ttsLoading.value = false);
+                        }
+                    },
+                    classes: ["flex", "align-center", "icon-button"]
+                })),
+                when(ttsLoading, GenericTemplates.spinner()),
                 when(compute(i => message.type === "user" && i, isOwnChat), GenericTemplates.iconButton("autorenew", "Retry with currently selected model", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Retry message", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
@@ -269,7 +275,7 @@ export class ChatTemplates {
                         }
                     }));
                 })),
-                when(compute(i => message.type === "assistant" && i, isOwnChat), GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
+                when(isAssistant, GenericTemplates.iconButton("alt_route", "Branch within chat", async (e) => {
                     e.stopPropagation();
                     createModal(GenericTemplates.confirmModal("Branch within chat", `This will delete all messages after the selected one and can not be reversed. Are you sure?`, "Yes", "No", async () => {
                         const r = await Api.deleteAfterMessage(chatContext.value.id, message.id);

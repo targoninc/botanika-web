@@ -1,6 +1,6 @@
 import {Application, Request, RequestHandler, Response} from "express";
 import {db} from "../database/db.ts";
-import {ApiEndpoint} from "../../models/ApiEndpoints.ts";
+import {ApiEndpoint} from "../../models-shared/ApiEndpoints.ts";
 import {auth, Session} from "express-openid-connect";
 import {base64Decode} from "./base64Decode.ts";
 import { User } from "@prisma/client";

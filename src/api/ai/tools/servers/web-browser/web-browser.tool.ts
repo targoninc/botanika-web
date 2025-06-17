@@ -2,11 +2,11 @@ import { z } from "zod";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { WebBrowserImage } from "./web-browser.models.ts";
-import { ResourceReference } from "../../../../../models/chat/ResourceReference.ts";
-import { ChatToolResult } from "../../../../../models/chat/ChatToolResult.ts";
+import { ResourceReference } from "../../../../../models-shared/chat/ResourceReference.ts";
+import { ChatToolResult } from "../../../../../models-shared/chat/ChatToolResult.ts";
 import { wrapTool } from "../../tooling.ts";
 import { Signal } from "@targoninc/jess";
-import { ChatMessage } from "../../../../../models/chat/ChatMessage.ts";
+import { ChatMessage } from "../../../../../models-shared/chat/ChatMessage.ts";
 import {CLI} from "../../../../CLI.ts";
 
 /**

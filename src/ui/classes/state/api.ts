@@ -1,10 +1,10 @@
 import { ApiBase } from "./api.base";
-import {Configuration} from "../../../models/Configuration.ts";
-import {ApiEndpoint} from "../../../models/ApiEndpoints.ts";
-import {ChatContext} from "../../../models/chat/ChatContext.ts";
-import {ProviderDefinition} from "../../../models/llms/ProviderDefinition.ts";
-import {McpServerConfig} from "../../../models/mcp/McpServerConfig.ts";
-import {ShortcutConfiguration} from "../../../models/shortcuts/ShortcutConfiguration.ts";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
+import {ApiEndpoint} from "../../../models-shared/ApiEndpoints.ts";
+import {ChatContext} from "../../../models-shared/chat/ChatContext.ts";
+import {ProviderDefinition} from "../../../models-shared/llms/ProviderDefinition.ts";
+import {McpServerConfig} from "../../../models-shared/mcp/McpServerConfig.ts";
+import {ShortcutConfiguration} from "../../../models-shared/shortcuts/ShortcutConfiguration.ts";
 import {UserinfoResponse} from "openid-client";
 import {User} from "@prisma/client";
 

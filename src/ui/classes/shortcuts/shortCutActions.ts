@@ -1,4 +1,4 @@
-import {Shortcut} from "../../../models/shortcuts/Shortcut";
+import {Shortcut} from "../../../models-shared/shortcuts/Shortcut";
 import {activePage, currentChatId} from "../state/store.ts";
 
 export const shortCutActions: Record<Shortcut, () => void> = {
