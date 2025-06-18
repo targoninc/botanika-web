@@ -13,7 +13,13 @@ export async function sharedChangedEventHandler(ws: WebsocketConnection, message
     if (!chat) {
         throw new Error("Chat not found");
     }
-    chat.shared = request.newValue === true;
+
+    const newValue = request.newValue === true;
+    if (newValue === chat.shared) {
+        return;
+    }
+
+    chat.shared = newValue;
     await ChatStorage.writeChatContext(ws.userId, chat);
 
     sendChatUpdate(ws, {

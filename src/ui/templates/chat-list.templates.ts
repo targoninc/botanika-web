@@ -123,7 +123,7 @@ export class ChatListTemplates {
             if (data.chatId === currentChatId.value && data.name) {
                 chatName.value = data.name;
             }
-            if (data.chatId === currentChatId.value && data.shared !== undefined) {
+            if (data.chatId === currentChatId.value && data.shared !== undefined && data.shared !== shared.value) {
                 shared.value = data.shared;
             }
         });

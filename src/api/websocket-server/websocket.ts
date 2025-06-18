@@ -279,9 +279,9 @@ export function addWebsocketServer(server: Server) {
 
         ws.on("message", async (msg: string) => {
             const message = JSON.parse(msg);
-            CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
             try {
                 await handleMessage(message, ws);
+                CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
             } catch (e) {
                 console.error(e);
                 sendError(ws, e);
