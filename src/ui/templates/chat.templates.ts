@@ -111,28 +111,32 @@ export class ChatTemplates {
                             .build(),
                         ChatTemplates.botSettings(),
                     ).build(),
-                input({
-                    type: InputType.text,
-                    classes: ["invisible-input"],
-                    value: chatName,
-                    name: "chatname-input",
-                    onchange: (() => {
-                        return (val: string) => {
-                            clearTimeout(timeoutId);
-                            timeoutId = setTimeout(() => {
-                                if (val.length > 0) {
-                                    realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
-                                        type: BotanikaClientEventType.chatNameChanged,
-                                        data: {
-                                            chatId: currentChatId.value,
-                                            name: val
+                create("div")
+                    .classes("full-width")
+                    .children(
+                        input({
+                            type: InputType.text,
+                            classes: ["invisible-input"],
+                            value: chatName,
+                            name: "chatname-input",
+                            onchange: (() => {
+                                return (val: string) => {
+                                    clearTimeout(timeoutId);
+                                    timeoutId = setTimeout(() => {
+                                        if (val.length > 0) {
+                                            realtime.send(<BotanikaClientEvent<ChatNameChangedEventData>>{
+                                                type: BotanikaClientEventType.chatNameChanged,
+                                                data: {
+                                                    chatId: currentChatId.value,
+                                                    name: val
+                                                }
+                                            });
                                         }
-                                    });
-                                }
-                            }, 1000);
-                        };
-                    })()
-                })
+                                    }, 1000);
+                                };
+                            })()
+                        })
+                    ).build()
             ).build();
     }
 

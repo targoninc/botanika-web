@@ -1091,7 +1091,7 @@ div:hover > .showOnParentHover {
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
-    width: max-content !important;
+    width: 100%;
 }
 
 .setting {
