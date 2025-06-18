@@ -19,6 +19,10 @@ import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {Api} from "../utility/state/api.ts";
 import {TextSegment} from "../models/TextSegment.ts";
 import {Tab} from "../models/Tab.ts";
+import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
+import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
+import {ResourceReference} from "../../models-shared/chat/ResourceReference.ts";
+import {getHost} from "../utility/state/urlHelpers.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -634,5 +638,68 @@ export class GenericTemplates {
             .href(url)
             .target("_blank")
             .build();
+    }
+
+    public static selectorPane(p: {
+        id: string,
+        displayName: string
+    }[], selected: Signal<string>, setValue: (str: string) => void) {
+        return create("div")
+            .classes("flex-v", "no-gap", "selector-pane")
+            .children(
+                ...p.map(item => {
+                    return create("div")
+                        .classes("selector-row", compute((s): string => s === item.id ? "selected" : "_", selected))
+                        .onclick(() => setValue(item.id))
+                        .text(item.displayName);
+                })
+            ).build();
+    }
+
+    public static reference(r: ResourceReference) {
+        return create("div")
+            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_")
+            .onmousedown((e) => {
+                if (r.link && e.button !== 2) {
+                    e.preventDefault();
+                    window.open(r.link, "_blank");
+                }
+            })
+            .children(
+                create("div")
+                    .classes("flex", "align-center", "no-wrap")
+                    .children(
+                        (r.link && !r.link.startsWith("file://")) ? create("a")
+                                .href(r.link)
+                                .target("_blank")
+                                .title(r.link)
+                                .classes("flex", "align-children")
+                                .children(
+                                    GenericTemplates.icon("link"),
+                                    create("span")
+                                        .text(r.name)
+                                ).build()
+                            : create("span")
+                                .classes("text-small")
+                                .text(r.name)
+                                .build(),
+                    ).build(),
+                r.link ? create("span").classes("link-host").text(getHost(r.link)).build() : null,
+                r.snippet ? create("div")
+                        .classes("flex", "no-wrap", "small-gap", "reference-preview")
+                        .children(
+                            r.imageUrl ? create("img")
+                                    .classes("thumbnail")
+                                    .src(r.imageUrl)
+                                    .alt(r.name)
+                                    .build()
+                                : null,
+                            create("span")
+                                .classes("snippet")
+                                .text(r.snippet)
+                                .build(),
+                        ).build()
+                    : null,
+            ).build();
     }
 }

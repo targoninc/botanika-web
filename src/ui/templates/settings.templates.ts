@@ -5,7 +5,7 @@ import {ShortcutConfiguration} from "../../models-shared/shortcuts/ShortcutConfi
 import {shortcutNames} from "../../models-shared/shortcuts/Shortcut";
 import {McpServerConfig} from "../../models-shared/mcp/McpServerConfig";
 import {Configuration} from "../../models-shared/configuration/Configuration.ts";
-import {featureOptions} from "../../models-shared/configuration/FeatureOptions.ts";
+import {featureOptions, featureTypeIsUsable} from "../../models-shared/configuration/FeatureOptions.ts";
 import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
 import {BotanikaFeature} from "../../models-shared/configuration/BotanikaFeature.ts";
@@ -144,6 +144,7 @@ export class SettingsTemplates {
             });
         }
         const changed = compute((v, c) => v !== (getter(c) ?? null) && sc.type !== "boolean", value, configuration);
+        const featureNotConfigured = compute(c => sc.needsFeatureType ? !featureTypeIsUsable(c, sc.needsFeatureType) : false, configuration);
 
         return create("div")
             .classes("flex-v", "small-gap", "setting")
@@ -168,6 +169,7 @@ export class SettingsTemplates {
                             onclick: () => updateKey(sc.key, value.value)
                         })),
                     ).build(),
+                when(featureNotConfigured, GenericTemplates.warning(`Feature ${(sc.needsFeatureType ?? "").toUpperCase()} is not configured. Head to "Keys" to set up.`)),
                 when(sc.description, create("span")
                     .classes("text-small")
                     .text(sc.description)

@@ -21,7 +21,6 @@ import {ChatMessage} from "../../models-shared/chat/ChatMessage";
 import {attachCodeCopyButtons, createModal, toast} from "../utility/ui";
 import {marked} from "marked";
 import DOMPurify from 'dompurify';
-import {ResourceReference} from "../../models-shared/chat/ResourceReference";
 import {LlmProvider} from "../../models-shared/llms/llmProvider";
 import {playAudio, stopAudio} from "../utility/audio/audio";
 import {AudioTemplates} from "./audio.templates";
@@ -36,7 +35,6 @@ import {attachFiles, handleDroppedFiles, pasteFile} from "../utility/files/attac
 import {Api} from "../utility/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
-import {getHost} from "../utility/state/urlHelpers.ts";
 import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
 import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
@@ -543,12 +541,12 @@ export class ChatTemplates {
                 when(anyProvider, create("div")
                     .classes("flex", "no-gap", "no-wrap", "full-width")
                     .children(
-                        compute(p => ChatTemplates.selectorPane(p.map(provider => ({
+                        compute(p => GenericTemplates.selectorPane(p.map(provider => ({
                             id: provider,
                             displayName: provider
                         })), currentProvider, setProvider), availableProviders),
                         compute((models) => {
-                            return ChatTemplates.selectorPane(models, currentModel, async (newModel: string) => {
+                            return GenericTemplates.selectorPane(models, currentModel, async (newModel: string) => {
                                 configuration.value = {
                                     ...configuration.value,
                                     model: newModel
@@ -559,69 +557,6 @@ export class ChatTemplates {
                         }, filteredModels),
                     ).build()),
                 when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
-            ).build();
-    }
-
-    private static selectorPane(p: {
-        id: string,
-        displayName: string
-    }[], selected: Signal<string>, setValue: (str: string) => void) {
-        return create("div")
-            .classes("flex-v", "no-gap", "selector-pane")
-            .children(
-                ...p.map(item => {
-                    return create("div")
-                        .classes("selector-row", compute((s): string => s === item.id ? "selected" : "_", selected))
-                        .onclick(() => setValue(item.id))
-                        .text(item.displayName);
-                })
-            ).build();
-    }
-
-    private static reference(r: ResourceReference) {
-        return create("div")
-            .classes("flex-v", "no-gap", "relative", "reference", r.link ? "clickable" : "_")
-            .onmousedown((e) => {
-                if (r.link && e.button !== 2) {
-                    e.preventDefault();
-                    window.open(r.link, "_blank");
-                }
-            })
-            .children(
-                create("div")
-                    .classes("flex", "align-center", "no-wrap")
-                    .children(
-                        (r.link && !r.link.startsWith("file://")) ? create("a")
-                                .href(r.link)
-                                .target("_blank")
-                                .title(r.link)
-                                .classes("flex", "align-children")
-                                .children(
-                                    GenericTemplates.icon("link"),
-                                    create("span")
-                                        .text(r.name)
-                                ).build()
-                            : create("span")
-                                .classes("text-small")
-                                .text(r.name)
-                                .build(),
-                    ).build(),
-                r.link ? create("span").classes("link-host").text(getHost(r.link)).build() : null,
-                r.snippet ? create("div")
-                        .classes("flex", "no-wrap", "small-gap", "reference-preview")
-                        .children(
-                            r.imageUrl ? create("img")
-                                    .classes("thumbnail")
-                                    .src(r.imageUrl)
-                                    .alt(r.name)
-                                    .build()
-                                : null,
-                            create("span")
-                                .classes("snippet")
-                                .text(r.snippet)
-                                .build(),
-                        ).build()
-                    : null,
             ).build();
     }
 
@@ -639,7 +574,7 @@ export class ChatTemplates {
                         when(expanded, create("div")
                             .classes("flex-v", "small-gap")
                             .children(
-                                ...sources.map(ChatTemplates.reference),
+                                ...sources.map(GenericTemplates.reference),
                             ).build())
                     ).build())
             ).build();

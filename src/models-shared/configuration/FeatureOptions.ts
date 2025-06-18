@@ -46,6 +46,10 @@ export function getEnabledProvidersForFeatureType(config: Configuration, feature
     return providers;
 }
 
+export function featureTypeIsUsable(config: Configuration, featureType: FeatureType) {
+    return getEnabledProvidersForFeatureType(config, featureType).length > 0;
+}
+
 export const featureOptions: Record<BotanikaFeature, ProviderSettings> = {
     [BotanikaFeature.OpenRouter]: {
         keys: [apiKeyConfig("https://openrouter.ai/settings/keys")],

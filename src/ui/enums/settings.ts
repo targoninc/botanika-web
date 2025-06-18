@@ -2,6 +2,7 @@ import {SettingConfiguration} from "../../models-shared/configuration/SettingCon
 import {TranscriptionProvider} from "../../models-shared/configuration/TranscriptionProvider.ts";
 import {SpeechProvider} from "../../models-shared/configuration/SpeechProvider.ts";
 import {GenericTemplates} from "../templates/generic.templates.ts";
+import {FeatureType} from "../../models-shared/configuration/FeatureType.ts";
 
 export const generalSettings: SettingConfiguration[] = [
     {
@@ -58,6 +59,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
         icon: "mic",
         label: "Enable transcription",
         description: "Whether transcription of what you say should be enabled",
+        needsFeatureType: FeatureType.stt,
         type: "boolean",
     },
     {
@@ -65,6 +67,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
         icon: "transcribe",
         label: "Transcription Provider",
         description: `Which transcription provider to use.`,
+        needsFeatureType: FeatureType.stt,
         type: "select",
         options: [null].concat(Object.values(TranscriptionProvider))
     },
@@ -72,6 +75,7 @@ export const transcriptionSettings: SettingConfiguration[] = [
         key: "transcriptionModel",
         icon: "transcribe",
         label: "Transcription Model",
+        needsFeatureType: FeatureType.stt,
         descriptionContent: [GenericTemplates.link("https://ai-sdk.dev/docs/ai-sdk-core/transcription#transcription-models")],
         type: "string",
     },
@@ -83,6 +87,7 @@ export const speechSettings: SettingConfiguration[] = [
         icon: "text_to_speech",
         label: "Enable text to speech",
         description: "Whether assistant messages should automatically be spoken aloud once received",
+        needsFeatureType: FeatureType.tts,
         type: "boolean",
     },
     {
@@ -90,6 +95,7 @@ export const speechSettings: SettingConfiguration[] = [
         icon: "record_voice_over",
         label: "Speech Provider",
         description: `Which speech provider to use.`,
+        needsFeatureType: FeatureType.tts,
         type: "select",
         options: [null].concat(Object.values(SpeechProvider))
     },
@@ -98,12 +104,14 @@ export const speechSettings: SettingConfiguration[] = [
         icon: "record_voice_over",
         label: "Speech Model",
         descriptionContent: [GenericTemplates.link("https://ai-sdk.dev/docs/ai-sdk-core/speech#speech-models")],
+        needsFeatureType: FeatureType.tts,
         type: "string",
     },
     {
         key: "speechVoice",
         icon: "record_voice_over",
         description: "The voice to use when generating speech. Check your provider documentation for which voices are available.",
+        needsFeatureType: FeatureType.tts,
         label: "Voice",
         type: "string",
     }
