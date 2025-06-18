@@ -166,15 +166,34 @@ button.no-border, input.no-border, textarea.no-border, select.no-border {
     color: inherit;
 }
 
-button.positive, input.positive, textarea.positive, select.positive {
-    border: var(--input-border-width) solid var(--tint-muted);
-    color: var(--tint-main);
-    background: var(--gradient-1);
+button:hover {
+    background: var(--gradient-2);
 }
 
-button.positive:hover, button.fjsc.positive:hover {
-    box-shadow: 0 0 20px -5px color-mix(in oklab, var(--tint-muted) 50%, transparent 50%);
-    background: var(--gradient-2);
+button.positive, input.positive, textarea.positive, select.positive {
+    border: var(--input-border-width) solid var(--green);
+    color: var(--green);
+}
+
+button.negative, input.negative, textarea.negative, select.negative {
+    border: var(--input-border-width) solid var(--red);
+    color: var(--red);
+}
+
+button * {
+    color: inherit !important;
+}
+
+button.positive:hover, button.jessc.positive:hover {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--bg);
+}
+
+button.negative:hover, button.jessc.negative:hover {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--bg);
 }
 
 button.icon-button {
@@ -184,13 +203,8 @@ button.icon-button {
 }
 
 button.icon-button:hover {
-    background: var(--gradient-1);
+    background: var(--gradient-2);
     border-color: var(--tint-present);
-}
-
-button.negative, input.negative, textarea.negative, select.negative {
-    border: var(--input-border-width) solid var(--red);
-    color: var(--red);
 }
 
 button.sensitive, input.sensitive, textarea.sensitive, select.sensitive {

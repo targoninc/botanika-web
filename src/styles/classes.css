@@ -717,6 +717,10 @@ kbd {
     .movable-divider {
         display: none;
     }
+
+    .llm-settings-button span:not(.material-symbols-outlined) {
+        display: none;
+    }
 }
 
 .burger-menu {
@@ -893,13 +897,14 @@ pre {
 
 .chat-history {
     padding: var(--gap-v);
-    padding-top: 4em;
+    padding-top: 6em;
     width: 100%;
 }
 
 .bot-name {
     justify-content: center;
     width: max-content;
+    max-width: calc(100dvw - 2 * var(--gap-v));
     position: absolute;
     top: var(--gap-v);
     left: 50%;

@@ -71,14 +71,13 @@ export class ChatTemplates {
         return create("div")
             .classes("flex-v", "container", "relative", "no-gap", "no-padding", "chat-box")
             .children(
-                ChatListTemplates.burgerButton(shown),
-                ChatTemplates.botName(),
+                ChatTemplates.botName(shown),
                 ChatTemplates.chatHistory(),
                 ChatTemplates.chatInput(),
             ).build();
     }
 
-    static botName() {
+    static botName(shown: Signal<boolean>) {
         const chatName = compute(c => c.name ?? "New chat", chatContext);
         let timeoutId: NodeJS.Timeout;
 
@@ -94,11 +93,12 @@ export class ChatTemplates {
         });
 
         return create("div")
-            .classes("flex-v", "align-center", "no-gap", "bot-name", "align-children")
+            .classes("flex-v", "align-center", "small-gap", "bot-name")
             .children(
                 create("div")
-                    .classes("flex")
+                    .classes("flex", "align-children")
                     .children(
+                        ChatListTemplates.burgerButton(shown),
                         create("div")
                             .classes("relative")
                             .children(
@@ -471,7 +471,7 @@ export class ChatTemplates {
             .children(
                 GenericTemplates.buttonWithIcon("settings", model, () => {
                     flyoutVisible.value = !flyoutVisible.value;
-                }),
+                }, ["llm-settings-button"]),
                 when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
             ).build();
     }

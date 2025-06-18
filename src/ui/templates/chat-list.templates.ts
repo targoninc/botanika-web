@@ -186,7 +186,7 @@ export class ChatListTemplates {
 
     static burgerButton(shown: Signal<boolean>) {
         return create("div")
-            .classes("burger-button", compute(s => s ? "inline" : "absolute", shown))
+            .classes("burger-button")
             .children(
                 GenericTemplates.iconButton(compute(s => s ? "close" : "menu", shown), "Close chat list", () => shown.value = !shown.value),
             ).build();
