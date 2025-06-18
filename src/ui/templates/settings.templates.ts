@@ -310,14 +310,19 @@ export class SettingsTemplates {
                             placeholder: "Name",
                             onchange: (value) => name.value = value
                         }),
-                        input({
-                            type: InputType.text,
-                            value: url,
-                            name: "url",
-                            label: "URL",
-                            placeholder: "URL",
-                            onchange: (value) => url.value = value
-                        })
+                        create("div")
+                            .classes("full-width")
+                            .children(
+                                input({
+                                    type: InputType.text,
+                                    value: url,
+                                    name: "url",
+                                    label: "URL",
+                                    placeholder: "URL",
+                                    classes: ["full-width"],
+                                    onchange: (value) => url.value = value
+                                })
+                            ).build()
                     ).build(),
                 button({
                     text: "Add",
