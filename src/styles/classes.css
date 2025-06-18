@@ -850,7 +850,7 @@ pre {
     border: none;
     padding: 0;
     opacity: .8;
-    font-size: .8em;
+    font-size: .9em;
 }
 
 .snippet {
@@ -907,7 +907,7 @@ pre {
     z-index: 999;
     background: var(--gradient-1);
     padding: var(--gap-h) var(--gap-v) var(--gap-h) var(--gap-h);
-    border-radius: 999px;
+    border-radius: var(--input-border-radius);
     border: 1px solid var(--tint-main);
     box-shadow: var(--flyout-shadow);
 }
@@ -1010,10 +1010,8 @@ pre {
     border: 1px solid var(--tint-muted);
     padding: var(--gap-v);
     z-index: 999;
-    min-width: max-content;
-    min-height: max-content;
-    max-width: max-content;
-    max-height: max-content;
+    width: max-content;
+    max-width: 100dvw;
     box-shadow: var(--flyout-shadow);
 }
 

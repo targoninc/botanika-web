@@ -32,7 +32,7 @@ export const featureOptions: Record<BotanikaFeature, SettingConfiguration[]> = {
         {
             key: "url",
             icon: "key",
-            description: "Ollama URL",
+            description: "Ollama URL. You can use ngrok to make it publicly available. Make sure to configure Ollama to allow incoming connections from this instance's host.",
             label: "Ollama URL",
             type: "string",
         },

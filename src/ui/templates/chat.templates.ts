@@ -97,18 +97,23 @@ export class ChatTemplates {
         });
 
         return create("div")
-            .classes("flex", "align-center", "bot-name", "align-children")
+            .classes("flex-v", "align-center", "no-gap", "bot-name", "align-children")
             .children(
                 create("div")
-                    .classes("relative")
+                    .classes("flex")
                     .children(
-                        GenericTemplates.icon("person", ["bot-icon"]),
-                        GenericTemplates.statusIndicator(connected),
+                        create("div")
+                            .classes("relative")
+                            .children(
+                                GenericTemplates.icon("person", ["bot-icon"]),
+                                GenericTemplates.statusIndicator(connected),
+                            ).build(),
+                        create("span")
+                            .classes("bot-name-text")
+                            .text(compute(c => c.botname ?? "Anika", configuration))
+                            .build(),
+                        ChatTemplates.botSettings(),
                     ).build(),
-                create("span")
-                    .classes("bot-name-text")
-                    .text(compute(c => c.botname ?? "Anika", configuration))
-                    .build(),
                 input({
                     type: InputType.text,
                     classes: ["invisible-input"],
@@ -160,7 +165,6 @@ export class ChatTemplates {
             .styles("overflow-y", "auto")
             .children(
                 signalMap(dedupHistory, create("div").classes("restrict-width-small", "message-history", "flex-v"), (m, i) => ChatTemplates.chatMessage(m, i === dedupHistory.value.length - 1)),
-
             ).build();
     }
 
@@ -236,7 +240,7 @@ export class ChatTemplates {
                 }),
                 when(ttsVisible, button({
                     disabled: audioDisabled,
-                    icon: { icon: compute(a => a === message.id ? "stop" : "play_arrow", currentlyPlayingAudio) },
+                    icon: {icon: compute(a => a === message.id ? "stop" : "play_arrow", currentlyPlayingAudio)},
                     title: "Play audio",
                     onclick: () => {
                         if (currentlyPlayingAudio.value === message.id) {
@@ -333,9 +337,7 @@ export class ChatTemplates {
     static chatInput() {
         const input = currentText;
         const chatId = compute(c => c?.id, chatContext);
-        const provider = compute(c => c.provider, configuration);
         const modelConfigured = compute(c => c.model !== undefined && c.model.length > 0, configuration);
-        const model = compute((c, conf) => conf ? c.model : "No model selected", configuration, modelConfigured);
         const files = signal<MessageFile[]>([]);
         const focusInput = () => {
             document.getElementById("chat-input-field")?.focus();
@@ -353,7 +355,6 @@ export class ChatTemplates {
             }
         }
         input.subscribe(updateInputHeight);
-        const flyoutVisible = signal(false);
         const isDraggingOver = signal(false);
         const hasText = compute(i => i.length > 0, input);
         const sendButtonClass = compute((h): string => h ? "has-text" : "_", hasText);
@@ -381,8 +382,8 @@ export class ChatTemplates {
                     type: BotanikaClientEventType.message,
                     data: <NewMessageEventData>{
                         chatId: chatId.value,
-                        provider: provider.value,
-                        model: model.value,
+                        provider: configuration.value.provider,
+                        model: configuration.value.model,
                         message: input.value,
                         files: files.value,
                     }
@@ -442,14 +443,6 @@ export class ChatTemplates {
                                 create("div")
                                     .classes("flex", "align-children")
                                     .children(
-                                        create("div")
-                                            .classes("relative")
-                                            .children(
-                                                GenericTemplates.buttonWithIcon("settings", model, () => {
-                                                    flyoutVisible.value = !flyoutVisible.value;
-                                                }),
-                                                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
-                                            ).build(),
                                         GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files), ["onlyIconOnSmall"]),
                                     ).build(),
                                 create("div")
@@ -471,9 +464,24 @@ export class ChatTemplates {
             ).build();
     }
 
+    private static botSettings() {
+        const modelConfigured = compute(c => c.model !== undefined && c.model.length > 0, configuration);
+        const model = compute((c, conf) => conf ? c.model : "No model selected", configuration, modelConfigured);
+        const flyoutVisible = signal(false);
+
+        return create("div")
+            .classes("relative")
+            .children(
+                GenericTemplates.buttonWithIcon("settings", model, () => {
+                    flyoutVisible.value = !flyoutVisible.value;
+                }),
+                when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
+            ).build();
+    }
+
     static settingsFlyout(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flyout", "no-padding", "above", "right")
+            .classes("flex-v", "flyout", "no-padding", "below", "left")
             .children(
                 ChatTemplates.llmSelector(configured, flyoutVisible),
             ).build();
@@ -510,15 +518,6 @@ export class ChatTemplates {
             }
             return featureOptions[feat].every((o: SettingConfiguration) => !!c.featureOptions[feat][o.key]);
         }), configuration);
-        const filteredModels = compute((a, p) => {
-            const out = {};
-            for (const provider in a) {
-                if (p.includes(provider)) {
-                    out[provider] = a[provider];
-                }
-            }
-            return out as Record<string, ProviderDefinition>;
-        }, availableModels, availableProviders);
         const setProvider = async (p: LlmProvider) => {
             if (p === configuration.value.provider) {
                 return;
@@ -537,6 +536,7 @@ export class ChatTemplates {
             }
             return toUse;
         }, configuration, availableProviders);
+        const filteredModels = compute((a, p) => a[p]?.models.sort((a, b) => a.displayName.localeCompare(b.displayName)) ?? [], availableModels, provider);
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
         const currentProvider = compute(c => c.provider, configuration);
         const currentModel = compute(c => c.model, configuration);
@@ -554,12 +554,8 @@ export class ChatTemplates {
                             id: provider,
                             displayName: provider
                         })), currentProvider, setProvider), availableProviders),
-                        compute((p, a) => {
-                            if (!a[p] || Object.keys(a).length === 0) {
-                                return nullElement();
-                            }
-
-                            return ChatTemplates.selectorPane(a[p].models ?? [], currentModel, async (newModel: string) => {
+                        compute((models) => {
+                            return ChatTemplates.selectorPane(models, currentModel, async (newModel: string) => {
                                 configuration.value = {
                                     ...configuration.value,
                                     model: newModel
@@ -567,13 +563,16 @@ export class ChatTemplates {
                                 await Api.setConfigKey("model", newModel);
                                 flyoutVisible.value = false;
                             });
-                        }, provider, filteredModels),
+                        }, filteredModels),
                     ).build()),
                 when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
             ).build();
     }
 
-    private static selectorPane(p: { id: string, displayName: string }[], selected: Signal<string>, setValue: (str: string) => void) {
+    private static selectorPane(p: {
+        id: string,
+        displayName: string
+    }[], selected: Signal<string>, setValue: (str: string) => void) {
         return create("div")
             .classes("flex-v", "no-gap", "selector-pane")
             .children(

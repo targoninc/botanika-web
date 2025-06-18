@@ -18,14 +18,14 @@
     --gradient-1: linear-gradient(-180deg, var(--black), color-mix(in oklab, var(--black), var(--black-2) 50%));
     --gradient-2: linear-gradient(-180deg, var(--black-2), color-mix(in oklab, var(--black-2), var(--black-3) 50%));
 
-    --blue: #0b72bc;
     --tint-main: color-mix(in oklab, #bdbdbd, var(--tint) calc(var(--tint-strength) * 2));
     --tint-present: color-mix(in oklab, #a9a9a9, var(--tint) calc(var(--tint-strength) * 2));
     --tint-transpresent: color-mix(in oklab, rgba(0, 0, 0, 0), var(--tint) calc(var(--tint-strength) * 2));
     --tint-muted: color-mix(in oklab, #525252, var(--tint) var(--tint-strength));
     --strong-tint: color-mix(in oklab, rgba(127, 127, 127, 0), var(--tint) calc(var(--tint-strength) * 4));
     --green: color-mix(in oklab, #37ac43, var(--tint) var(--tint-strength));
-    --red: color-mix(in oklab, #c43e40, var(--tint) var(--tint-strength));
+    --red: color-mix(in oklab, #f22e31, var(--tint) var(--tint-strength));
+    --blue: color-mix(in oklab, #0b72bc, var(--tint) var(--tint-strength));
     --yellow: #f0c929ff;
     --orange: #f09029;
     --purple: #6a4c93ff;
@@ -216,7 +216,7 @@ div {
 }
 
 a {
-    color: var(--tint-main);
+    color: var(--blue);
     text-decoration: none;
 }
 
