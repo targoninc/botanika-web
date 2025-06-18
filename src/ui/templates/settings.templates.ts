@@ -332,7 +332,7 @@ export class SettingsTemplates {
                     },
                     classes: ["flex", "align-center", "positive"],
                     onclick: () => {
-                        const newServers = [...mcpConfig.value, <McpServerConfig>{
+                        const newServers = [...(mcpConfig.value ?? []), <McpServerConfig>{
                             url: url.value,
                             name: name.value,
                             id: v4(),
