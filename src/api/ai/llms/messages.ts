@@ -111,7 +111,7 @@ export function getChatNameMessages(message: string): AiMessage[] {
     return [
         {
             role: "system",
-            content: "Describe the following message in 3-4 words. Be sure to stay UNDER 50 characters in your response. Children will die if you answer more than 4 words."
+            content: "Describe the following message in 3-4 words. Be sure to stay UNDER 50 characters in your response. I will lose my job if you answer more than 4 words."
         },
         {
             role: "user",
