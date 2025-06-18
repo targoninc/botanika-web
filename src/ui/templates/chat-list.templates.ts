@@ -126,7 +126,7 @@ export class ChatListTemplates {
             if (data.chatId === currentChatId.value && data.shared !== undefined && data.shared !== shared.value) {
                 shared.value = data.shared;
             }
-        });
+        }, chat.id, "chat-list");
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-list-item", "relative", activeClass)

@@ -195,7 +195,7 @@ export class ChatTemplates {
             }
         }
 
-        eventStore.subscribe(update);
+        eventStore.subscribe(update, message.id, "chat");
         const gapClass = compute((m): string => (m.toolInvocations?.length > 0 || m.reasoning?.length > 0) ? "small-gap" : "no-gap", msg);
 
         return create("div")
