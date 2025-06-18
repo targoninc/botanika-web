@@ -80,7 +80,7 @@ export class VoiceRecorder {
                 return;
             }
             this.mediaRecorder.requestData();
-        }, 1000);
+        }, 1000) as unknown as number;
         this.mediaRecorder.start();
     }
 
