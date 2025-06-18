@@ -11,7 +11,8 @@ import {
     currentUser,
     eventStore,
     shortCutConfig,
-    target, ttsAvailable,
+    target,
+    ttsAvailable,
     updateChats,
 } from "../utility/state/store";
 import {GenericTemplates} from "./generic.templates";
@@ -23,12 +24,10 @@ import DOMPurify from 'dompurify';
 import {ResourceReference} from "../../models-shared/chat/ResourceReference";
 import {LlmProvider} from "../../models-shared/llms/llmProvider";
 import {playAudio, stopAudio} from "../utility/audio/audio";
-import {ProviderDefinition} from "../../models-shared/llms/ProviderDefinition";
 import {AudioTemplates} from "./audio.templates";
-import {compute, create, InputType, nullElement, Signal, signal, signalMap, when} from "@targoninc/jess";
+import {compute, create, InputType, Signal, signal, signalMap, when} from "@targoninc/jess";
 import {button, input} from "@targoninc/jess-components";
-import {featureOptions} from "../../models-shared/configuration/FeatureOptions.ts";
-import {SettingConfiguration} from "../../models-shared/configuration/SettingConfiguration.ts";
+import {getEnabledProvidersForFeatureType} from "../../models-shared/configuration/FeatureOptions.ts";
 import {focusChatInput, realtime} from "../index.ts";
 import {BotanikaClientEventType} from "../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
 import {NewMessageEventData} from "../../models-shared/websocket/clientEvents/newMessageEventData.ts";
@@ -38,7 +37,6 @@ import {Api} from "../utility/state/api.ts";
 import hljs from "highlight.js";
 import {FileTemplates} from "./file.templates.ts";
 import {getHost} from "../utility/state/urlHelpers.ts";
-import {llmProviderFeatureMap} from "../enums/LlmProviderFeatureMap.ts";
 import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {ChatListTemplates} from "./chat-list.templates.ts";
 import {BotanikaClientEvent} from "../../models-shared/websocket/clientEvents/botanikaClientEvent.ts";
@@ -48,6 +46,7 @@ import {BotanikaServerEventType} from "../../models-shared/websocket/serverEvent
 import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";
 import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
+import {FeatureType} from "../../models-shared/configuration/FeatureType.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -511,13 +510,7 @@ export class ChatTemplates {
     }
 
     private static llmSelector(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
-        const availableProviders = compute(c => Object.keys(LlmProvider).filter(p => {
-            const feat = llmProviderFeatureMap[p];
-            if (!c.featureOptions || !c.featureOptions[feat]) {
-                return false;
-            }
-            return featureOptions[feat].keys.every((o) => !!c.featureOptions[feat][o]);
-        }), configuration);
+        const availableProviders = compute(c => getEnabledProvidersForFeatureType(c, FeatureType.llm), configuration);
         const setProvider = async (p: LlmProvider) => {
             if (p === configuration.value.provider) {
                 return;

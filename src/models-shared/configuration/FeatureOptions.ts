@@ -6,6 +6,8 @@ import {TranscriptionProvider} from "./TranscriptionProvider.ts";
 import {LlmProvider} from "../llms/llmProvider.ts";
 import {ProviderSettings} from "./ProviderSettings.ts";
 import {FeatureType} from "./FeatureType.ts";
+import {getFeatureOption} from "./getFeatureOption.ts";
+import {Configuration} from "./Configuration.ts";
 
 const apiKeyConfig = (url?: string) => <SettingConfiguration>{
     key: "apiKey",
@@ -14,6 +16,35 @@ const apiKeyConfig = (url?: string) => <SettingConfiguration>{
     label: "API Key",
     type: "password",
 };
+
+export function getEnabledProvidersForFeatureType(config: Configuration, featureType: FeatureType) {
+    const providers = [];
+
+    for (const [feat, pSettings] of Object.entries(featureOptions)) {
+        const typeFeature = pSettings.features.find(f => f.featureType === featureType);
+        if (typeFeature) {
+            const configured = getFeatureOption(config, feat as BotanikaFeature);
+            if (typeFeature.required.every(r => !!configured[r])) {
+                switch (featureType) {
+                    case FeatureType.llm:
+                        providers.push(typeFeature.llmProvider);
+                        break;
+                    case FeatureType.tts:
+                        providers.push(typeFeature.speechProvider);
+                        break;
+                    case FeatureType.stt:
+                        providers.push(typeFeature.transcriptionProvider);
+                        break;
+                    case FeatureType.tools:
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    return providers;
+}
 
 export const featureOptions: Record<BotanikaFeature, ProviderSettings> = {
     [BotanikaFeature.OpenRouter]: {
