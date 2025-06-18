@@ -119,6 +119,9 @@ export class ChatTemplates {
                             classes: ["invisible-input"],
                             value: chatName,
                             name: "chatname-input",
+                            disabled: compute(id => {
+                                return id === null || id === undefined;
+                            }, currentChatId),
                             onchange: (() => {
                                 return (val: string) => {
                                     clearTimeout(timeoutId);
