@@ -1,4 +1,4 @@
-import {compute, create, InputType, Signal, signal, when} from "@targoninc/jess";
+import {compute, create, InputType, Signal, signal, stack, when} from "@targoninc/jess";
 import {GenericTemplates} from "./generic.templates.ts";
 import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, search} from "../utility/state/store.ts";
 import {searchList} from "../utility/search.ts";
@@ -120,11 +120,8 @@ export class ChatListTemplates {
             }
 
             const data = event.data as ChatUpdate;
-            if (data.chatId === currentChatId.value && data.name) {
+            if (data.chatId === chat.id && data.name) {
                 chatName.value = data.name;
-            }
-            if (data.chatId === currentChatId.value && data.shared !== undefined && data.shared !== shared.value) {
-                shared.value = data.shared;
             }
         }, chat.id, "chat-list");
 
