@@ -154,7 +154,7 @@ export const featureOptions: Record<BotanikaFeature, ProviderSettings> = {
             {
                 key: "resourceName",
                 icon: "graph_5",
-                description: "Resource name",
+                description: "Azure resource name",
                 label: "Resource name",
                 type: "string",
             },
