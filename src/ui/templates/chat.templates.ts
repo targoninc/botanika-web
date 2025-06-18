@@ -516,7 +516,7 @@ export class ChatTemplates {
             if (!c.featureOptions || !c.featureOptions[feat]) {
                 return false;
             }
-            return featureOptions[feat].every((o: SettingConfiguration) => !!c.featureOptions[feat][o.key]);
+            return featureOptions[feat].keys.every((o) => !!c.featureOptions[feat][o]);
         }), configuration);
         const setProvider = async (p: LlmProvider) => {
             if (p === configuration.value.provider) {

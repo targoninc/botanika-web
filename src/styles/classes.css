@@ -1090,3 +1090,10 @@ div:hover > .showOnParentHover {
     padding: var(--gap-v);
     border-radius: calc(var(--input-border-radius) - var(--gap-h));
 }
+
+.feature {
+    background: var(--bg-2);
+    padding: var(--input-padding-v) var(--input-padding-h);
+    border-radius: calc(var(--input-border-radius) - var(--gap-h));
+    font-size: .8em;
+}

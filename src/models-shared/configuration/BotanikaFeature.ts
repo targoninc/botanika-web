@@ -9,4 +9,8 @@ export enum BotanikaFeature {
     RevAi = "RevAi",
     Lmnt = "LMNT",
     Hume = "Hume",
+    Deepgram = "Deepgram",
+    Gladia = "Gladia",
+    AssemblyAI = "AssemblyAI",
+    Fal = "Fal",
 }

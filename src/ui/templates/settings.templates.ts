@@ -15,6 +15,7 @@ import {Api} from "../utility/state/api.ts";
 import {v4} from "uuid";
 import {transcriptionSettings, generalSettings, speechSettings} from "../enums/settings.ts";
 import {Tab} from "../models/Tab.ts";
+import {FeatureSettings} from "../../models-shared/configuration/FeatureSettings.ts";
 
 export class SettingsTemplates {
     static settings() {
@@ -234,12 +235,12 @@ export class SettingsTemplates {
             .classes("flex-v")
             .children(
                 ...Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)).map((api: BotanikaFeature) => {
-                    const features = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
-                    const fOptions = featureOptions[api];
                     const loading = signal(false);
-                    const allSet = fOptions.every(f => !!features[f.key]);
+                    const featureConfig = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
+                    const provider = featureOptions[api];
+                    const configuredFeatures = provider.features.filter(f => f.required.every(requiredKey => !!featureConfig[requiredKey]));
 
-                    const settingsList = fOptions && fOptions.length > 0 ? fOptions.map(s => SettingsTemplates.setting(s, loading, c => {
+                    const settingsList = provider && provider.keys.length > 0 ? provider.keys.map(s => SettingsTemplates.setting(s, loading, c => {
                         return c.featureOptions && c.featureOptions[api] ? c.featureOptions[api][s.key] : null;
                     }, (c, k, v) => (<Configuration>{
                         ...c,
@@ -256,11 +257,12 @@ export class SettingsTemplates {
                         .classes("flex-v", "card", "small-gap")
                         .children(
                             create("div")
-                                .classes("flex", allSet ? "positive" : "negative")
+                                .classes("flex")
                                 .children(
-                                    GenericTemplates.icon(allSet ? "check" : "key_off", [allSet ? "positive" : "negative"]),
+                                    // TODO: Add logos
                                     create("b")
                                         .text(api),
+                                    SettingsTemplates.providerFeatures(configuredFeatures, provider.features),
                                     when(loading, GenericTemplates.spinner())
                                 ).build(),
                             ...settingsList,
@@ -494,6 +496,26 @@ export class SettingsTemplates {
                             })
                         ).build();
                 })
+            ).build();
+    }
+
+    private static providerFeatures(configuredFeatures: FeatureSettings[], availableFeatures: FeatureSettings[]) {
+        return create("div")
+            .classes("flex")
+            .children(
+                ...availableFeatures.map(f => {
+                    return SettingsTemplates.availableFeature(f, configuredFeatures.some(feat => feat.featureType === f.featureType));
+                })
+            ).build();
+    }
+
+    private static availableFeature(f: FeatureSettings, isConfigured: boolean) {
+        return create("div")
+            .classes("feature", isConfigured ? "positive" : "negative")
+            .children(
+                create("span")
+                    .text(f.featureType.toUpperCase())
+                    .build()
             ).build();
     }
 }
