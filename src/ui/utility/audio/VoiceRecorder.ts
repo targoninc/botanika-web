@@ -35,13 +35,15 @@ export class VoiceRecorder {
     private mediaStream: MediaStream;
 
     private loudness: Signal<number>;
+    private disabled: Signal<boolean>;
 
     constructor(loudness: Signal<number>) {
         this.loudness = loudness;
         this.loudness.value = this.currentVolume;
     }
 
-    public toggleRecording() {
+    public toggleRecording(disabled: Signal<boolean>) {
+        this.disabled = disabled;
         if (this.recording) {
             this.stop();
         } else {
@@ -165,11 +167,18 @@ export class VoiceRecorder {
 
         const formData = new FormData();
         formData.append('file', audioBlob, "file.webm");
-        console.log("Transcribing audio...");
         transcribing.value = true;
+        console.log("Transcribing audio...");
+
         Api.transcribe(formData).then(async text => {
             transcribing.value = false;
             currentText.value = currentText.value + " " + text;
+
+            if (this.disabled.value) {
+                console.log("Not sending transcribed text because still generating.");
+                return;
+            }
+
             try {
                 activateNextUpdate.value = true;
                 const config = configuration.value;

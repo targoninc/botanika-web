@@ -21,7 +21,7 @@ export class AudioTemplates {
                 when(transcribing, GenericTemplates.redDot(onState, currentLoudness), true),
                 when(transcribing, GenericTemplates.spinner()),
                 GenericTemplates.verticalButtonWithIcon(iconState, "", () => {
-                    recorder.toggleRecording();
+                    recorder.toggleRecording(disabled);
                     onState.value = !onState.value;
                 }, ["voice-button"]),
             ).build();
