@@ -73,7 +73,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
                 }
             }
         },
-        onError: event => sendError(ws, event),
+        onError: event => sendError(ws, JSON.parse(JSON.stringify(event))),
     });
 
     updateMessageFromStream(message, textStream, text).then();
