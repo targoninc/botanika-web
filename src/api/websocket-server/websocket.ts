@@ -144,7 +144,7 @@ export function sendAllOngoingConversations(ws: WebsocketConnection) {
     }
 }
 
-export function sendError(ws: WebsocketConnection, message: string) {
+export function sendError(ws: WebsocketConnection, message: any) {
     CLI.error(`Error in realtime: ${message}`);
     const errorEvent = {
         type: BotanikaServerEventType.error,
