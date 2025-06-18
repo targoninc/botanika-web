@@ -1032,6 +1032,11 @@ pre {
     right: 0;
 }
 
+.flyout.center {
+    right: 50%;
+    transform: translateX(50%);
+}
+
 .flyout.right {
     left: 0;
 }

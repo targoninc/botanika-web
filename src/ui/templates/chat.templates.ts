@@ -478,7 +478,7 @@ export class ChatTemplates {
 
     static settingsFlyout(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         return create("div")
-            .classes("flex-v", "flyout", "no-padding", "below", "left")
+            .classes("flex-v", "flyout", "no-padding", "below", "center")
             .children(
                 ChatTemplates.llmSelector(configured, flyoutVisible),
             ).build();

@@ -188,7 +188,7 @@ export class ChatListTemplates {
         return create("div")
             .classes("burger-button")
             .children(
-                GenericTemplates.iconButton(compute(s => s ? "close" : "menu", shown), "Close chat list", () => shown.value = !shown.value),
+                GenericTemplates.buttonWithIcon(compute(s => s ? "close" : "menu", shown), "", () => shown.value = !shown.value),
             ).build();
     }
 }
