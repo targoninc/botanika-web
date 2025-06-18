@@ -187,6 +187,7 @@ export class ChatTemplates {
         }
 
         eventStore.subscribe(update);
+        const gapClass = compute((m): string => (m.toolInvocations?.length > 0 || m.reasoning?.length > 0) ? "small-gap" : "no-gap", msg);
 
         return create("div")
             .classes("flex-v", "small-gap", "chat-message", message.type)
@@ -197,7 +198,7 @@ export class ChatTemplates {
                         ChatTemplates.date(message.time),
                     ).build(),
                 create("div")
-                    .classes("flex-v", "message-content")
+                    .classes("flex-v", "message-content", gapClass)
                     .children(
                         compute(m => ChatTemplates.toolCalls(m.toolInvocations), msg),
                         compute(m => ChatTemplates.reasoning(m.reasoning), msg),
