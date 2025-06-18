@@ -9,7 +9,7 @@ import {
     currentlyPlayingAudio,
     currentText,
     currentUser,
-    eventStore,
+    eventStore, toSendFiles,
     shortCutConfig,
     target,
     ttsAvailable,
@@ -336,7 +336,6 @@ export class ChatTemplates {
         const input = currentText;
         const chatId = compute(c => c?.id, chatContext);
         const modelConfigured = compute(c => c.model !== undefined && c.model.length > 0, configuration);
-        const files = signal<MessageFile[]>([]);
         const focusInput = () => {
             document.getElementById("chat-input-field")?.focus();
         }
@@ -383,14 +382,14 @@ export class ChatTemplates {
                         provider: configuration.value.provider,
                         model: configuration.value.model,
                         message: input.value,
-                        files: files.value,
+                        files: toSendFiles.value,
                     }
                 });
             } catch (e) {
                 toast(e.toString());
             }
             input.value = "";
-            files.value = [];
+            toSendFiles.value = [];
         }
 
         return create("div")
@@ -411,7 +410,7 @@ export class ChatTemplates {
                     })
                     .ondrop((e: DragEvent) => {
                         isDraggingOver.value = false;
-                        handleDroppedFiles(e, files);
+                        handleDroppedFiles(e, toSendFiles);
                     })
                     .onclick((e) => {
                         const preventIn = ["BUTTON", "INPUT", "SELECT"];
@@ -431,8 +430,8 @@ export class ChatTemplates {
                                             .classes("onboarding-text")
                                             .text("What's on your mind?")
                                             .build()),
-                                        when(compute(f => f.length > 0, files), FileTemplates.filesDisplay(files)),
-                                        ChatTemplates.actualChatInput(input, modelConfigured, send, files),
+                                        when(compute(f => f.length > 0, toSendFiles), FileTemplates.filesDisplay(toSendFiles)),
+                                        ChatTemplates.actualChatInput(input, modelConfigured, send, toSendFiles),
                                     ).build(),
                             ).build(),
                         create("div")
@@ -441,7 +440,7 @@ export class ChatTemplates {
                                 create("div")
                                     .classes("flex", "align-children")
                                     .children(
-                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(files), ["onlyIconOnSmall"]),
+                                        GenericTemplates.buttonWithIcon("attach_file", "Attach files", () => attachFiles(toSendFiles), ["onlyIconOnSmall"]),
                                     ).build(),
                                 create("div")
                                     .classes("flex", "align-center")

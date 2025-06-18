@@ -18,6 +18,7 @@ import {focusChatInput} from "../../index.ts";
 import {getPathname, getUrlParameter, updateUrlParameter, updateUrlPathname} from "./urlHelpers.ts";
 import {User} from "@prisma/client";
 import {EventStore} from "../realtime/eventStore.ts";
+import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -38,6 +39,8 @@ export const currentUser = signal<User & UserinfoResponse | null>(null);
 export const connected = signal(false);
 export const search = signal("");
 export const eventStore = new EventStore();
+export const transcribing = signal(false);
+export const toSendFiles = signal<MessageFile[]>([]);
 
 const getNewestChatDate = (chts: ChatContext[]) => {
     const updatedDates = chts.filter(c => !!c.updatedAt).map(c => c.updatedAt);

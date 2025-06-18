@@ -1,6 +1,7 @@
 import {GenericTemplates} from "./generic.templates";
 import {VoiceRecorder} from "../utility/audio/VoiceRecorder";
-import {compute, create, Signal, signal} from "@targoninc/jess";
+import {compute, create, Signal, signal, when} from "@targoninc/jess";
+import {transcribing} from "../utility/state/store.ts";
 
 const currentLoudness = signal(0);
 let recorder: VoiceRecorder;
@@ -17,7 +18,8 @@ export class AudioTemplates {
         return create("div")
             .classes("flex", "align-children", "no-gap", disabledClass)
             .children(
-                GenericTemplates.redDot(onState, currentLoudness),
+                when(transcribing, GenericTemplates.redDot(onState, currentLoudness), true),
+                when(transcribing, GenericTemplates.spinner()),
                 GenericTemplates.verticalButtonWithIcon(iconState, "", () => {
                     recorder.toggleRecording();
                     onState.value = !onState.value;

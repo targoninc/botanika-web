@@ -1,5 +1,12 @@
 import {toast} from "../ui";
-import {activateNextUpdate, chatContext, configuration, currentText} from "../state/store.ts";
+import {
+    activateNextUpdate,
+    chatContext,
+    configuration,
+    currentText,
+    toSendFiles,
+    transcribing
+} from "../state/store.ts";
 import {Signal} from "@targoninc/jess";
 import {realtime} from "../../index.ts";
 import {BotanikaClientEventType} from "../../../models-shared/websocket/clientEvents/botanikaClientEventType.ts";
@@ -159,7 +166,9 @@ export class VoiceRecorder {
         const formData = new FormData();
         formData.append('file', audioBlob, "file.webm");
         console.log("Transcribing audio...");
+        transcribing.value = true;
         Api.transcribe(formData).then(async text => {
+            transcribing.value = false;
             currentText.value = currentText.value + " " + text;
             try {
                 activateNextUpdate.value = true;
@@ -171,12 +180,14 @@ export class VoiceRecorder {
                         provider: config.provider,
                         model: config.model,
                         message: currentText.value,
+                        files: toSendFiles.value
                     }
                 });
             } catch (e) {
                 toast(e.toString());
             }
             currentText.value = "";
+            toSendFiles.value = [];
         });
 
         this.audioChunks = [];
