@@ -23,6 +23,7 @@ import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 import {ResourceReference} from "../../models-shared/chat/ResourceReference.ts";
 import {getHost} from "../utility/state/urlHelpers.ts";
+import {closeIfNotClickedInsideClass} from "./closeIfNotClickedInsideClass.ts";
 
 export class GenericTemplates {
     static input<T>(type: InputType, name: StringOrSignal, value: any, placeholder: StringOrSignal, label: StringOrSignal, id: any, classes: StringOrSignal[] = [],
@@ -549,6 +550,11 @@ export class GenericTemplates {
             .classes("clickable")
             .onclick(() => {
                 userPopupVisible.value = !userPopupVisible.value;
+                if (userPopupVisible.value) {
+                    setTimeout(() => {
+                        closeIfNotClickedInsideClass("flyout", userPopupVisible);
+                    });
+                }
             })
             .children(
                 GenericTemplates.icon(image, ["user-image"])

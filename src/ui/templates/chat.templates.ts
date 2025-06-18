@@ -9,9 +9,10 @@ import {
     currentlyPlayingAudio,
     currentText,
     currentUser,
-    eventStore, toSendFiles,
+    eventStore,
     shortCutConfig,
     target,
+    toSendFiles,
     ttsAvailable,
     updateChats,
 } from "../utility/state/store";
@@ -45,6 +46,7 @@ import {ChatUpdate} from "../../models-shared/chat/ChatUpdate.ts";
 import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
 import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 import {FeatureType} from "../../models-shared/configuration/FeatureType.ts";
+import {closeIfNotClickedInsideClass} from "./closeIfNotClickedInsideClass.ts";
 
 function parseMarkdown(text: string) {
     const rawMdParsed = marked.parse(text, {
@@ -478,6 +480,11 @@ export class ChatTemplates {
             .children(
                 GenericTemplates.buttonWithIcon("settings", model, () => {
                     flyoutVisible.value = !flyoutVisible.value;
+                    if (flyoutVisible.value) {
+                        setTimeout(() => {
+                            closeIfNotClickedInsideClass("flyout", flyoutVisible);
+                        });
+                    }
                 }, ["llm-settings-button"]),
                 when(flyoutVisible, ChatTemplates.settingsFlyout(modelConfigured, flyoutVisible)),
             ).build();
@@ -563,7 +570,11 @@ export class ChatTemplates {
                             });
                         }, filteredModels),
                     ).build()),
-                when(anyProvider, GenericTemplates.warning("No provider configured, go to settings"), true),
+                when(anyProvider, create("div")
+                    .classes("card")
+                    .children(
+                        GenericTemplates.warning("No provider configured, go to settings")
+                    ).build(), true),
             ).build();
     }
 
