@@ -169,7 +169,7 @@ export class SettingsTemplates {
                             onclick: () => updateKey(sc.key, value.value)
                         })),
                     ).build(),
-                when(featureNotConfigured, GenericTemplates.warning(`Feature ${(sc.needsFeatureType ?? "").toUpperCase()} is not configured. Head to "Keys" to set up.`)),
+                when(featureNotConfigured, GenericTemplates.warning(`Feature ${(sc.needsFeatureType ?? "")} is not configured. Head to "Keys" to set up.`)),
                 when(sc.description, create("span")
                     .classes("text-small")
                     .text(sc.description)
@@ -516,7 +516,7 @@ export class SettingsTemplates {
             .classes("feature", isConfigured ? "positive" : "negative")
             .children(
                 create("span")
-                    .text(f.featureType.toUpperCase())
+                    .text(f.featureType)
                     .build()
             ).build();
     }

@@ -1,6 +1,6 @@
 export enum FeatureType {
-    llm = "llm",
-    tts = "tts",
-    stt = "stt",
-    tools = "tools",
+    llm = "Language models",
+    tts = "Text to speech",
+    stt = "Transcription",
+    tools = "Tools",
 }
