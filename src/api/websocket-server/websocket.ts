@@ -284,7 +284,7 @@ export function addWebsocketServer(server: Server) {
                 CLI.log(`Event: u-${ws.userId}\tt-${message.type}`);
             } catch (e) {
                 console.error(e);
-                sendError(ws, e);
+                sendError(ws, e.message);
             }
         });
 
