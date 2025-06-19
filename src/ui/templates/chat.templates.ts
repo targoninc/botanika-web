@@ -579,7 +579,7 @@ export class ChatTemplates {
                         GenericTemplates.warning("No provider configured, go to settings")
                     ).build(), true),
                 create("div")
-                    .classes("flex-v", "no-gap")
+                    .classes("flex", "small-gap", "align-bottom")
                     .children(
                         input({
                             type: InputType.range,
@@ -598,7 +598,6 @@ export class ChatTemplates {
                         input({
                             type: InputType.number,
                             name: "temperatureManual",
-                            label: "",
                             value: temperature,
                             attributes: ["min", "0", "max", "1", "step", "0.1"],
                             onchange: async value => {

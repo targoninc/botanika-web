@@ -1077,7 +1077,7 @@ div:hover > .showOnParentHover {
     border-radius: var(--input-border-radius);
     padding: var(--gap-h) var(--gap-v);
     cursor: pointer;
-    background: var(--bg-4);
+    background: var(--bg-3);
     font-size: .8em;
     font-weight: bold;
     border: 1px solid var(--tint-muted);

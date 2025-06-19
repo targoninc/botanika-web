@@ -247,6 +247,10 @@ a:hover {
     align-items: center;
 }
 
+.align-bottom {
+    align-items: end;
+}
+
 button {
     cursor: pointer;
     align-items: center;
