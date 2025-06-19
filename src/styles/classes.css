@@ -1091,3 +1091,8 @@ div:hover > .showOnParentHover {
     background: var(--bg);
     color: var(--green);
 }
+
+.highlight {
+    background: var(--highlight);
+    color: var(--bg);
+}

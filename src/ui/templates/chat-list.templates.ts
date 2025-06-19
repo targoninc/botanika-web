@@ -1,4 +1,4 @@
-import {compute, create, InputType, Signal, signal, stack, when} from "@targoninc/jess";
+import {compute, create, InputType, Signal, signal, when} from "@targoninc/jess";
 import {GenericTemplates} from "./generic.templates.ts";
 import {activePage, chatContext, chats, currentChatId, deleteChat, eventStore, search} from "../utility/state/store.ts";
 import {searchList} from "../utility/search.ts";

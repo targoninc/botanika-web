@@ -26,9 +26,10 @@
     --green: color-mix(in oklab, #37ac43, var(--tint) var(--tint-strength));
     --red: color-mix(in oklab, #f22e31, var(--tint) var(--tint-strength));
     --blue: color-mix(in oklab, #0b72bc, var(--tint) var(--tint-strength));
-    --yellow: #f0c929ff;
+    --yellow: color-mix(in oklab, #f0c929ff, var(--tint) var(--tint-strength));
     --orange: #f09029;
     --purple: #6a4c93ff;
+    --highlight: var(--yellow);
 
     --font-size-base: 18px;
     --gap-h: 7px;

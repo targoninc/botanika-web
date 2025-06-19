@@ -19,6 +19,7 @@ import {getPathname, getUrlParameter, updateUrlParameter, updateUrlPathname} fro
 import {User} from "@prisma/client";
 import {EventStore} from "../realtime/eventStore.ts";
 import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
+import {clearHighlights, highlightInElement} from "../highlighting.ts";
 
 export const activePage = signal<string>(getPathname() ?? "chat");
 export const configuration = signal<Configuration>({} as Configuration);
@@ -86,6 +87,15 @@ export function initializeStore() {
         }
         await Api.setShortcutConfig(sc);
     });
+
+    search.subscribe(query => {
+        query = query.trim();
+        clearHighlights();
+
+        if (query && query.length > 0) {
+            highlightInElement(document.querySelector(".message-history"), query);
+        }
+    })
 
     tryLoadFromCache<Configuration>("config", configuration, () => Api.getConfig());
     tryLoadFromCache<ChatContext[]>("chats", chats, (cachedChats) => Api.getNewestChats((cachedChats && cachedChats.length > 0) ? new Date(getNewestChatDate(cachedChats)) : undefined)
