@@ -545,7 +545,7 @@ export class ChatTemplates {
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
         const currentProvider = compute(c => c.provider, configuration);
         const currentModel = compute(c => c.model, configuration);
-        const temperature = compute(c => c.temperature, configuration);
+        const temperature = compute(c => c.temperature ?? "0.5", configuration);
 
         currentProvider.subscribe((p) => configured.value = p !== undefined && currentModel.value !== undefined);
         currentModel.subscribe((m) => configured.value = m !== undefined && currentProvider.value !== undefined);
