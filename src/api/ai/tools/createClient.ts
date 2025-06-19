@@ -27,6 +27,10 @@ export async function createClientsFromConfig(servers: McpServerConfig[]) {
 
     const clients: TempMcpClient[] = [];
     for (const server of servers) {
+        if (server.enabled !== true) {
+            continue;
+        }
+
         const client = await createClient(server.url, server.headers ?? {});
         clients.push(client);
     }

@@ -99,7 +99,7 @@ export class SettingsTemplates {
                 create("div")
                     .classes("flex", "small-gap")
                     .children(
-                        GenericTemplates.warning("All data will be saved in this instance's database. Learn how to host your own instance: "),
+                        GenericTemplates.warning("All data will be saved in this instance's database unencrypted, meaning the instance hoster can read your data. Learn how to host your own instance: "),
                         GenericTemplates.buttonWithIcon("open_in_new", "GitHub Repository", () => window.open("https://github.com/targoninc/botanika-web", "_blank")),
                     ).build(),
             ).build();
@@ -373,6 +373,7 @@ export class SettingsTemplates {
         const name = signal(server.name);
         const url = signal(server.url);
         const headers = signal(server.headers);
+        const enabled = signal(server.enabled === true);
 
         return create("div")
             .classes("flex-v", "bordered-panel")
@@ -380,7 +381,7 @@ export class SettingsTemplates {
                 create("div")
                     .classes("flex")
                     .children(
-                        SettingsTemplates.mcpServerSaveButton(name, url, server, headers),
+                        SettingsTemplates.mcpServerSaveButton(name, url, enabled, server, headers),
                         GenericTemplates.buttonWithIcon("delete", "Delete", () => {
                             createModal(GenericTemplates.confirmModal("Delete MCP Server connection", `Are you sure you want to delete ${server.url}?`, "Yes", "No", () => {
                                 const newServers = [...mcpConfig.value].filter(s => s.id !== server.id);
@@ -393,6 +394,10 @@ export class SettingsTemplates {
                                 });
                             }));
                         }, ["negative"]),
+                        GenericTemplates.toggle("Enabled", enabled, newEnabled => {
+                            enabled.value = newEnabled;
+                            SettingsTemplates.saveMcpServer(server, name, url, enabled, headers);
+                        }),
                     ).build(),
                 create("div")
                     .classes("flex", "align-center")
@@ -424,13 +429,13 @@ export class SettingsTemplates {
                         GenericTemplates.heading(3, "Headers"),
                         compute(h => GenericTemplates.keyValueInput(h, newHeaders => {
                             headers.value = newHeaders;
-                            SettingsTemplates.saveMcpServer(server, name, url, headers);
+                            SettingsTemplates.saveMcpServer(server, name, url, enabled, headers);
                         }), headers),
                     ).build(),
             ).build();
     }
 
-    private static mcpServerSaveButton(name: Signal<string>, url: Signal<string>, server: McpServerConfig, headers: Signal<Record<string, string>>) {
+    private static mcpServerSaveButton(name: Signal<string>, url: Signal<string>, enabled: Signal<boolean>, server: McpServerConfig, headers: Signal<Record<string, string>>) {
         return button({
             icon: {icon: "save"},
             text: "Update server",
@@ -438,18 +443,19 @@ export class SettingsTemplates {
                 && (n === server.name) && (u === server.url)
                 && (JSON.stringify(h) === JSON.stringify(server.headers)), name, url, headers),
             classes: ["flex", "align-center", "positive"],
-            onclick: () => SettingsTemplates.saveMcpServer(server, name, url, headers)
+            onclick: () => SettingsTemplates.saveMcpServer(server, name, url, enabled, headers)
         });
     }
 
-    private static saveMcpServer(server: McpServerConfig, name: Signal<string>, url: Signal<string>, headers: Signal<Record<string, string>>) {
+    private static saveMcpServer(server: McpServerConfig, name: Signal<string>, url: Signal<string>, enabled: Signal<boolean>, headers: Signal<Record<string, string>>) {
         const newServers = mcpConfig.value.map(s => {
-            if (s.url === server.url) {
-                server.name = name.value;
-                server.url = url.value;
-                server.headers = headers.value ?? {};
+            if (s.id === server.id) {
+                s.name = name.value;
+                s.url = url.value;
+                s.enabled = enabled.value;
+                s.headers = headers.value ?? {};
             }
-            return server;
+            return s;
         });
         Api.setMcpConfig(newServers).then(() => {
             Api.getMcpConfig().then(mcpConf => {
