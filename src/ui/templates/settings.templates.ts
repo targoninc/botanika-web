@@ -245,7 +245,6 @@ export class SettingsTemplates {
                 return providers;
             }
 
-            console.log(f);
             return providers.filter(p => f.every(feat => featureOptions[p]?.features.some(ff => ff.featureType === feat)));
         }, filters);
 
