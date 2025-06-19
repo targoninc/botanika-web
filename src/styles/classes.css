@@ -276,41 +276,6 @@ iframe {
     border-color: var(--blue);
 }
 
-.selector-pane {
-    height: 100%;
-    width: max-content;
-    max-height: 20dvh;
-    background: var(--gradient-2);
-    border-left: 1px solid var(--tint-main);
-    overflow: auto;
-}
-
-.selector-pane:first-child {
-    border-radius: var(--input-border-radius) 0 0 var(--input-border-radius);
-    border-left: none;
-}
-
-.selector-pane:last-child {
-    border-radius: 0 var(--input-border-radius) var(--input-border-radius) 0;
-    flex-grow: 1;
-}
-
-.selector-row {
-    padding: var(--gap-h) var(--gap-v);
-    padding-right: calc(var(--gap-v) * 2);
-    cursor: pointer;
-}
-
-.selector-row.selected {
-    font-weight: bold;
-    border-right: 5px solid var(--tint-main);
-    background: var(--bg);
-}
-
-.selector-row:hover {
-    background: var(--bg-3);
-}
-
 .modal {
     position: fixed;
     top: 0;

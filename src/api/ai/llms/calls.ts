@@ -6,6 +6,7 @@ import {Signal} from "@targoninc/jess";
 import {sendError, WebsocketConnection} from "../../websocket-server/websocket.ts";
 import {MessageFile} from "../../../models-shared/chat/MessageFile.ts";
 import {AiMessage} from "./aiMessage.ts";
+import {Configuration} from "../../../models-shared/configuration/Configuration.ts";
 
 export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], maxTokens: number = 1000): Promise<{
     thoughts: string;
@@ -43,7 +44,7 @@ export async function getSimpleResponse(model: LanguageModelV1, tools: ToolSet, 
     };
 }
 
-export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], chatId: string, abortSignal: AbortSignal): Promise<{
+export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps: number, message: Signal<ChatMessage>, model: LanguageModelV1, tools: ToolSet, messages: AiMessage[], userConfig: Configuration, abortSignal: AbortSignal): Promise<{
     steps: Promise<Array<StepResult<ToolSet>>>
 }> {
     CLI.debug("Streaming response...");
@@ -60,7 +61,7 @@ export async function streamResponseAsMessage(ws: WebsocketConnection, maxSteps:
         tools,
         presencePenalty: 0.6,
         frequencyPenalty: 0.6,
-        temperature: .5,
+        temperature: parseFloat(userConfig.temperature ?? "0.5"),
         maxSteps,
         maxRetries: 0,
         abortSignal,

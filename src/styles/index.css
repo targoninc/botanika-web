@@ -542,6 +542,10 @@ label.required {
     font-weight: bold;
 }
 
+label {
+    font-size: .8em;
+}
+
 ::-webkit-scrollbar {
     width: var(--gap-h);
 }

@@ -146,11 +146,9 @@ export class GenericTemplates {
         return create("div")
             .classes("flex", "align-center")
             .children(
-                when(label, create("span")
+                when(label, create("label")
+                    .classes("flex-v", "small-gap")
                     .text(label)
-                    .build()),
-                create("div")
-                    .classes("select")
                     .children(
                         create("select")
                             .onchange((e) => {
@@ -169,7 +167,7 @@ export class GenericTemplates {
                                         }).build();
                                 })
                             ).build()
-                    ).build()
+                    ).build()),
             ).build();
     }
 
@@ -642,22 +640,6 @@ export class GenericTemplates {
             .href(url)
             .target("_blank")
             .build();
-    }
-
-    public static selectorPane(p: {
-        id: string,
-        displayName: string
-    }[], selected: Signal<string>, setValue: (str: string) => void) {
-        return create("div")
-            .classes("flex-v", "no-gap", "selector-pane")
-            .children(
-                ...p.map(item => {
-                    return create("div")
-                        .classes("selector-row", compute((s): string => s === item.id ? "selected" : "_", selected))
-                        .onclick(() => setValue(item.id))
-                        .text(item.displayName);
-                })
-            ).build();
     }
 
     public static reference(r: ResourceReference) {

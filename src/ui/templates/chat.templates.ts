@@ -494,7 +494,7 @@ export class ChatTemplates {
         return create("div")
             .classes("flex-v", "flyout", "no-padding", "below", "center")
             .children(
-                ChatTemplates.llmSelector(configured, flyoutVisible),
+                ChatTemplates.llmSelectorNew(configured, flyoutVisible),
             ).build();
     }
 
@@ -521,7 +521,7 @@ export class ChatTemplates {
             .build();
     }
 
-    private static llmSelector(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
+    private static llmSelectorNew(configured: Signal<boolean>, flyoutVisible: Signal<boolean>) {
         const availableProviders = compute(c => getEnabledProvidersForFeatureType(c, FeatureType.llm), configuration);
         const setProvider = async (p: LlmProvider) => {
             if (p === configuration.value.provider) {
@@ -545,22 +545,26 @@ export class ChatTemplates {
         const anyProvider = compute(ap => ap.length > 0, availableProviders);
         const currentProvider = compute(c => c.provider, configuration);
         const currentModel = compute(c => c.model, configuration);
+        const temperature = compute(c => c.temperature, configuration);
 
         currentProvider.subscribe((p) => configured.value = p !== undefined && currentModel.value !== undefined);
         currentModel.subscribe((m) => configured.value = m !== undefined && currentProvider.value !== undefined);
 
         return create("div")
-            .classes("flex-v")
+            .classes("flex-v", "card")
             .children(
                 when(anyProvider, create("div")
-                    .classes("flex", "no-gap", "no-wrap", "full-width")
+                    .classes("flex-v", "small-gap", "no-wrap", "full-width")
                     .children(
-                        compute(p => GenericTemplates.selectorPane(p.map(provider => ({
-                            id: provider,
-                            displayName: provider
+                        compute(p => GenericTemplates.select("Provider", p.map(provider => ({
+                            text: provider,
+                            value: provider
                         })), currentProvider, setProvider), availableProviders),
                         compute((models) => {
-                            return GenericTemplates.selectorPane(models, currentModel, async (newModel: string) => {
+                            return GenericTemplates.select("Model", models.map(m => ({
+                                text: m.displayName,
+                                value: m.id
+                            })), currentModel, async (newModel: string) => {
                                 configuration.value = {
                                     ...configuration.value,
                                     model: newModel
@@ -571,10 +575,27 @@ export class ChatTemplates {
                         }, filteredModels),
                     ).build()),
                 when(anyProvider, create("div")
-                    .classes("card")
                     .children(
                         GenericTemplates.warning("No provider configured, go to settings")
                     ).build(), true),
+                create("div")
+                    .classes("flex-v")
+                    .children(
+                        input({
+                            type: InputType.range,
+                            name: "temperature",
+                            label: "Temperature",
+                            value: temperature,
+                            attributes: ["min", "0", "max", "1", "step", "0.1"],
+                            onchange: async value => {
+                                configuration.value = {
+                                    ...configuration.value,
+                                    temperature: value
+                                };
+                                await Api.setConfigKey("temperature", value);
+                            }
+                        })
+                    ).build()
             ).build();
     }
 

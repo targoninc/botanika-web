@@ -18,6 +18,7 @@ export interface Configuration extends Record<string, any> {
     speechModel: string;
     speechProvider: string;
     speechVoice: string;
+    temperature: string;
     featureOptions: {
         [BotanikaFeature.GoogleSearch]: {
             apiKey: string,
