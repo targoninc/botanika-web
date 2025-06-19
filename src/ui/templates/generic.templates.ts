@@ -265,7 +265,7 @@ export class GenericTemplates {
         });
 
         return create("div")
-            .classes("flex-v", "flex-grow", "small-gap")
+            .classes("flex-v", "flex-grow")
             .children(
                 tabButtons,
                 ...tabs.map((tab, i) => {
