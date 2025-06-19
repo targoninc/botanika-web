@@ -16,6 +16,7 @@ import {v4} from "uuid";
 import {transcriptionSettings, generalSettings, speechSettings} from "../enums/settings.ts";
 import {Tab} from "../models/Tab.ts";
 import {FeatureSettings} from "../../models-shared/configuration/FeatureSettings.ts";
+import {FeatureType} from "../../models-shared/configuration/FeatureType.ts";
 
 export class SettingsTemplates {
     static settings() {
@@ -106,6 +107,7 @@ export class SettingsTemplates {
 
     static setting(sc: SettingConfiguration, loading: Signal<boolean>, getter: (config: Configuration) => any, updateFunction: (config: Configuration, key: string, value: any) => Configuration) {
         const errors = signal<string[]>([]);
+
         async function updateKey(key: string, value: any, notifyOnChange = true) {
             if (sc.validator) {
                 const valErrors = sc.validator(value);
@@ -190,7 +192,10 @@ export class SettingsTemplates {
             case "string":
                 return GenericTemplates.input(InputType.text, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "select":
-                return GenericTemplates.select(sc.label, (sc.options ?? []).map(o => ({ text: o, value: o })), value, (newValue) => updateKey(sc.key, newValue));
+                return GenericTemplates.select(sc.label, (sc.options ?? []).map(o => ({
+                    text: o,
+                    value: o
+                })), value, (newValue) => updateKey(sc.key, newValue));
             case "password":
                 return GenericTemplates.input(InputType.password, sc.key, value, sc.label, sc.label, sc.key, [], (newValue) => updateKey(sc.key, newValue));
             case "color":
@@ -233,43 +238,57 @@ export class SettingsTemplates {
     }
 
     static configuredFeaturesInternal(config: Configuration) {
+        const providers = Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)) as BotanikaFeature[];
+        const filters = signal<FeatureType[]>([]);
+        const filteredProviders = compute(f => {
+            if (f.length === 0) {
+                return providers;
+            }
+
+            console.log(f);
+            return providers.filter(p => f.every(feat => featureOptions[p]?.features.some(ff => ff.featureType === feat)));
+        }, filters);
+
         return create("div")
             .classes("flex-v")
             .children(
-                ...Object.keys(featureOptions).sort((a, b) => a.localeCompare(b)).map((api: BotanikaFeature) => {
-                    const loading = signal(false);
-                    const featureConfig = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
-                    const provider = featureOptions[api];
-                    const configuredFeatures = provider.features.filter(f => f.required.every(requiredKey => !!featureConfig[requiredKey]));
+                GenericTemplates.filter(Object.values(FeatureType), filters),
+                signalMap(filteredProviders, create("div").classes("flex-v"), f => SettingsTemplates.featureProvider(f, config))
+            ).build();
+    }
 
-                    const settingsList = provider && provider.keys.length > 0 ? provider.keys.map(s => SettingsTemplates.setting(s, loading, c => {
-                        return c.featureOptions && c.featureOptions[api] ? c.featureOptions[api][s.key] : null;
-                    }, (c, k, v) => (<Configuration>{
-                        ...c,
-                        featureOptions: {
-                            ...(c.featureOptions ?? {}),
-                            [api]: {
-                                ...((c.featureOptions ?? {})[api] ?? {}),
-                                [k]: v,
-                            }
-                        }
-                    }))) : [];
+    private static featureProvider(api: BotanikaFeature, config: Configuration) {
+        const loading = signal(false);
+        const featureConfig = (config.featureOptions ?? {})[api] as Record<string, any> ?? {};
+        const provider = featureOptions[api];
+        const configuredFeatures = provider.features.filter(f => f.required.every(requiredKey => !!featureConfig[requiredKey]));
 
-                    return create("div")
-                        .classes("flex-v", "card", "small-gap")
-                        .children(
-                            create("div")
-                                .classes("flex")
-                                .children(
-                                    // TODO: Add logos
-                                    create("b")
-                                        .text(api),
-                                    SettingsTemplates.providerFeatures(configuredFeatures, provider.features),
-                                    when(loading, GenericTemplates.spinner())
-                                ).build(),
-                            ...settingsList,
-                        ).build();
-                })
+        const settingsList = provider && provider.keys.length > 0 ? provider.keys.map(s => SettingsTemplates.setting(s, loading, c => {
+            return c.featureOptions && c.featureOptions[api] ? c.featureOptions[api][s.key] : null;
+        }, (c, k, v) => (<Configuration>{
+            ...c,
+            featureOptions: {
+                ...(c.featureOptions ?? {}),
+                [api]: {
+                    ...((c.featureOptions ?? {})[api] ?? {}),
+                    [k]: v,
+                }
+            }
+        }))) : [];
+
+        return create("div")
+            .classes("flex-v", "card", "small-gap")
+            .children(
+                create("div")
+                    .classes("flex")
+                    .children(
+                        // TODO: Add logos
+                        create("b")
+                            .text(api),
+                        SettingsTemplates.providerFeatures(configuredFeatures, provider.features),
+                        when(loading, GenericTemplates.spinner())
+                    ).build(),
+                ...settingsList,
             ).build();
     }
 
@@ -452,7 +471,7 @@ export class SettingsTemplates {
             ).build();
     }
 
-    private static plus(){
+    private static plus() {
         return create("span")
             .text("+")
             .build()
@@ -485,7 +504,7 @@ export class SettingsTemplates {
                                     key.value = value;
                                 }
                             }),
-                            button({
+                            when(unchanged, button({
                                 icon: {
                                     icon: "save",
                                 },
@@ -498,9 +517,9 @@ export class SettingsTemplates {
                                         ...shortCutConfig.value,
                                         [action]: key.value
                                     };
-                                    toast("Shortcuts updated", null, ToastType.positive);
+                                    toast("Shortcut updated", null, ToastType.positive);
                                 }
-                            })
+                            }), true)
                         ).build();
                 })
             ).build();

@@ -19,8 +19,6 @@ import {toHumanizedTime} from "../utility/toHumanizedTime.ts";
 import {Api} from "../utility/state/api.ts";
 import {TextSegment} from "../models/TextSegment.ts";
 import {Tab} from "../models/Tab.ts";
-import {ToolCall} from "../../models-shared/chat/ToolCall.ts";
-import {ReasoningDetail} from "../../api/ai/llms/aiMessage.ts";
 import {ResourceReference} from "../../models-shared/chat/ResourceReference.ts";
 import {getHost} from "../utility/state/urlHelpers.ts";
 import {closeIfNotClickedInsideClass} from "./closeIfNotClickedInsideClass.ts";
@@ -707,5 +705,29 @@ export class GenericTemplates {
                         ).build()
                     : null,
             ).build();
+    }
+
+    static filter<T extends string>(options: T[], filters: Signal<T[]>) {
+        return create("div")
+            .classes("flex", "align-children")
+            .children(
+                ...options.map(o => GenericTemplates.filterOption(o, filters))
+            ).build();
+    }
+
+    private static filterOption<T extends string>(o: T, filters: Signal<T[]>) {
+        const activeClass = compute(f => f.includes(o) ? "active" : "inactive", filters);
+
+        return create("div")
+            .classes("filter-option", "clickable", activeClass)
+            .onclick(() => {
+                if (!filters.value.includes(o)) {
+                    filters.value = filters.value.concat([o]);
+                } else {
+                    filters.value = filters.value.filter(f => f !== o);
+                }
+            })
+            .text(o)
+            .build();
     }
 }

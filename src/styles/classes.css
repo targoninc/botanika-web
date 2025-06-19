@@ -1107,3 +1107,22 @@ div:hover > .showOnParentHover {
     font-size: .8em;
     font-weight: bold;
 }
+
+.filter-option {
+    border-radius: var(--input-border-radius);
+    padding: var(--gap-h) var(--gap-v);
+    cursor: pointer;
+    background: var(--bg-4);
+    font-size: .8em;
+    font-weight: bold;
+    border: 1px solid var(--tint-muted);
+}
+
+.filter-option:hover {
+    background: var(--bg);
+}
+
+.filter-option.active {
+    background: var(--bg);
+    color: var(--green);
+}
