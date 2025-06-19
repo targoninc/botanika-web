@@ -61,7 +61,7 @@ export function initializeStore() {
 
     chatContext.subscribe(c => {
         const url = new URL(window.location.href);
-        if (c?.shared && c.shared.toString() !== url.searchParams.get("shared")) {
+        if (c?.shared !== undefined && c.shared.toString() !== url.searchParams.get("shared")) {
             updateUrlParameter("shared", c.shared ? "true" : null);
         }
         focusChatInput();
